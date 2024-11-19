@@ -324,7 +324,8 @@ namespace VoucherPro
 
         private void Layout_CheckVoucher_Bill(PrintPageEventArgs e, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter)
         {
-
+            Font font_Data = font_Eight;
+            Font font_Header = font_EightBold;
         }
 
         private void Layout_APVoucher(PrintPageEventArgs e, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter)
