@@ -329,42 +329,50 @@ namespace VoucherPro
                         data = receipts;
                     }
 
-                    if (GlobalVariables.client == "LEADS")
+                    if (receipts.Count > 0)
                     {
-                        Layouts_LEADS layouts_LEADS = new Layouts_LEADS();
-                        //Layouts layouts = new Layouts();
-
-                        PaperSize paperSize = new PaperSize("Custom", 850, 1100);
-
-                        printDocument = new PrintDocument();
-                        printDocument.DefaultPageSettings.PaperSize = paperSize;
-                        printDocument.PrinterSettings.DefaultPageSettings.PaperSize = paperSize;
-
-                        printDocument.PrintPage += (s, ev) =>
+                        if (GlobalVariables.client == "LEADS")
                         {
-                            layouts_LEADS.PrintPage_LEADS(s, ev, comboBox_Forms.SelectedIndex, data);
-                            //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
-                        };
+                            Layouts_LEADS layouts_LEADS = new Layouts_LEADS();
+                            //Layouts layouts = new Layouts();
+
+                            PaperSize paperSize = new PaperSize("Custom", 850, 1100);
+
+                            printDocument = new PrintDocument();
+                            printDocument.DefaultPageSettings.PaperSize = paperSize;
+                            printDocument.PrinterSettings.DefaultPageSettings.PaperSize = paperSize;
+
+                            printDocument.PrintPage += (s, ev) =>
+                            {
+                                layouts_LEADS.PrintPage_LEADS(s, ev, comboBox_Forms.SelectedIndex, data);
+                                //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
+                            };
+                        }
+                        else
+                        {
+                            Layouts layouts = new Layouts();
+
+                            PaperSize paperSize = new PaperSize("Custom", 850, 1100);
+
+                            printDocument = new PrintDocument();
+                            printDocument.DefaultPageSettings.PaperSize = paperSize;
+                            printDocument.PrinterSettings.DefaultPageSettings.PaperSize = paperSize;
+
+                            printDocument.PrintPage += (s, ev) =>
+                            {
+                                layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
+                            };
+                        }
+
+                        printPreviewControl.Document = printDocument;
+                        printPreviewControl.Visible = true;
+                        panel_Printing.Visible = true;
                     }
                     else
                     {
-                        Layouts layouts = new Layouts();
-
-                        PaperSize paperSize = new PaperSize("Custom", 850, 1100);
-
-                        printDocument = new PrintDocument();
-                        printDocument.DefaultPageSettings.PaperSize = paperSize;
-                        printDocument.PrinterSettings.DefaultPageSettings.PaperSize = paperSize;
-
-                        printDocument.PrintPage += (s, ev) =>
-                        {
-                            layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
-                        };
+                        MessageBox.Show("No data found for the provided reference number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
-
-                    printPreviewControl.Document = printDocument;
-                    printPreviewControl.Visible = true;
-                    panel_Printing.Visible = true;
+                    
                 }
                 else
                 {
