@@ -22,18 +22,24 @@ namespace VoucherPro.Clients
         Font font_Eleven = new Font("Microsoft Sans Serif", 11, FontStyle.Regular);
         Font font_ElevenBold = new Font("Microsoft Sans Serif", 11, FontStyle.Bold);
 
-        public void PrintPage_LEADS(object sender, PrintPageEventArgs e, int layoutIndex)
+        public void PrintPage_LEADS(object sender, PrintPageEventArgs e, int layoutIndex, object data)
         {
             StringFormat sfAlignRight = new StringFormat { Alignment = StringAlignment.Far | StringAlignment.Far };
             StringFormat sfAlignCenterRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
             StringFormat sfAlignCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
             StringFormat sfAlignLeftCenter = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
 
+            List<ItemReciept> items = null;
+
+            if (layoutIndex == 4)
+            {
+                items = data as List<ItemReciept>;
+            }
 
             switch (layoutIndex)
             {
                 case 4:
-                    Layout_ItemReceipt(e, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter);
+                    Layout_ItemReceipt(e, items, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter);
                     break;
                 default:
                     throw new ArgumentException("Invalid layout index");
@@ -45,7 +51,7 @@ namespace VoucherPro.Clients
 
         }
 
-        private void Layout_ItemReceipt(PrintPageEventArgs e, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter)
+        private void Layout_ItemReceipt(PrintPageEventArgs e, List<ItemReciept> receiptData, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter)
         {
             if (GlobalVariables.includeImage)
             {
@@ -62,6 +68,8 @@ namespace VoucherPro.Clients
             e.Graphics.DrawRectangle(Pens.Black, rectReceivingPoint);
             e.Graphics.DrawRectangle(Pens.Black, rectReceivingAddress);
             e.Graphics.DrawRectangle(Pens.Black, rectDate);
+
+            e.Graphics.DrawString(receiptData[0].Memo.ToString(), font_Details, Brushes.Black, rectReceivingPoint);
 
             // TABLE
             Rectangle rectItemNo = new Rectangle(44, 329, 52, 24);

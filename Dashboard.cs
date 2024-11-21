@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 using VoucherPro.Clients;
+using static VoucherPro.DataClass;
 
 namespace VoucherPro
 {
@@ -317,6 +318,16 @@ namespace VoucherPro
                 else if (comboBox_Forms.SelectedIndex != 0 && textBox_ReferenceNumber.Text != "")
                 {
                     string refNumber = textBox_ReferenceNumber.Text;
+                    AccessQueries queries = new AccessQueries();
+
+                    List<ItemReciept> receipts = new List<ItemReciept>();
+                    object data = null;
+
+                    if (comboBox_Forms.SelectedIndex == 4)
+                    {
+                        receipts = queries.GetItemRecieptData_LEADS(refNumber);
+                        data = receipts;
+                    }
 
                     if (GlobalVariables.client == "LEADS")
                     {
@@ -331,7 +342,7 @@ namespace VoucherPro
 
                         printDocument.PrintPage += (s, ev) =>
                         {
-                            layouts_LEADS.PrintPage_LEADS(s, ev, comboBox_Forms.SelectedIndex);
+                            layouts_LEADS.PrintPage_LEADS(s, ev, comboBox_Forms.SelectedIndex, data);
                             //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
                         };
                     }
