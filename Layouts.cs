@@ -8,12 +8,16 @@ using System.Threading.Tasks;
 
 using static VoucherPro.DataClass;
 using static VoucherPro.AccessToDatabase;
+
 namespace VoucherPro
 {
     public class Layouts
     {
+        private AccessToDatabase accessToDatabase;
+
         Font font_Six = new Font("Microsoft Sans Serif", 6, FontStyle.Regular);
         Font font_Seven = new Font("Microsoft Sans Serif", 7, FontStyle.Regular);
+        Font font_SevenBold = new Font("Microsoft Sans Serif", 7, FontStyle.Bold);
         Font font_Eight = new Font("Microsoft Sans Serif", 8, FontStyle.Regular);
         Font font_EightBold = new Font("Microsoft Sans Serif", 8, FontStyle.Bold);
         Font font_Nine = new Font("Microsoft Sans Serif", 9, FontStyle.Regular);
@@ -31,6 +35,8 @@ namespace VoucherPro
             StringFormat sfAlignCenterRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
             StringFormat sfAlignCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
             StringFormat sfAlignLeftCenter = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
+
+            accessToDatabase = new AccessToDatabase();
 
             switch (layoutIndex)
             {
@@ -292,24 +298,24 @@ namespace VoucherPro
             e.Graphics.DrawRectangle(Pens.Black, 50 + 450, secondTableYPos + 45 + 20, 150, tableHeight + 35);
             e.Graphics.DrawRectangle(Pens.Black, 50 + 600, secondTableYPos + 45 + 20, 150, tableHeight + 35);
 
-            /*
-            var data = accessDatabase.RetrieveAllSignatoryDataFromAccess();
 
-            e.Graphics.DrawString(data.PreparedByName, font_seven_Bold, Brushes.Black, new RectangleF(50, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
-            e.Graphics.DrawString(data.PreparedByPosition, font_seven, Brushes.Black, new RectangleF(50, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
+            var data = accessToDatabase.RetrieveAllSignatoryData();
 
-            e.Graphics.DrawString(data.ReviewedByName, font_seven_Bold, Brushes.Black, new RectangleF(50 + 150, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
-            e.Graphics.DrawString(data.ReviewedByPosition, font_seven, Brushes.Black, new RectangleF(50 + 150, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
+            e.Graphics.DrawString(data.PreparedByName, font_SevenBold, Brushes.Black, new RectangleF(50, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
+            e.Graphics.DrawString(data.PreparedByPosition, font_Seven, Brushes.Black, new RectangleF(50, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
 
-            e.Graphics.DrawString(data.RecommendingApprovalName, font_seven_Bold, Brushes.Black, new RectangleF(50 + 300, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
-            e.Graphics.DrawString(data.RecommendingApprovalPosition, font_seven, Brushes.Black, new RectangleF(50 + 300, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
+            e.Graphics.DrawString(data.ReviewedByName, font_SevenBold, Brushes.Black, new RectangleF(50 + 150, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
+            e.Graphics.DrawString(data.ReviewedByPosition, font_Seven, Brushes.Black, new RectangleF(50 + 150, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
 
-            e.Graphics.DrawString(data.ApprovedByName, font_seven_Bold, Brushes.Black, new RectangleF(50 + 450, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
-            e.Graphics.DrawString(data.ApprovedByPosition, font_seven, Brushes.Black, new RectangleF(50 + 450, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
+            e.Graphics.DrawString(data.RecommendingApprovalName, font_SevenBold, Brushes.Black, new RectangleF(50 + 300, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
+            e.Graphics.DrawString(data.RecommendingApprovalPosition, font_Seven, Brushes.Black, new RectangleF(50 + 300, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
 
-            e.Graphics.DrawString(data.ReceivedByName, font_seven_Bold, Brushes.Black, new RectangleF(50 + 600, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
-            e.Graphics.DrawString(data.ReceivedByPosition, font_seven, Brushes.Black, new RectangleF(50 + 600, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
-            */
+            e.Graphics.DrawString(data.ApprovedByName, font_SevenBold, Brushes.Black, new RectangleF(50 + 450, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
+            e.Graphics.DrawString(data.ApprovedByPosition, font_Seven, Brushes.Black, new RectangleF(50 + 450, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
+
+            e.Graphics.DrawString(data.ReceivedByName, font_SevenBold, Brushes.Black, new RectangleF(50 + 600, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
+            e.Graphics.DrawString(data.ReceivedByPosition, font_Seven, Brushes.Black, new RectangleF(50 + 600, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
+
 
             // Received the amount of
             //e.Graphics.DrawString("Received the amount of Php " + amount.ToString("N2"), font_eight, Brushes.Black, new PointF(50 + 430, othersYPos + 20));

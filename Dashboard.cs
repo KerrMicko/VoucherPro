@@ -16,6 +16,7 @@ namespace VoucherPro
     public class GlobalVariables
     {
         public static string client = "LEADS";
+        public static bool includeImage = true;
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
     }
@@ -23,6 +24,7 @@ namespace VoucherPro
     {
         private PrintDocument printDocument;
         private PrintPreviewControl printPreviewControl;
+        private AccessToDatabase accessToDatabase;
 
         ComboBox comboBox_Forms;
         FlowLayoutPanel panel_Printing;
@@ -33,6 +35,8 @@ namespace VoucherPro
         public Dashboard()
         {
             InitializeComponent();
+
+            accessToDatabase = new AccessToDatabase();
 
             this.WindowState = FormWindowState.Maximized;
             this.Text = "VoucherPro";
@@ -129,7 +133,7 @@ namespace VoucherPro
 
             // - SIGNATORY ----------------------------------------------
             FlowLayoutPanel panel_Signatory = Panel_SBSignatory();
-            //panel_Signatory.Parent = panel_SideBar;
+            panel_Signatory.Parent = panel_SideBar;
             
             // - PRINTING -----------------------------------------------
             FlowLayoutPanel panel_Printing = Panel_SBPrinting();
@@ -177,7 +181,7 @@ namespace VoucherPro
                 "Accounts Payable Voucher",
                 "Item Receipt / Receiving Report",
             });
-            comboBox_Forms.SelectedIndex = 2;
+            comboBox_Forms.SelectedIndex = 4;
 
             /*if (GlobalVariables.client == "LEADS")
             {
@@ -316,8 +320,8 @@ namespace VoucherPro
 
                     if (GlobalVariables.client == "LEADS")
                     {
-                        //Layouts_LEADS layouts_LEADS = new Layouts_LEADS();
-                        Layouts layouts = new Layouts();
+                        Layouts_LEADS layouts_LEADS = new Layouts_LEADS();
+                        //Layouts layouts = new Layouts();
 
                         PaperSize paperSize = new PaperSize("Custom", 850, 1100);
 
@@ -327,8 +331,8 @@ namespace VoucherPro
 
                         printDocument.PrintPage += (s, ev) =>
                         {
-                            //layouts_LEADS.PrintPage_LEADS(s, ev, comboBox_Forms.SelectedIndex);
-                            layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
+                            layouts_LEADS.PrintPage_LEADS(s, ev, comboBox_Forms.SelectedIndex);
+                            //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
                         };
                     }
                     else
@@ -385,14 +389,14 @@ namespace VoucherPro
                 Font = font_Label,
             };
 
-            ComboBox comboBox_Signaory = new ComboBox
+            ComboBox comboBox_Signatory = new ComboBox
             {
                 Parent = panel_Signatory,
                 Width = sideBarWidth - 28,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = font_Label,
             };
-            comboBox_Signaory.Items.AddRange(new string[]
+            comboBox_Signatory.Items.AddRange(new string[]
             {
                 "Select Signatory Option",
                 "Prepared By:",
@@ -400,7 +404,7 @@ namespace VoucherPro
                 "Approved By:",
                 "Noted By:",
             });
-            comboBox_Signaory.SelectedIndex = 0;
+            comboBox_Signatory.SelectedIndex = 0;
 
             Label label_SignatoryName = new Label
             {
@@ -444,16 +448,52 @@ namespace VoucherPro
                 Font = new Font("Microsoft Sans Serif", 8),
                 BackColor = Color.Transparent,
             };
-
+            
             Label label_SignatoryStatus = new Label
             {
                 Parent = panel_Signatory,
                 Height = 22,
                 Width = 110,
-                Text = "Saved!",
+                //Text = "Saved!",
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Microsoft Sans Serif", 8),
                 Margin = new Padding(0, 3, 0, 0),
+            };
+
+            button_SaveSignatory.Click += (sender, e) =>
+            {
+                if (comboBox_Signatory.SelectedIndex == 0)
+                {
+                    MessageBox.Show("Please selecet an option");
+                }
+                else
+                {
+                    string signatoryName = textBox_SignatoryName.Text;
+                    string signatoryPosition = textBox_SignatoryPosition.Text;
+
+                    int choice = comboBox_Signatory.SelectedIndex;
+
+                    accessToDatabase.SaveSignatoryData(choice, signatoryName, signatoryPosition);
+                    label_SignatoryStatus.Text = "Saved";
+                }
+            };
+
+            comboBox_Signatory.SelectedIndexChanged += (sender, e) =>
+            {
+                if (comboBox_Signatory.SelectedIndex == 0)
+                {
+                    textBox_SignatoryName.Text = "";
+                    textBox_SignatoryPosition.Text = "";
+                }
+                else
+                {
+                    label_SignatoryStatus.Text = "";
+                    int choice = comboBox_Signatory.SelectedIndex;
+                    var signatoryData = accessToDatabase.RetrieveSignatoryData(choice);
+
+                    textBox_SignatoryName.Text = signatoryData.Name;
+                    textBox_SignatoryPosition.Text = signatoryData.Position;
+                }
             };
 
             return panel_Signatory;

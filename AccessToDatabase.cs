@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data.Odbc;
 using System.Data.OleDb;
@@ -10,8 +11,9 @@ using System.Windows.Forms;
 
 namespace VoucherPro
 {
-    internal class AccessToDatabase
+    public class AccessToDatabase
     {
+        readonly string client = GlobalVariables.client;
         public static string GetAccessConnectionString()
         {
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
@@ -187,6 +189,471 @@ namespace VoucherPro
             }
 
             Console.WriteLine("All data from specified tables has been deleted.");
+        }
+
+        public void SaveSignatoryData(int choice, string name, string position)
+        {
+            string accessConnectionString = GetAccessConnectionString();
+
+            try
+            {
+                using (OleDbConnection connection = new OleDbConnection(accessConnectionString))
+                {
+                    connection.Open();
+
+                    string selectQuery = "SELECT COUNT(*) FROM Signatory";
+                    int rowCount;
+
+                    using (OleDbCommand selectCommand = new OleDbCommand(selectQuery, connection))
+                    {
+                        rowCount = (int)selectCommand.ExecuteScalar();
+                    }
+
+                    string signatoryQuery = null;
+
+                    if (rowCount > 0)
+                    {
+                        if (client == "LEADS")
+                        {
+                            switch (choice)
+                            {
+                                case 1:
+                                    signatoryQuery = "UPDATE Signatory SET PreparedByName = ?, PreparedByPosition = ?";
+                                    break;
+                                case 2:
+                                    signatoryQuery = "UPDATE Signatory SET ReviewedByName = ?, ReviewedByPosition = ?";
+                                    break;
+                                case 3:
+                                    signatoryQuery = "UPDATE Signatory SET RecommendingApprovalName = ?, RecommendingApprovalPosition = ?";
+                                    break;
+                                case 4:
+                                    signatoryQuery = "UPDATE Signatory SET ApprovedByName = ?, ApprovedByPosition = ?";
+                                    break;
+                                case 5:
+                                    signatoryQuery = "UPDATE Signatory SET ReceivedByName = ?, ReceivedByPosition = ?";
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            switch (choice)
+                            {
+                                case 1:
+                                    signatoryQuery = "UPDATE Signatory SET PreparedByName = ?, PreparedByPosition = ?";
+                                    break;
+                                case 2:
+                                    signatoryQuery = "UPDATE Signatory SET ReviewedByName = ?, ReviewedByPosition = ?";
+                                    break;
+                                case 3:
+                                    signatoryQuery = "UPDATE Signatory SET RecommendingApprovalName = ?, RecommendingApprovalPosition = ?";
+                                    break;
+                                case 4:
+                                    signatoryQuery = "UPDATE Signatory SET ApprovedByName = ?, ApprovedByPosition = ?";
+                                    break;
+                                case 5:
+                                    signatoryQuery = "UPDATE Signatory SET ReceivedByName = ?, ReceivedByPosition = ?";
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (client == "LEADS")
+                        {
+                            switch (choice)
+                            {
+                                case 1:
+                                    signatoryQuery = "INSERT INTO Signatory (PreparedByName, PreparedByPosition) VALUES (?, ?)";
+                                    break;
+
+                                case 2:
+                                    signatoryQuery = "INSERT INTO Signatory (ReviewedByName, ReviewedByPosition) VALUES (?, ?)";
+                                    break;
+
+                                case 3:
+                                    signatoryQuery = "INSERT INTO Signatory (RecommendingApprovalName, RecommendingApprovalPosition) VALUES (?, ?)";
+                                    break;
+
+                                case 4:
+                                    signatoryQuery = "INSERT INTO Signatory (ApprovedByName, ApprovedByPosition) VALUES (?, ?)";
+                                    break;
+
+                                case 5:
+                                    signatoryQuery = "INSERT INTO Signatory (ReceivedByName, ReceivedByPosition) VALUES (?, ?)";
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            switch (choice)
+                            {
+                                case 1:
+                                    signatoryQuery = "INSERT INTO Signatory (PreparedByName, PreparedByPosition) VALUES (?, ?)";
+                                    break;
+
+                                case 2:
+                                    signatoryQuery = "INSERT INTO Signatory (ReviewedByName, ReviewedByPosition) VALUES (?, ?)";
+                                    break;
+
+                                case 3:
+                                    signatoryQuery = "INSERT INTO Signatory (RecommendingApprovalName, RecommendingApprovalPosition) VALUES (?, ?)";
+                                    break;
+
+                                case 4:
+                                    signatoryQuery = "INSERT INTO Signatory (ApprovedByName, ApprovedByPosition) VALUES (?, ?)";
+                                    break;
+
+                                case 5:
+                                    signatoryQuery = "INSERT INTO Signatory (ReceivedByName, ReceivedByPosition) VALUES (?, ?)";
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+
+                    using (OleDbCommand signatoryCommand = new OleDbCommand(signatoryQuery, connection))
+                    {
+                        if (client == "LEADS")
+                        {
+                            switch (choice)
+                            {
+                                case 1:
+                                    signatoryCommand.Parameters.AddWithValue("@PreparedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@PreparedByPosition", position);
+                                    break;
+
+                                case 2:
+                                    signatoryCommand.Parameters.AddWithValue("@ReviewedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ReviewedByPosition", position);
+                                    break;
+
+                                case 3:
+                                    signatoryCommand.Parameters.AddWithValue("@RecommendingApprovalName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@RecommendingApprovalPosition", position);
+                                    break;
+
+                                case 4:
+                                    signatoryCommand.Parameters.AddWithValue("@ApprovedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ApprovedByPosition", position);
+                                    break;
+
+                                case 5:
+                                    signatoryCommand.Parameters.AddWithValue("@ReceivedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ReceivedByPosition", position);
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            switch (choice)
+                            {
+                                case 1:
+                                    signatoryCommand.Parameters.AddWithValue("@PreparedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@PreparedByPosition", position);
+                                    break;
+
+                                case 2:
+                                    signatoryCommand.Parameters.AddWithValue("@ReviewedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ReviewedByPosition", position);
+                                    break;
+
+                                case 3:
+                                    signatoryCommand.Parameters.AddWithValue("@RecommendingApprovalName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@RecommendingApprovalPosition", position);
+                                    break;
+
+                                case 4:
+                                    signatoryCommand.Parameters.AddWithValue("@ApprovedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ApprovedByPosition", position);
+                                    break;
+
+                                case 5:
+                                    signatoryCommand.Parameters.AddWithValue("@ReceivedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ReceivedByPosition", position);
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
+
+                        int rowsAffected = signatoryCommand.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine("Data inserted/updated successfully.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("No rows were affected.");
+                        }
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while updating Signatory table: {ex.Message}");
+            }
+        }
+
+        public (string Name, string Position) RetrieveSignatoryData(int choice)
+        {
+            string name = null;
+            string position = null;
+
+            string accessConnectionString = GetAccessConnectionString();
+
+            try
+            {
+                using (OleDbConnection connection = new OleDbConnection(accessConnectionString))
+                {
+                    connection.Open();
+
+                    string query = null;
+
+                    if (client == "LEADS")
+                    {
+                        switch (choice)
+                        {
+                            case 1:
+                                query = "SELECT TOP 1 PreparedByName, PreparedByPosition FROM Signatory";
+                                break;
+
+                            case 2:
+                                query = "SELECT TOP 1 ReviewedByName, ReviewedByPosition FROM Signatory";
+                                break;
+
+                            case 3:
+                                query = "SELECT TOP 1 RecommendingApprovalName, RecommendingApprovalPosition FROM Signatory";
+                                break;
+
+                            case 4:
+                                query = "SELECT TOP 1 ApprovedByName, ApprovedByPosition FROM Signatory";
+                                break;
+
+                            case 5:
+                                query = "SELECT TOP 1 ReceivedByName, ReceivedByPosition FROM Signatory";
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        switch (choice)
+                        {
+                            case 1:
+                                query = "SELECT TOP 1 PreparedByName, PreparedByPosition FROM Signatory";
+                                break;
+
+                            case 2:
+                                query = "SELECT TOP 1 ReviewedByName, ReviewedByPosition FROM Signatory";
+                                break;
+
+                            case 3:
+                                query = "SELECT TOP 1 RecommendingApprovalName, RecommendingApprovalPosition FROM Signatory";
+                                break;
+
+                            case 4:
+                                query = "SELECT TOP 1 ApprovedByName, ApprovedByPosition FROM Signatory";
+                                break;
+
+                            case 5:
+                                query = "SELECT TOP 1 ReceivedByName, ReceivedByPosition FROM Signatory";
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
+
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        using (OleDbDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                if (client == "LEADS")
+                                {
+                                    switch (choice)
+                                    {
+                                        case 1:
+                                            name = reader["PreparedByName"].ToString();
+                                            position = reader["PreparedByPosition"].ToString();
+                                            break;
+
+                                        case 2:
+                                            name = reader["ReviewedByName"].ToString();
+                                            position = reader["ReviewedByPosition"].ToString();
+                                            break;
+
+                                        case 3:
+                                            name = reader["RecommendingApprovalName"].ToString();
+                                            position = reader["RecommendingApprovalPosition"].ToString();
+                                            break;
+
+                                        case 4:
+                                            name = reader["ApprovedByName"].ToString();
+                                            position = reader["ApprovedByPosition"].ToString();
+                                            break;
+
+                                        case 5:
+                                            name = reader["ReceivedByName"].ToString();
+                                            position = reader["ReceivedByPosition"].ToString();
+                                            break;
+
+                                        default:
+                                            break;
+                                    }
+                                }
+                                else
+                                {
+                                    switch (choice)
+                                    {
+                                        case 1:
+                                            name = reader["PreparedByName"].ToString();
+                                            position = reader["PreparedByPosition"].ToString();
+                                            break;
+
+                                        case 2:
+                                            name = reader["ReviewedByName"].ToString();
+                                            position = reader["ReviewedByPosition"].ToString();
+                                            break;
+
+                                        case 3:
+                                            name = reader["RecommendingApprovalName"].ToString();
+                                            position = reader["RecommendingApprovalPosition"].ToString();
+                                            break;
+
+                                        case 4:
+                                            name = reader["ApprovedByName"].ToString();
+                                            position = reader["ApprovedByPosition"].ToString();
+                                            break;
+
+                                        case 5:
+                                            name = reader["ReceivedByName"].ToString();
+                                            position = reader["ReceivedByPosition"].ToString();
+                                            break;
+
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while retrieving signatory data: {ex.Message}");
+            }
+
+            return (name, position);
+        }
+
+        public (string PreparedByName, string PreparedByPosition, string ReviewedByName, string ReviewedByPosition, string RecommendingApprovalName, string RecommendingApprovalPosition, string ApprovedByName, string ApprovedByPosition, string ReceivedByName, string ReceivedByPosition) RetrieveAllSignatoryData()
+        {
+            string preparedByName = null;
+            string preparedByPosition = null;
+            string reviewedByName = null;
+            string reviewedByPosition = null;
+            string recommendingApprovalName = null;
+            string recommendingApprovalPosition = null;
+            string approvedByName = null;
+            string approvedByPosition = null;
+            string receivedByName = null;
+            string receivedByPosition = null;
+
+            string accessConnectionString = GetAccessConnectionString();
+
+            try
+            {
+                using (OleDbConnection connection = new OleDbConnection(accessConnectionString))
+                {
+                    connection.Open();
+
+                    string query = "SELECT TOP 1 " +
+                        "PreparedByName, PreparedByPosition, " +
+                        "ReviewedByName, ReviewedByPosition, " +
+                        "RecommendingApprovalName, RecommendingApprovalPosition, " +
+                        "ApprovedByName, ApprovedByPosition, " +
+                        "ReceivedByName, ReceivedByPosition " +
+                        "FROM Signatory";
+
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        using (OleDbDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                if (client == "LEADS")
+                                {
+                                    preparedByName = reader["PreparedByName"].ToString();
+                                    preparedByPosition = reader["PreparedByPosition"].ToString();
+
+                                    reviewedByName = reader["ReviewedByName"].ToString();
+                                    reviewedByPosition = reader["ReviewedByPosition"].ToString();
+
+                                    recommendingApprovalName = reader["RecommendingApprovalName"].ToString();
+                                    recommendingApprovalPosition = reader["RecommendingApprovalPosition"].ToString();
+
+                                    approvedByName = reader["ApprovedByName"].ToString();
+                                    approvedByPosition = reader["ApprovedByPosition"].ToString();
+
+                                    receivedByName = reader["ReceivedByName"].ToString();
+                                    receivedByPosition = reader["ReceivedByPosition"].ToString();
+                                }
+                                else
+                                {
+                                    preparedByName = reader["PreparedByName"].ToString();
+                                    preparedByPosition = reader["PreparedByPosition"].ToString();
+
+                                    reviewedByName = reader["ReviewedByName"].ToString();
+                                    reviewedByPosition = reader["ReviewedByPosition"].ToString();
+
+                                    recommendingApprovalName = reader["RecommendingApprovalName"].ToString();
+                                    recommendingApprovalPosition = reader["RecommendingApprovalPosition"].ToString();
+
+                                    approvedByName = reader["ApprovedByName"].ToString();
+                                    approvedByPosition = reader["ApprovedByPosition"].ToString();
+
+                                    receivedByName = reader["ReceivedByName"].ToString();
+                                    receivedByPosition = reader["ReceivedByPosition"].ToString();
+                                }
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while retrieving all signatory data: {ex.Message}");
+            }
+
+            return (
+                preparedByName, preparedByPosition,
+                reviewedByName, reviewedByPosition,
+                recommendingApprovalName, recommendingApprovalPosition,
+                approvedByName, approvedByPosition,
+                receivedByName, receivedByPosition
+                );
         }
 
         public class AmountToWordsConverter
