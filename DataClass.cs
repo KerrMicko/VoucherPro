@@ -8,6 +8,121 @@ namespace VoucherPro
 {
     public class DataClass
     {
+        public class BillTable // For APV / Bill
+        {
+            // BillPaymentCheckLine table
+            public DateTime DateCreated { get; set; } //TimeCreated
+            public string PayeeFullName { get; set; } //PayeeEntityRefFullName
+            public string TermsRefFullName { get; set; } //TermsRefFullName
+            public string BankAccount { get; set; } //BankAccountRefFullName
+            public string APAccountRefFullName { get; set; } //APAccountRefFullName
+            public double Amount { get; set; }
+            public string RefNumber { get; set; }
+            public string Address { get; set; } //AddressAddr
+            public string Address2 { get; set; } //AddressAddr2
+
+            public string AppliedRefNumber { get; set; } //AppliedToTxnRefNumber
+            public string AppliedToTxnTxnID { get; set; } //AppliedToTxnTxnID
+
+            // Bill table
+            public string Vendor { get; set; } //VendorRefFullName
+            public DateTime DueDate { get; set; }
+            public double AmountDue { get; set; }
+            public string Memo { get; set; }
+            public string BillMemo { get; set; }
+            public string TinID { get; set; }
+            public string POnumber { get; set; }
+            public DateTime DateCreatedHistory { get; set; }
+            public string MemoHistory { get; set; }
+            public double AmountHistory { get; set; }
+            public string RefNumberHistory { get; set; }
+            public string HistoryCVNumber { get; set; }
+            public string HistoryAPVNumber { get; set; }
+            public string Remarks { get; set; }
+            public string AccountName { get; set; }
+            public string AccountNumber { get; set; }
+            public List<string> AccountNameParticularsList { get; set; }
+            public List<string> AccountNumberParticularsList { get; set; }
+
+            public List<ItemDetail> ItemDetails { get; set; }
+
+            public BillTable()
+            {
+                ItemDetails = new List<ItemDetail>();
+                AccountNameParticularsList = new List<string>();
+                AccountNumberParticularsList = new List<string>();
+            }
+
+            //Increment
+            public string IncrementalID { get; set; }
+        }
+
+        public class ItemDetail
+        {
+            public string ItemLineItemRefFullName { get; set; }
+            public double ItemLineAmount { get; set; }
+            public string ItemLineMemo { get; set; }
+
+            public string ExpenseLineItemRefFullName { get; set; }
+            public double ExpenseLineAmount { get; set; }
+            public string ExpenseLineMemo { get; set; }
+        }
+
+        public class CheckTable // For Print Check
+        {
+            public DateTime DateCreated { get; set; } //TimeCreated
+            public string RefNumber { get; set; }
+            public double Amount { get; set; }
+            public string PayeeFullName { get; set; }
+        }
+
+        public class CheckTableExpensesAndItems // For Print Check Voucher
+        {
+            //Check table
+            public DateTime DateCreated { get; set; }
+            public string BankAccount { get; set; }
+            public string PayeeFullName { get; set; }
+            public string RefNumber { get; set; }
+            public double TotalAmount { get; set; }
+            public string Address { get; set; }
+            public string Address2 { get; set; }
+            public string Memo { get; set; }
+            public string IncrementalID { get; set; }
+
+            // Properties specific to items
+            public string Item { get; set; }
+            public string ItemDescription { get; set; }
+            public double ItemAmount { get; set; }
+
+            // Properties specific to expenses
+            public string Account { get; set; }
+            public string AccountName { get; set; }
+            public string AccountNumber { get; set; }
+            public double ExpensesAmount { get; set; }
+            public string ExpensesMemo { get; set; }
+            public string ExpensesCustomerJob { get; set; }
+            public string TinID { get; set; }
+            public string POnumber { get; set; }
+            public string TxnID { get; set; }
+            public DateTime DateCreatedHistory { get; set; }
+            public string MemoHistory { get; set; }
+            public double AmountHistory { get; set; }
+            public string RefNumberHistory { get; set; }
+            public string HistoryCVNumber { get; set; }
+            public string HistoryAPVNumber { get; set; }
+            public string Remarks { get; set; }
+
+            // Indicates whether it's an item or an expense
+            public ItemType ItemType { get; set; }
+        }
+
+        public enum ItemType
+        {
+            Item,
+            Expense,
+            Transaction
+        }
+
         public class ItemReciept
         {
             public string PayeeFullName { get; set; }

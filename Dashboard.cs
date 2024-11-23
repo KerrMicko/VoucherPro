@@ -28,9 +28,16 @@ namespace VoucherPro
         private AccessToDatabase accessToDatabase;
 
         ComboBox comboBox_Forms;
+
+        Label label_SeriesNumberText;
+
+        TextBox textBox_SeriesNumber;
+
         FlowLayoutPanel panel_Printing;
+        FlowLayoutPanel panel_SeriesNumber;
 
         static int sideBarWidth = 250;
+        string seriesNumber;
 
         Font font_Label = new Font("Microsoft Sans Serif", 9);
         public Dashboard()
@@ -125,8 +132,8 @@ namespace VoucherPro
             panels_Forms.Parent = panel_SideBar;
             
             // - SERIES NUMBER ------------------------------------------
-            FlowLayoutPanel panel_SeriesNumber = Panel_SBSeriesNumber();
-            //panel_SeriesNumber.Parent = panel_SideBar;
+            panel_SeriesNumber = Panel_SBSeriesNumber();
+            panel_SeriesNumber.Parent = panel_SideBar;
 
             // - REF NUMBER ---------------------------------------------
             FlowLayoutPanel panel_RefNumber = Panel_SBRefNumber();
@@ -182,7 +189,8 @@ namespace VoucherPro
                 "Accounts Payable Voucher",
                 "Item Receipt / Receiving Report",
             });
-            comboBox_Forms.SelectedIndex = 4;
+            comboBox_Forms.SelectedIndex = 2;
+            comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
 
             /*if (GlobalVariables.client == "LEADS")
             {
@@ -229,9 +237,10 @@ namespace VoucherPro
                 BackColor = Color.LightGray,
                 Padding = new Padding(5, 2, 5, 5),
                 BorderStyle = BorderStyle.FixedSingle,
+                Visible = false,
             };
 
-            Label label_SeriesNumberText = new Label
+            label_SeriesNumberText = new Label
             {
                 Parent = panel_SeriesNumber,
                 Width = sideBarWidth - 30,
@@ -240,22 +249,11 @@ namespace VoucherPro
                 Font = font_Label,
             };
 
-            TextBox textBox_SeriesNumber = new TextBox
+            textBox_SeriesNumber = new TextBox
             {
                 Parent = panel_SeriesNumber,
                 Width = 156,
                 Font = new Font("Microsoft Sans Serif", 10),
-            };
-
-            Button button_AddSeriesNum = new Button
-            {
-                Parent = panel_SeriesNumber,
-                Height = 28,
-                Width = 28,
-                Text = "+",
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(3, 1, 3, 0),
-                BackColor = Color.Transparent,
             };
 
             Button button_SubtractSeriesNum = new Button
@@ -266,6 +264,17 @@ namespace VoucherPro
                 Text = "-",
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 1, 0, 0),
+                BackColor = Color.Transparent,
+            };
+
+            Button button_AddSeriesNum = new Button
+            {
+                Parent = panel_SeriesNumber,
+                Height = 28,
+                Width = 28,
+                Text = "+",
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(3, 1, 3, 0),
                 BackColor = Color.Transparent,
             };
 
@@ -320,16 +329,33 @@ namespace VoucherPro
                     string refNumber = textBox_ReferenceNumber.Text;
                     AccessQueries queries = new AccessQueries();
 
+                    List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
+                    List<BillTable> bills = new List<BillTable>();
                     List<ItemReciept> receipts = new List<ItemReciept>();
+
                     object data = null;
 
-                    if (comboBox_Forms.SelectedIndex == 4)
+                    if (comboBox_Forms.SelectedIndex == 2)
+                    {
+                        checks = queries.GetCheckExpensesAndItemsData_LEADS(refNumber);
+                        if (checks.Count == 0)
+                        {
+                            bills = queries.GetBillData_LEADS(refNumber);
+                            data = bills;
+                        }
+                        else
+                        {
+                            data = checks;
+                        }
+                    }
+                    else if (comboBox_Forms.SelectedIndex == 4)
                     {
                         receipts = queries.GetItemRecieptData_LEADS(refNumber);
                         data = receipts;
                     }
 
-                    if (receipts.Count > 0)
+                    //if (checks.Count > 0 || bills.Count > 0 || receipts.Count > 0)
+                    if (data is System.Collections.ICollection colletion && colletion.Count > 0)
                     {
                         if (GlobalVariables.client == "LEADS")
                         {
@@ -571,11 +597,58 @@ namespace VoucherPro
             };
             button_Print.Click += (sender, e) =>
             {
+                try
+                {
+                    PrintDialog printDialog = new PrintDialog
+                    {
+                        Document = printDocument,
+                    };
 
+                    if (printDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        GlobalVariables.includeImage = false;
+                        printDialog.Document.Print();
+                        printPreviewControl.Visible = false;
+                        printPreviewControl.Zoom = 1;
+                        panel_Printing.Visible = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"An error occurred while printing: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                GlobalVariables.includeImage = true;
             };
 
             return panel_Printing;
         }
 
+        private void ComboBox_Forms_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (comboBox_Forms.SelectedIndex == 0)
+            {
+                panel_SeriesNumber.Visible = false;
+            }
+            else if (comboBox_Forms.SelectedIndex == 1) // Check
+            {
+                panel_SeriesNumber.Visible = false;
+            }
+            else if (comboBox_Forms.SelectedIndex == 2) // CV
+            {
+                panel_SeriesNumber.Visible = true;
+                label_SeriesNumberText.Text = "Current Series Number: CV";
+                textBox_SeriesNumber.Text = "CV" + seriesNumber;
+            }
+            else if (comboBox_Forms.SelectedIndex == 3) // APV
+            {
+                panel_SeriesNumber.Visible = true;
+                label_SeriesNumberText.Text = "Current Series Number: APV";
+                textBox_SeriesNumber.Text = "test2" + seriesNumber;
+            }
+            else if (comboBox_Forms.SelectedIndex == 4)
+            {
+                panel_SeriesNumber.Visible = false;
+            }
+        }
     }
 }
