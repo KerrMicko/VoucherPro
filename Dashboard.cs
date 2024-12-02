@@ -20,6 +20,7 @@ namespace VoucherPro
         public static bool includeImage = true;
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
+        public static bool isPrinting = false;
     }
     public partial class Dashboard : Form
     {
@@ -189,7 +190,7 @@ namespace VoucherPro
                 "Accounts Payable Voucher",
                 "Item Receipt / Receiving Report",
             });
-            comboBox_Forms.SelectedIndex = 2;
+            comboBox_Forms.SelectedIndex = 0;
             comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
 
             /*if (GlobalVariables.client == "LEADS")
@@ -329,29 +330,43 @@ namespace VoucherPro
                     string refNumber = textBox_ReferenceNumber.Text;
                     AccessQueries queries = new AccessQueries();
 
-                    List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
+                    List<CheckTable> cheque = new List<CheckTable>();
                     List<BillTable> bills = new List<BillTable>();
+                    List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
                     List<ItemReciept> receipts = new List<ItemReciept>();
+                    List<BillTable> apvData = new List<BillTable>();
 
                     object data = null;
-
-                    if (comboBox_Forms.SelectedIndex == 2)
+                    if (GlobalVariables.client == "LEADS")
                     {
-                        checks = queries.GetCheckExpensesAndItemsData_LEADS(refNumber);
-                        if (checks.Count == 0)
+                        if (comboBox_Forms.SelectedIndex == 1)
                         {
-                            bills = queries.GetBillData_LEADS(refNumber);
-                            data = bills;
+                            cheque = queries.GetCheckData(refNumber);
+                            data = cheque;
                         }
-                        else
+                        else if (comboBox_Forms.SelectedIndex == 2)
                         {
-                            data = checks;
+                            checks = queries.GetCheckExpensesAndItemsData_LEADS(refNumber);
+                            if (checks.Count == 0)
+                            {
+                                bills = queries.GetBillData_LEADS(refNumber);
+                                data = bills;
+                            }
+                            else
+                            {
+                                data = checks;
+                            }
                         }
-                    }
-                    else if (comboBox_Forms.SelectedIndex == 4)
-                    {
-                        receipts = queries.GetItemRecieptData_LEADS(refNumber);
-                        data = receipts;
+                        else if (comboBox_Forms.SelectedIndex == 3)
+                        {
+                            apvData = queries.GetAccountsPayableData_LEADS(refNumber);
+                            data = apvData;
+                        }
+                        else if (comboBox_Forms.SelectedIndex == 4)
+                        {
+                            receipts = queries.GetItemRecieptData_LEADS(refNumber);
+                            data = receipts;
+                        }
                     }
 
                     //if (checks.Count > 0 || bills.Count > 0 || receipts.Count > 0)
@@ -405,7 +420,6 @@ namespace VoucherPro
                     MessageBox.Show("Please enter a reference number.", "Notice", MessageBoxButtons.OK);
                 }
             };
-
             return panel_RefNumber;
         }
 
@@ -625,29 +639,59 @@ namespace VoucherPro
 
         private void ComboBox_Forms_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (comboBox_Forms.SelectedIndex == 0)
+            if (GlobalVariables.client == "LEADS")
             {
-                panel_SeriesNumber.Visible = false;
+                if (comboBox_Forms.SelectedIndex == 0)
+                {
+                    panel_SeriesNumber.Visible = false;
+                }
+                else if (comboBox_Forms.SelectedIndex == 1) // Check
+                {
+                    panel_SeriesNumber.Visible = false;
+                }
+                else if (comboBox_Forms.SelectedIndex == 2) // CV
+                {
+                    panel_SeriesNumber.Visible = true;
+                    label_SeriesNumberText.Text = "Current Series Number: CV";
+                    textBox_SeriesNumber.Text = "CV" + seriesNumber;
+                }
+                else if (comboBox_Forms.SelectedIndex == 3) // APV
+                {
+                    panel_SeriesNumber.Visible = true;
+                    label_SeriesNumberText.Text = "Current Series Number: APV";
+                    textBox_SeriesNumber.Text = "test2" + seriesNumber;
+                }
+                else if (comboBox_Forms.SelectedIndex == 4)
+                {
+                    panel_SeriesNumber.Visible = false;
+                }
             }
-            else if (comboBox_Forms.SelectedIndex == 1) // Check
+            else
             {
-                panel_SeriesNumber.Visible = false;
-            }
-            else if (comboBox_Forms.SelectedIndex == 2) // CV
-            {
-                panel_SeriesNumber.Visible = true;
-                label_SeriesNumberText.Text = "Current Series Number: CV";
-                textBox_SeriesNumber.Text = "CV" + seriesNumber;
-            }
-            else if (comboBox_Forms.SelectedIndex == 3) // APV
-            {
-                panel_SeriesNumber.Visible = true;
-                label_SeriesNumberText.Text = "Current Series Number: APV";
-                textBox_SeriesNumber.Text = "test2" + seriesNumber;
-            }
-            else if (comboBox_Forms.SelectedIndex == 4)
-            {
-                panel_SeriesNumber.Visible = false;
+                if (comboBox_Forms.SelectedIndex == 0)
+                {
+                    panel_SeriesNumber.Visible = false;
+                }
+                else if (comboBox_Forms.SelectedIndex == 1) // Check
+                {
+                    panel_SeriesNumber.Visible = false;
+                }
+                else if (comboBox_Forms.SelectedIndex == 2) // CV
+                {
+                    panel_SeriesNumber.Visible = true;
+                    label_SeriesNumberText.Text = "Current Series Number: CV";
+                    textBox_SeriesNumber.Text = "CV" + seriesNumber;
+                }
+                else if (comboBox_Forms.SelectedIndex == 3) // APV
+                {
+                    panel_SeriesNumber.Visible = true;
+                    label_SeriesNumberText.Text = "Current Series Number: APV";
+                    textBox_SeriesNumber.Text = "test2" + seriesNumber;
+                }
+                else if (comboBox_Forms.SelectedIndex == 4)
+                {
+                    panel_SeriesNumber.Visible = false;
+                }
             }
         }
     }

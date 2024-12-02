@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static VoucherPro.DataClass;
 using static VoucherPro.AccessToDatabase;
+//using static System.Net.Mime.MediaTypeNames;
 namespace VoucherPro.Clients
 {
     public class Layouts_LEADS
@@ -42,6 +43,9 @@ namespace VoucherPro.Clients
 
             switch (layoutIndex)
             {
+                case 1:
+                    Layout_Check(e, data as List<CheckTable>, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter);
+                    break;
                 case 2:
                     if (data is List<CheckTableExpensesAndItems>)
                     {
@@ -51,13 +55,77 @@ namespace VoucherPro.Clients
                     {
                         Layout_CheckVoucher_Bill(e, data as List<BillTable>, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter, sfAlignRight);
                     }
-                    
+                    break;
+                case 3:
+                    Layout_APVoucher(e, data as List<BillTable>, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter, sfAlignRight);
                     break;
                 case 4:
                     Layout_ItemReceipt(e, receiptData: (List<ItemReciept>)data, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter);
                     break;
                 default:
                     throw new ArgumentException("Invalid layout index");
+            }
+        }
+
+        private void Layout_Check(PrintPageEventArgs e, List<CheckTable> checkTableData, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter)
+        {
+            DateTime dateCreated = Convert.ToDateTime(checkTableData[0].DateCreated).Date;
+
+            string month = dateCreated.ToString("MM");
+            string day = dateCreated.ToString("dd");
+            string year = dateCreated.ToString("yyyy");
+
+            // Insert spaces between characters
+            string formattedMonth = string.Join("    ", month.ToCharArray());
+            string formattedDay = string.Join("    ", day.ToCharArray());
+            string formattedYear = string.Join("    ", year.ToCharArray());
+
+            // Combine the parts with additional spaces between sections
+            string formattedDate = $"{formattedMonth}       {formattedDay}       {formattedYear}";
+
+            /*string formattedDate = dateCreated.ToString("MM    dd     yyyy");
+            formattedDate = string.Join(" ", formattedDate.Select(c => c.ToString()));*/
+
+            string payee = checkTableData[0].PayeeFullName.ToString();
+            double amount = checkTableData[0].Amount;
+            string amountInWords = AmountToWordsConverter.Convert(amount);
+
+            Font amountinWordsFont = new Font("Microsoft Sans Serif", 9, FontStyle.Regular);
+            Font dateFont = new Font("Microsoft Sans Serif", 9, FontStyle.Regular);
+            Font payeeFont = new Font("Microsoft Sans Serif", 11, FontStyle.Regular);
+            /*
+                e.Graphics.DrawString(amount.ToString("N2"), dateFont, Brushes.Black, new PointF(550 + 50, 60 + 10)); // amount x 600 y 93
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(90 - 30 + 50, 60 + 10)); // payee x 110 y 90
+                e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(520 + 60, 30 + 10)); // date x 570 y 60
+                e.Graphics.DrawString(amountInWords, dateFont, Brushes.Black, new PointF(55 - 30 + 50, 90 + 10)); // amountinwords x 75 y 120
+            */
+            // Rotate the content -90 degrees
+            if (GlobalVariables.isPrinting)
+            {
+                e.Graphics.RotateTransform(-90);
+                e.Graphics.TranslateTransform(-e.MarginBounds.Height + 180, 0 - 70);
+
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(60, 400 + 10));
+                e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(520 + 10, 370 + 10));
+                e.Graphics.DrawString(amount.ToString("N2"), dateFont, Brushes.Black, new PointF(550, 38 + 345 + 30));
+                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(25, 430 + 15));
+            }
+            else
+            {
+                /*e.Graphics.DrawString(amount.ToString("N2"), dateFont, Brushes.Black, new PointF(550 + 50, 38 + 70 - 15));
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(90 - 30 + 50, 20 + 70));
+                e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(520 + 3 + 50, 20 + 70 - 30));
+                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(55 - 30 + 50, 70 + 50));*/
+
+                /*e.Graphics.DrawString(amount.ToString("N2"), dateFont, Brushes.Black, new PointF(550, 38 + 380 - 15));
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(90 - 30, 20 + 380));
+                e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(520 + 3, 20 + 380 - 30));
+                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(55 - 30, 50 + 380));*/
+
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(155, 110));
+                e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(625 + 3, 75));
+                e.Graphics.DrawString(amount.ToString("N2"), dateFont, Brushes.Black, new PointF(520 + 130, 110));
+                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(125, 155));
             }
         }
 
@@ -580,6 +648,303 @@ namespace VoucherPro.Clients
 
             e.Graphics.DrawString("Date:", font_Data, Brushes.Black, new PointF(50 + 620, othersYPos + 82 - 15));
             e.Graphics.DrawLine(Pens.Black, 50 + 650, othersYPos + 82, 50 + 750, othersYPos + 82); // line kanan date
+
+        }
+
+        private void Layout_APVoucher(PrintPageEventArgs e, List<BillTable> billData, StringFormat sfAlignRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter, StringFormat sfAlignCenterRight)
+        {
+            Font font_Header = font_EightBold;
+            Font font_Data = font_Eight;
+
+            string companyName = "LEADS ENVIRONMENTAL HEALTH PRODUCTS CORP.";
+            string companyTIN = "VAT Reg. TIN: 243-354-422-00000";
+            string companyAddress = "LOT 14-A BLOCK 83 RODEO DRIVE, LAGUNA BEL AIR 2,\nBRGY. DON JOSE, 4026 CITY OF SANTA ROSA, LAGUNA, PHILIPPINES";
+            string companyTelNo = "Tel. No.: (049) 501-8125";
+            string apvText = "ACCOUNTS PAYABLE VOUCHER";
+
+            Image image = Properties.Resources.leads_logo2;
+            Bitmap resizedBitmap = null;
+
+            if (image != null)
+            {
+                int imageWidth = 140; // 90
+                int imageHeight = (int)((double)image.Height / image.Width * imageWidth);
+                resizedBitmap = new Bitmap(image, new Size(imageWidth, imageHeight));
+            }
+
+            if (resizedBitmap != null)
+            {
+                e.Graphics.DrawImage(resizedBitmap, new PointF(50, 40)); // an logo
+            }
+
+            e.Graphics.DrawString(companyName, font_NineBold, Brushes.Black, new PointF(200, 50));
+            e.Graphics.DrawString(companyTIN, font_Eight, Brushes.Black, new PointF(200, 65));
+            e.Graphics.DrawString(companyAddress, font_Seven, Brushes.Black, new PointF(200, 80));
+            e.Graphics.DrawString(companyTelNo, font_Seven, Brushes.Black, new PointF(200, 106));
+            e.Graphics.DrawString(apvText, font_TwelveBold, Brushes.Black, new PointF(370 - 15, 110 + 5));
+
+            // 1st Table - Details
+            int tableWidth = 750;
+            int tableHeight = 40;
+            int firstTableYPos = 180 + tableHeight + 7;
+            e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 150, 50, 150, tableHeight + 10); // CV Ref. No.
+            e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 150, 100, 150, tableHeight); // Print Date
+
+            e.Graphics.DrawRectangle(Pens.Black, 50, 140, tableWidth - 450, tableHeight); // Payee
+            e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 450, 140, 150, tableHeight); // Bank
+            e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 300, 140, 150, tableHeight); // Check Number
+            e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 150, 140, 150, tableHeight); // Check Date
+
+            e.Graphics.DrawRectangle(Pens.Black, 50, 180, tableWidth - 150, tableHeight); // Amount in Words
+            e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 150, 180, 150, tableHeight); // Amount
+
+            // 1st Table Header
+            e.Graphics.DrawString("APV Ref. No.", font_Header, Brushes.Black, new RectangleF(50 + 3 + tableWidth - 150, 50 + 2, 150, tableHeight + 10));
+            e.Graphics.DrawString("Bill Date", font_Header, Brushes.Black, new RectangleF(50 + tableWidth - 150, 100 - 10 - 1, 150, tableHeight), sfAlignCenter);
+
+            e.Graphics.DrawString("Payee", font_Header, Brushes.Black, new RectangleF(50 + 3, 140 + 2, tableWidth - 450, tableHeight));
+            e.Graphics.DrawString("Terms", font_Header, Brushes.Black, new RectangleF(50 + 3 + tableWidth - 450, 140 + 2, 150, tableHeight));
+            e.Graphics.DrawString("Bill No.", font_Header, Brushes.Black, new RectangleF(50 + 3 + tableWidth - 300, 140 + 2, 150, tableHeight));
+            e.Graphics.DrawString("Due Date", font_Header, Brushes.Black, new RectangleF(50 + 3 + tableWidth - 150, 140 + 2, 150, tableHeight));
+
+            e.Graphics.DrawString("Amount in Words", font_Header, Brushes.Black, new RectangleF(50 + 3, 180 + 2, tableWidth - 150, tableHeight));
+            e.Graphics.DrawString("Amount", font_Header, Brushes.Black, new RectangleF(50 + 3 + tableWidth - 150, 180 + 2, 150, tableHeight));
+
+            // 1st Table Data
+            string payee = billData[0].Vendor;
+            string terms = billData[0].TermsRefFullName;
+            string billNumber = "refNumText";
+            double amount = billData[0].AmountDue;
+            string amountInWords = AmountToWordsConverter.Convert(amount);
+            DateTime billDate = billData[0].DateCreated; //BILL DATE
+            DateTime dueDate = billData[0].DueDate;
+
+
+            e.Graphics.DrawString("seriesNumberText", font_TenBold, Brushes.Black, new RectangleF(50 + tableWidth - 150, 50 + 6, 150, tableHeight + 10), sfAlignCenter); // APV Ref. No.
+            e.Graphics.DrawString(billDate.ToString("dd-MMM-yyyy"), font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 150, 100 + 8, 150, tableHeight), sfAlignCenter); // Bill Date
+
+            e.Graphics.DrawString(payee, font_Data, Brushes.Black, new RectangleF(50 + 15, 140 + 6, tableWidth - 450, tableHeight), sfAlignLeftCenter); // Payee
+            e.Graphics.DrawString(terms, font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 450, 140 + 6, 150, tableHeight), sfAlignCenter); // Terms
+            e.Graphics.DrawString(billNumber, font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 300, 140 + 6, 150, tableHeight), sfAlignCenter); // Bill No.
+            e.Graphics.DrawString(dueDate.ToString("MM/dd/yyyy"), font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 150, 140 + 8, 150, tableHeight), sfAlignCenter); // Due Date
+
+            e.Graphics.DrawString(amountInWords, font_Data, Brushes.Black, new RectangleF(50 + 15, 180 + 6, tableWidth - 150, tableHeight), sfAlignLeftCenter); // Amount in words
+            e.Graphics.DrawString("₱", font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 150 + 10, 180 + 6, 150, tableHeight), sfAlignLeftCenter);
+            e.Graphics.DrawString(amount.ToString("N2"), font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 150 - 10, 180 + 6, 150, tableHeight), sfAlignCenterRight); // Amount
+
+            // 2nd Table - Particulars
+            int secondTableHeight = 75 - 14; // 75
+
+            // Dictionary to store the grouped amounts by AccountNameParticulars
+            Dictionary<string, double> groupedItemData = new Dictionary<string, double>();
+            Dictionary<string, double> groupedExpenseData = new Dictionary<string, double>();
+
+            foreach (var bill in billData)
+            {
+                try
+                {
+                    for (int i = 0; i < bill.AccountNameParticularsList.Count; i++)
+                    {
+                        //string itemName = bill.AccountNameParticularsList[i];
+                        string itemName = bill.ItemDetails[i].ItemLineItemRefFullName;
+                        double itemAmount = bill.ItemDetails[i].ItemLineAmount;
+
+                        if (groupedItemData.ContainsKey(itemName))
+                        {
+                            groupedItemData[itemName] += itemAmount;
+                        }
+                        else
+                        {
+                            groupedItemData[itemName] = itemAmount;
+                        }
+                    }
+
+                    foreach (var item in bill.ItemDetails)
+                    {
+                        if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                        {
+                            string expenseName = item.ExpenseLineItemRefFullName;
+                            double expenseAmount = item.ExpenseLineAmount;
+
+                            if (groupedExpenseData.ContainsKey(expenseName))
+                            {
+                                groupedExpenseData[expenseName] += expenseAmount;
+                            }
+                            else
+                            {
+                                groupedExpenseData[expenseName] = expenseAmount;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"An error occurred while grouping entries: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+            /*foreach (var bill in billData)
+            {
+                foreach (var c in bill.ItemDetails)
+                {
+                    secondTableHeight += 25;
+                }
+            }*/
+            try
+            {
+                foreach (var bill in billData)
+                {
+                    foreach (var entry in groupedItemData)
+                    {
+                        secondTableHeight += 25;
+                    }
+
+                    foreach (var entry in groupedExpenseData)
+                    {
+                        secondTableHeight += 25;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred while adding height: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            int secondTableYPos = firstTableYPos + 40 + secondTableHeight;
+
+
+            // 2nd Table Headers
+            e.Graphics.DrawRectangle(Pens.Black, 50, firstTableYPos, tableWidth - (300 + 100), 20); // Particular header
+            e.Graphics.DrawRectangle(Pens.Black, 50 + 300 + 50, firstTableYPos, 100, 20); // Class header
+            e.Graphics.DrawRectangle(Pens.Black, 50 + 450, firstTableYPos, 150, 20); // Debit header
+            e.Graphics.DrawRectangle(Pens.Black, 50 + 600, firstTableYPos, 150, 20); // Credit header
+
+            e.Graphics.DrawString("Particular", font_Header, Brushes.Black, new RectangleF(50, firstTableYPos, tableWidth - (300 + 100), 20), sfAlignCenter);
+            e.Graphics.DrawString("Class", font_Header, Brushes.Black, new RectangleF(50 + 300 + 50, firstTableYPos, 100, 20), sfAlignCenter);
+            e.Graphics.DrawString("Debit", font_Header, Brushes.Black, new RectangleF(50 + 450, firstTableYPos, 150, 20), sfAlignCenter);
+            e.Graphics.DrawString("Credit", font_Header, Brushes.Black, new RectangleF(50 + 600, firstTableYPos, 150, 20), sfAlignCenter);
+
+            e.Graphics.DrawLine(Pens.Black, 50 + 300 + 50, firstTableYPos + 20, 50 + 300 + 50, secondTableYPos); // Line ha class
+            e.Graphics.DrawLine(Pens.Black, 50 + 450, firstTableYPos + 20, 50 + 450, secondTableYPos); // Line ha debit
+            e.Graphics.DrawLine(Pens.Black, 50 + 600, firstTableYPos + 20, 50 + 600, secondTableYPos); // Line ha credit
+            e.Graphics.DrawLine(Pens.Black, 50, secondTableYPos, tableWidth + 50, secondTableYPos); // Line ha ubos
+
+            // 2nd Table Data
+            int perItemHeight = 90;
+
+            //string particularAccount = billData[0].AccountNumberParticulars + " - " + billData[0].AccountNameParticulars;
+            string particularAPAccount = billData[0].AccountNumber + " - " + billData[0].AccountName;
+            //string particularBank = checkData[0].BankAccount;
+            string particularMemo = billData[0].Memo; // Remark or Memo
+
+            double debitTotalAmount = 0;
+            double creditTotalAmount = 0;
+
+            int pos = 0;
+            int amountPos = 0;
+
+            foreach (var bill in billData)
+            {
+                foreach (var item in groupedItemData)
+                {
+                    Console.WriteLine($"Grouped Items: Account Name: {item.Key}, Total Amount: {item.Value}");
+                    e.Graphics.DrawString($"{item.Key}", font_Nine, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 100), 25));
+                    e.Graphics.DrawString($"{item.Value:N2}", font_Nine, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + 20 + 4 + pos, 150, perItemHeight), sfAlignRight); // Credit
+
+                    if (item.Value > 0)
+                    {
+                        debitTotalAmount += item.Value;
+                        pos += 25;
+                    }
+                }
+
+                amountPos += pos + 25;
+
+                foreach (var items in groupedExpenseData)
+                {
+                    if (items.Key != "")
+                    {
+                        Console.WriteLine($"Grouped Expense: Account Name: {items.Key}, Total Amount: {items.Value}");
+                        e.Graphics.DrawString(items.Key, font_Nine, Brushes.Black, new RectangleF(50 + 4, firstTableYPos + amountPos, tableWidth - (300 + 100), perItemHeight));
+                        if (items.Value < 0)
+                        {
+                            double absoluteAmount = Math.Abs(items.Value);
+                            e.Graphics.DrawString(absoluteAmount.ToString("N2"), font_Nine, Brushes.Black, new RectangleF(50 + 600 - 5, firstTableYPos + amountPos, 150, perItemHeight), sfAlignRight); // Credit
+                            creditTotalAmount += absoluteAmount;
+                        }
+                        else if (items.Value > 0)
+                        {
+                            e.Graphics.DrawString(items.Value.ToString("N2"), font_Nine, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + amountPos, 150, perItemHeight), sfAlignRight); // Debit
+                            debitTotalAmount += items.Value;
+                        }
+                        amountPos += 25;
+                    }
+                    //pos += 25;
+                }
+            }
+
+            creditTotalAmount += amount;
+
+            e.Graphics.DrawString(particularAPAccount, font_Data, Brushes.Black, new RectangleF(50 + 15, firstTableYPos + amountPos, tableWidth - (300 + 110), perItemHeight)); // Item1 AP Account
+            e.Graphics.DrawString("*Remarks: ", font_Data, Brushes.Black, new RectangleF(50 + 10, firstTableYPos + 15 + amountPos, tableWidth - (300 + 100), perItemHeight - 30)); // Item1 Remark / Memo
+            e.Graphics.DrawString(amount.ToString("N2"), font_Data, Brushes.Black, new RectangleF(50 + 600 - 5, firstTableYPos + amountPos, 150, perItemHeight), sfAlignRight); // Credit - bank
+            e.Graphics.DrawString(particularMemo, font_Seven, Brushes.Black, new RectangleF(50 + 75, firstTableYPos + 20 - 4 + amountPos, tableWidth - (300 + 170), 45)); // Item1 Remark / Memo
+
+            //e.Graphics.DrawString(amount.ToString("N2"), font_eight, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + 20 + 4, 150, perItemHeight), sfAlignRight); // Debit
+            //e.Graphics.DrawString(amount.ToString("N2"), font_eight, Brushes.Black, new RectangleF(50 + 600 - 5, firstTableYPos + 20 + 12 + 4, 150, perItemHeight), sfAlignRight); // Credit - bank
+
+            // Debit Credit Total
+            e.Graphics.DrawString("₱", font_Header, Brushes.Black, new RectangleF(50 + 450 + 5, secondTableYPos - 6, 150, tableHeight), sfAlignLeftCenter);
+            e.Graphics.DrawString(debitTotalAmount.ToString("N2"), font_Header, Brushes.Black, new RectangleF(50 + 450 - 5, secondTableYPos - 6, 150, tableHeight), sfAlignRight);
+            e.Graphics.DrawLine(Pens.Black, 50 + 450 + 5, secondTableYPos + 25, 50 + 450 - 5 + 150, secondTableYPos + 25);
+            e.Graphics.DrawLine(Pens.Black, 50 + 450 + 5, secondTableYPos + 28, 50 + 450 - 5 + 150, secondTableYPos + 28);
+
+            e.Graphics.DrawString("₱", font_Header, Brushes.Black, new RectangleF(50 + 600 + 5, secondTableYPos - 6, 150, tableHeight), sfAlignLeftCenter);
+            e.Graphics.DrawString(creditTotalAmount.ToString("N2"), font_Header, Brushes.Black, new RectangleF(50 + 600 - 5, secondTableYPos - 6, 150, tableHeight), sfAlignRight);
+            e.Graphics.DrawLine(Pens.Black, 50 + 600 + 5, secondTableYPos + 25, 50 + 600 - 5 + 150, secondTableYPos + 25);
+            e.Graphics.DrawLine(Pens.Black, 50 + 600 + 5, secondTableYPos + 28, 50 + 600 - 5 + 150, secondTableYPos + 28);
+
+            // Others Header
+            int signWidth = 187;
+            e.Graphics.DrawRectangle(Pens.Black, 50, secondTableYPos + 45, signWidth, tableHeight - 20);
+            e.Graphics.DrawRectangle(Pens.Black, 50 + signWidth, secondTableYPos + 45, signWidth, tableHeight - 20);
+            e.Graphics.DrawRectangle(Pens.Black, 50 + signWidth * 2, secondTableYPos + 45, signWidth, tableHeight - 20);
+            e.Graphics.DrawRectangle(Pens.Black, 50 + signWidth * 3, secondTableYPos + 45, signWidth, tableHeight - 20);
+
+            e.Graphics.DrawString("Prepared By:", font_Header, Brushes.Black, new RectangleF(50, secondTableYPos + 45, signWidth, tableHeight - 20), sfAlignCenter);
+            e.Graphics.DrawString("Checked By:", font_Header, Brushes.Black, new RectangleF(50 + signWidth, secondTableYPos + 45, signWidth, tableHeight - 20), sfAlignCenter);
+            e.Graphics.DrawString("Approved By:", font_Header, Brushes.Black, new RectangleF(50 + signWidth * 2, secondTableYPos + 45, signWidth, tableHeight - 20), sfAlignCenter);
+            e.Graphics.DrawString("Received By:", font_Header, Brushes.Black, new RectangleF(50 + signWidth * 3, secondTableYPos + 45, signWidth, tableHeight - 20), sfAlignCenter);
+
+            // Others Data
+            int othersYPos = secondTableYPos + 45 + 20 + 75;
+            e.Graphics.DrawRectangle(Pens.Black, 50, secondTableYPos + 45 + 20, signWidth, tableHeight + 35);
+            e.Graphics.DrawRectangle(Pens.Black, 50 + signWidth, secondTableYPos + 45 + 20, signWidth, tableHeight + 35);
+            e.Graphics.DrawRectangle(Pens.Black, 50 + signWidth * 2, secondTableYPos + 45 + 20, signWidth, tableHeight + 35);
+            e.Graphics.DrawRectangle(Pens.Black, 50 + signWidth * 3, secondTableYPos + 45 + 20, signWidth, tableHeight + 35);
+
+            AccessToDatabase accessToDatabase = new AccessToDatabase();
+
+            var (PreparedByName, PreparedByPosition,
+                ReviewedByName, ReviewedByPosition,
+                RecommendingApprovalName, RecommendingApprovalPosition,
+                ApprovedByName, ApprovedByPosition,
+                ReceivedByName, ReceivedByPosition) = accessToDatabase.RetrieveAllSignatoryData();
+
+            e.Graphics.DrawString(PreparedByName, font_SevenBold, Brushes.Black, new RectangleF(50, secondTableYPos + 45 + 60, signWidth, 20), sfAlignCenter);
+            e.Graphics.DrawString(PreparedByPosition, font_Seven, Brushes.Black, new RectangleF(50, secondTableYPos + 45 + 75, signWidth, 20), sfAlignCenter);
+
+            e.Graphics.DrawString(ReviewedByName, font_SevenBold, Brushes.Black, new RectangleF(50 + signWidth, secondTableYPos + 45 + 60, signWidth, 20), sfAlignCenter);
+            e.Graphics.DrawString(ReviewedByPosition, font_Seven, Brushes.Black, new RectangleF(50 + signWidth, secondTableYPos + 45 + 75, signWidth, 20), sfAlignCenter);
+
+            //e.Graphics.DrawString(data.RecommendingApprovalName, font_seven_Bold, Brushes.Black, new RectangleF(50 + 300, secondTableYPos + 45 + 60, 150, 20), sfAlignCenter);
+            //e.Graphics.DrawString(data.RecommendingApprovalPosition, font_seven, Brushes.Black, new RectangleF(50 + 300, secondTableYPos + 45 + 75, 150, 20), sfAlignCenter);
+
+            e.Graphics.DrawString(ApprovedByName, font_SevenBold, Brushes.Black, new RectangleF(50 + signWidth * 2, secondTableYPos + 45 + 60, signWidth, 20), sfAlignCenter);
+            e.Graphics.DrawString(ApprovedByPosition, font_Seven, Brushes.Black, new RectangleF(50 + signWidth * 2, secondTableYPos + 45 + 75, signWidth, 20), sfAlignCenter);
+
+            e.Graphics.DrawString(ReceivedByName, font_SevenBold, Brushes.Black, new RectangleF(50 + signWidth * 3, secondTableYPos + 45 + 60, signWidth, 20), sfAlignCenter);
+            e.Graphics.DrawString(ReceivedByPosition, font_Seven, Brushes.Black, new RectangleF(50 + signWidth * 3, secondTableYPos + 45 + 75, signWidth, 20), sfAlignCenter);
 
         }
 
