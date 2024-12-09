@@ -504,14 +504,30 @@ namespace VoucherPro
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = font_Label,
             };
-            comboBox_Signatory.Items.AddRange(new string[]
+
+            if (GlobalVariables.client == "LEADS")
             {
-                "Select Signatory Option",
-                "Prepared By:",
-                "Checked By:",
-                "Approved By:",
-                "Noted By:",
-            });
+                comboBox_Signatory.Items.AddRange(new string[]
+                {
+                    "Select Signatory Option",
+                    "Prepared By:",
+                    "Checked By:",
+                    "Approved By:",
+                    "Noted By:",
+                });
+            }
+            else
+            {
+                comboBox_Signatory.Items.AddRange(new string[]
+                {
+                    "Select Signatory Option",
+                    "Prepared By:",
+                    "Checked By:",
+                    "Approved By:",
+                    "Noted By:",
+                });
+            }
+            
             comboBox_Signatory.SelectedIndex = 0;
 
             Label label_SignatoryName = new Label

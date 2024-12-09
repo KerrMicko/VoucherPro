@@ -223,13 +223,13 @@ namespace VoucherPro
                                 case 2:
                                     signatoryQuery = "UPDATE Signatory SET ReviewedByName = ?, ReviewedByPosition = ?";
                                     break;
-                                case 3:
+                                /*case 3:
                                     signatoryQuery = "UPDATE Signatory SET RecommendingApprovalName = ?, RecommendingApprovalPosition = ?";
-                                    break;
-                                case 4:
+                                    break;*/
+                                case 3:
                                     signatoryQuery = "UPDATE Signatory SET ApprovedByName = ?, ApprovedByPosition = ?";
                                     break;
-                                case 5:
+                                case 4:
                                     signatoryQuery = "UPDATE Signatory SET ReceivedByName = ?, ReceivedByPosition = ?";
                                     break;
                                 default:
@@ -274,15 +274,15 @@ namespace VoucherPro
                                     signatoryQuery = "INSERT INTO Signatory (ReviewedByName, ReviewedByPosition) VALUES (?, ?)";
                                     break;
 
-                                case 3:
+                                /*case 3:
                                     signatoryQuery = "INSERT INTO Signatory (RecommendingApprovalName, RecommendingApprovalPosition) VALUES (?, ?)";
-                                    break;
+                                    break;*/
 
-                                case 4:
+                                case 3:
                                     signatoryQuery = "INSERT INTO Signatory (ApprovedByName, ApprovedByPosition) VALUES (?, ?)";
                                     break;
 
-                                case 5:
+                                case 4:
                                     signatoryQuery = "INSERT INTO Signatory (ReceivedByName, ReceivedByPosition) VALUES (?, ?)";
                                     break;
 
@@ -336,17 +336,17 @@ namespace VoucherPro
                                     signatoryCommand.Parameters.AddWithValue("@ReviewedByPosition", position);
                                     break;
 
-                                case 3:
+                                /*case 3:
                                     signatoryCommand.Parameters.AddWithValue("@RecommendingApprovalName", name);
                                     signatoryCommand.Parameters.AddWithValue("@RecommendingApprovalPosition", position);
-                                    break;
+                                    break;*/
 
-                                case 4:
+                                case 3:
                                     signatoryCommand.Parameters.AddWithValue("@ApprovedByName", name);
                                     signatoryCommand.Parameters.AddWithValue("@ApprovedByPosition", position);
                                     break;
 
-                                case 5:
+                                case 4:
                                     signatoryCommand.Parameters.AddWithValue("@ReceivedByName", name);
                                     signatoryCommand.Parameters.AddWithValue("@ReceivedByPosition", position);
                                     break;
@@ -436,15 +436,15 @@ namespace VoucherPro
                                 query = "SELECT TOP 1 ReviewedByName, ReviewedByPosition FROM Signatory";
                                 break;
 
-                            case 3:
+                            /*case 3:
                                 query = "SELECT TOP 1 RecommendingApprovalName, RecommendingApprovalPosition FROM Signatory";
-                                break;
+                                break;*/
 
-                            case 4:
+                            case 3:
                                 query = "SELECT TOP 1 ApprovedByName, ApprovedByPosition FROM Signatory";
                                 break;
 
-                            case 5:
+                            case 4:
                                 query = "SELECT TOP 1 ReceivedByName, ReceivedByPosition FROM Signatory";
                                 break;
 
@@ -501,17 +501,17 @@ namespace VoucherPro
                                             position = reader["ReviewedByPosition"].ToString();
                                             break;
 
-                                        case 3:
+                                        /*case 3:
                                             name = reader["RecommendingApprovalName"].ToString();
                                             position = reader["RecommendingApprovalPosition"].ToString();
-                                            break;
+                                            break;*/
 
-                                        case 4:
+                                        case 3:
                                             name = reader["ApprovedByName"].ToString();
                                             position = reader["ApprovedByPosition"].ToString();
                                             break;
 
-                                        case 5:
+                                        case 4:
                                             name = reader["ReceivedByName"].ToString();
                                             position = reader["ReceivedByPosition"].ToString();
                                             break;
@@ -588,13 +588,28 @@ namespace VoucherPro
                 {
                     connection.Open();
 
-                    string query = "SELECT TOP 1 " +
+                    string query;
+
+                    if (GlobalVariables.client == "LEADS")
+                    {
+                        query = "SELECT TOP 1 " +
                         "PreparedByName, PreparedByPosition, " +
                         "ReviewedByName, ReviewedByPosition, " +
-                        "RecommendingApprovalName, RecommendingApprovalPosition, " +
+                        //"RecommendingApprovalName, RecommendingApprovalPosition, " +
                         "ApprovedByName, ApprovedByPosition, " +
                         "ReceivedByName, ReceivedByPosition " +
                         "FROM Signatory";
+                    }
+                    else
+                    {
+                       query = "SELECT TOP 1 " +
+                       "PreparedByName, PreparedByPosition, " +
+                       "ReviewedByName, ReviewedByPosition, " +
+                       "RecommendingApprovalName, RecommendingApprovalPosition, " +
+                       "ApprovedByName, ApprovedByPosition, " +
+                       "ReceivedByName, ReceivedByPosition " +
+                       "FROM Signatory";
+                    }
 
                     using (OleDbCommand command = new OleDbCommand(query, connection))
                     {
@@ -610,8 +625,8 @@ namespace VoucherPro
                                     reviewedByName = reader["ReviewedByName"].ToString();
                                     reviewedByPosition = reader["ReviewedByPosition"].ToString();
 
-                                    recommendingApprovalName = reader["RecommendingApprovalName"].ToString();
-                                    recommendingApprovalPosition = reader["RecommendingApprovalPosition"].ToString();
+                                    //recommendingApprovalName = reader["RecommendingApprovalName"].ToString();
+                                    //recommendingApprovalPosition = reader["RecommendingApprovalPosition"].ToString();
 
                                     approvedByName = reader["ApprovedByName"].ToString();
                                     approvedByPosition = reader["ApprovedByPosition"].ToString();
@@ -645,6 +660,12 @@ namespace VoucherPro
             catch (Exception ex)
             {
                 Console.WriteLine($"An error occurred while retrieving all signatory data: {ex.Message}");
+            }
+
+            if (GlobalVariables.client == "LEADS")
+            {
+                recommendingApprovalName = "";
+                recommendingApprovalPosition = "";
             }
 
             return (
