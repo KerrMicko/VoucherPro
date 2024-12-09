@@ -34,7 +34,7 @@ namespace VoucherPro
             "Bill", "BillExpenseLine", "BillItemLine", "BillPaymentCheck", "BillPaymentCheckLine", 
             "Check", "CheckExpenseLine", "CheckItemLine", "Company", 
             "Item", "ItemReceipt", "ItemReceiptExpenseLine", "ItemReceiptItemLine", 
-            "Transaction", "Vendor" };
+            "Vendor" };
 
         List<string> tableNamesWithoutItemReceipt = new List<string> { "Account", 
             "Bill", "BillExpenseLine", "BillItemLine", "BillPaymentCheck", "BillPaymentCheckLine", 
@@ -654,6 +654,81 @@ namespace VoucherPro
                 approvedByName, approvedByPosition,
                 receivedByName, receivedByPosition
                 );
+        }
+
+        public int GetSeriesNumberFromDatabase(string columnName)
+        {
+            string accessConnectionString = GetAccessConnectionString();
+
+            int currentSeries = 1; // Default to 1 if no value is found
+            string query = $"SELECT {columnName} FROM Series"; // Replace 'SeriesTable' with your actual table name
+
+            using (OleDbConnection connection = new OleDbConnection(accessConnectionString))
+            {
+                try
+                {
+                    connection.Open();
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        object result = command.ExecuteScalar();
+                        if (result != null && int.TryParse(result.ToString(), out int series))
+                        {
+                            currentSeries = series;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error fetching series number: {ex.Message}");
+                }
+            }
+
+            return currentSeries;
+        }
+
+        public void IncrementSeriesNumberInDatabase(string columnName)
+        {
+            string accessConnectionString = GetAccessConnectionString();
+
+            string query = $"UPDATE Series SET {columnName} = {columnName} + 1";
+
+            using (OleDbConnection connection = new OleDbConnection(accessConnectionString))
+            {
+                try
+                {
+                    connection.Open();
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error updating series number: {ex.Message}");
+                }
+            }
+        }
+
+        public void UpdateManualSeriesNumber(string columnName, int seriesNumber)
+        {
+            string query = $"UPDATE Series SET {columnName} = @SeriesNumber";
+
+            using (OleDbConnection connection = new OleDbConnection(GetAccessConnectionString()))
+            {
+                try
+                {
+                    connection.Open();
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@SeriesNumber", seriesNumber);
+                        command.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error updating series number: {ex.Message}");
+                }
+            }
         }
 
         public class AmountToWordsConverter

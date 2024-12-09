@@ -5,6 +5,8 @@ VisualStudioVersion = 17.10.34928.147
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoucherPro", "VoucherPro.csproj", "{CB6A1CF0-E8B0-4824-A499-E6E908F878C0}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "VoucherPro_Installer", "..\VoucherPro_Installer\VoucherPro_Installer.vdproj", "{68B099E5-1361-46C7-B2EC-F243371D4EB0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{CB6A1CF0-E8B0-4824-A499-E6E908F878C0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CB6A1CF0-E8B0-4824-A499-E6E908F878C0}.Release|x64.ActiveCfg = Release|x64
 		{CB6A1CF0-E8B0-4824-A499-E6E908F878C0}.Release|x64.Build.0 = Release|x64
+		{68B099E5-1361-46C7-B2EC-F243371D4EB0}.Debug|Any CPU.ActiveCfg = Debug
+		{68B099E5-1361-46C7-B2EC-F243371D4EB0}.Debug|x64.ActiveCfg = Debug
+		{68B099E5-1361-46C7-B2EC-F243371D4EB0}.Release|Any CPU.ActiveCfg = Release
+		{68B099E5-1361-46C7-B2EC-F243371D4EB0}.Release|x64.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

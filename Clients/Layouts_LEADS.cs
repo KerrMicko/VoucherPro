@@ -27,19 +27,12 @@ namespace VoucherPro.Clients
         Font font_Twelve = new Font("Microsoft Sans Serif", 12, FontStyle.Regular);
         Font font_TwelveBold = new Font("Microsoft Sans Serif", 12, FontStyle.Bold);
 
-        public void PrintPage_LEADS(object sender, PrintPageEventArgs e, int layoutIndex, object data)
+        public void PrintPage_LEADS(object sender, PrintPageEventArgs e, int layoutIndex, string seriesNumber, object data)
         {
             StringFormat sfAlignRight = new StringFormat { Alignment = StringAlignment.Far | StringAlignment.Far };
             StringFormat sfAlignCenterRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
             StringFormat sfAlignCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
             StringFormat sfAlignLeftCenter = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
-
-            /*List<ItemReciept> items = null;
-
-            if (layoutIndex == 4)
-            {
-                items = data as List<ItemReciept>;
-            }*/
 
             switch (layoutIndex)
             {
@@ -49,15 +42,15 @@ namespace VoucherPro.Clients
                 case 2:
                     if (data is List<CheckTableExpensesAndItems>)
                     {
-                        Layout_CheckVoucher_Check(e, data as List<CheckTableExpensesAndItems>, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter, sfAlignRight);
+                        Layout_CheckVoucher_Check(e, data as List<CheckTableExpensesAndItems>, seriesNumber, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter, sfAlignRight);
                     }
                     else if (data is List<BillTable>)
                     {
-                        Layout_CheckVoucher_Bill(e, data as List<BillTable>, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter, sfAlignRight);
+                        Layout_CheckVoucher_Bill(e, data as List<BillTable>, seriesNumber, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter, sfAlignRight);
                     }
                     break;
                 case 3:
-                    Layout_APVoucher(e, data as List<BillTable>, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter, sfAlignRight);
+                    Layout_APVoucher(e, data as List<BillTable>, seriesNumber, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter, sfAlignRight);
                     break;
                 case 4:
                     Layout_ItemReceipt(e, receiptData: (List<ItemReciept>)data, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter);
@@ -129,7 +122,7 @@ namespace VoucherPro.Clients
             }
         }
 
-        private void Layout_CheckVoucher_Check(PrintPageEventArgs e, List<CheckTableExpensesAndItems> checkData, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter, StringFormat sfAlignRight)
+        private void Layout_CheckVoucher_Check(PrintPageEventArgs e, List<CheckTableExpensesAndItems> checkData, string seriesNumber, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter, StringFormat sfAlignRight)
         {
             Font font_Header = font_EightBold;
             Font font_Data = font_Eight;
@@ -192,14 +185,14 @@ namespace VoucherPro.Clients
             // 1st Table Data
             string payee = checkData[0].PayeeFullName;
             string bankAccount = checkData[0].BankAccount;
-            string checkNumber = "refNumText";
+            string checkNumber = checkData[0].RefNumber;
             double amount = checkData[0].TotalAmount;
-            string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
+            string amountInWords = AmountToWordsConverter.Convert(amount);
             DateTime chequeDate = checkData[0].DateCreated;
             DateTime dateTime = DateTime.Now; //PRINT DATE
 
 
-            e.Graphics.DrawString("seriesNumberText", font_TenBold, Brushes.Black, new RectangleF(50 + tableWidth - 150, 50 + 6, 150, tableHeight + 10), sfAlignCenter); // CV Ref. No.
+            e.Graphics.DrawString(seriesNumber, font_TenBold, Brushes.Black, new RectangleF(50 + tableWidth - 150, 50 + 6, 150, tableHeight + 10), sfAlignCenter); // CV Ref. No.
             e.Graphics.DrawString(dateTime.ToString("dd-MMM-yyyy"), font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 150, 100 + 8, 150, tableHeight), sfAlignCenter); // Print Date
 
             e.Graphics.DrawString(payee, font_Data, Brushes.Black, new RectangleF(50 + 15, 140 + 6, tableWidth - 450, tableHeight), sfAlignLeftCenter); // Payee
@@ -438,7 +431,7 @@ namespace VoucherPro.Clients
 
         }
 
-        private void Layout_CheckVoucher_Bill(PrintPageEventArgs e, List<BillTable> billData, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter, StringFormat sfAlignRight)
+        private void Layout_CheckVoucher_Bill(PrintPageEventArgs e, List<BillTable> billData, string seriesNumber, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter, StringFormat sfAlignRight)
         {
             Font font_Header = font_EightBold;
             Font font_Data = font_Eight;
@@ -503,14 +496,14 @@ namespace VoucherPro.Clients
             // 1st Table Data
             string payee = billData[0].PayeeFullName;
             string bankAccount = billData[0].BankAccount;
-            string checkNumber = "refNumText";
+            string checkNumber = billData[0].RefNumber;
             double amount = billData[0].Amount;
             string amountInWords = AmountToWordsConverter.Convert(amount);
             DateTime chequeDate = billData[0].DateCreated;
             DateTime dateTime = DateTime.Now; //PRINT DATE
 
 
-            e.Graphics.DrawString("seriesNumberText", font_TenBold, Brushes.Black, new RectangleF(50 + tableWidth - 150, 50 + 6, 150, tableHeight + 10), sfAlignCenter); // CV Ref. No.
+            e.Graphics.DrawString(seriesNumber, font_TenBold, Brushes.Black, new RectangleF(50 + tableWidth - 150, 50 + 6, 150, tableHeight + 10), sfAlignCenter); // CV Ref. No.
             e.Graphics.DrawString(dateTime.ToString("dd-MMM-yyyy"), font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 150, 100 + 8, 150, tableHeight), sfAlignCenter); // Print Date
 
             e.Graphics.DrawString(payee, font_Data, Brushes.Black, new RectangleF(50 + 15, 140 + 6, payeeWidth, tableHeight), sfAlignLeftCenter); // Payee
@@ -651,7 +644,7 @@ namespace VoucherPro.Clients
 
         }
 
-        private void Layout_APVoucher(PrintPageEventArgs e, List<BillTable> billData, StringFormat sfAlignRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter, StringFormat sfAlignCenterRight)
+        private void Layout_APVoucher(PrintPageEventArgs e, List<BillTable> billData, string seriesNumber, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter, StringFormat sfAlignRight)
         {
             Font font_Header = font_EightBold;
             Font font_Data = font_Eight;
@@ -713,14 +706,14 @@ namespace VoucherPro.Clients
             // 1st Table Data
             string payee = billData[0].Vendor;
             string terms = billData[0].TermsRefFullName;
-            string billNumber = "refNumText";
+            string billNumber = billData[0].RefNumber;
             double amount = billData[0].AmountDue;
             string amountInWords = AmountToWordsConverter.Convert(amount);
             DateTime billDate = billData[0].DateCreated; //BILL DATE
             DateTime dueDate = billData[0].DueDate;
 
 
-            e.Graphics.DrawString("seriesNumberText", font_TenBold, Brushes.Black, new RectangleF(50 + tableWidth - 150, 50 + 6, 150, tableHeight + 10), sfAlignCenter); // APV Ref. No.
+            e.Graphics.DrawString(seriesNumber, font_TenBold, Brushes.Black, new RectangleF(50 + tableWidth - 150, 50 + 6, 150, tableHeight + 10), sfAlignCenter); // APV Ref. No.
             e.Graphics.DrawString(billDate.ToString("dd-MMM-yyyy"), font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 150, 100 + 8, 150, tableHeight), sfAlignCenter); // Bill Date
 
             e.Graphics.DrawString(payee, font_Data, Brushes.Black, new RectangleF(50 + 15, 140 + 6, tableWidth - 450, tableHeight), sfAlignLeftCenter); // Payee
@@ -739,6 +732,8 @@ namespace VoucherPro.Clients
             Dictionary<string, double> groupedItemData = new Dictionary<string, double>();
             Dictionary<string, double> groupedExpenseData = new Dictionary<string, double>();
 
+            int totalItemCount = 0;
+            
             foreach (var bill in billData)
             {
                 try
@@ -757,6 +752,7 @@ namespace VoucherPro.Clients
                         {
                             groupedItemData[itemName] = itemAmount;
                         }
+                        totalItemCount++;
                     }
 
                     foreach (var item in bill.ItemDetails)
@@ -774,6 +770,7 @@ namespace VoucherPro.Clients
                             {
                                 groupedExpenseData[expenseName] = expenseAmount;
                             }
+                            totalItemCount++;
                         }
                     }
                 }
@@ -781,6 +778,8 @@ namespace VoucherPro.Clients
                 {
                     MessageBox.Show($"An error occurred while grouping entries: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+
+                Console.WriteLine($"Total Count: {totalItemCount}");
             }
 
             /*foreach (var bill in billData)
@@ -843,19 +842,155 @@ namespace VoucherPro.Clients
             int pos = 0;
             int amountPos = 0;
 
+            // Assuming these variables are defined somewhere in your class
+            /*int pageCounter = 0;
+            int itemCounter = 0;
+            int index = 0;
+            int count = 0;*/
+
+            /*int itemsPerPage = 10;
+            int currentPage = 0;
+            var paginatedData = billData.Skip(currentPage * itemsPerPage).Take(itemsPerPage).ToList();
+
+            foreach (var bill in paginatedData)
+            {
+                foreach (var item in groupedItemData)
+                {
+                    if (itemCounter >= GlobalVariables.itemsPerPageAPV) break; // Stop if we reach the items per page limit
+                    Console.WriteLine($"Grouped Items: Account Name: {item.Key}, Total Amount: {item.Value}, Item Counter: {itemCounter}");
+                    itemCounter++;
+                    count++;
+                }
+
+                // Display grouped expenses
+                foreach (var item in groupedExpenseData)
+                {
+                    if (itemCounter >= GlobalVariables.itemsPerPageAPV) break; // Stop if we reach the items per page limit
+                    Console.WriteLine($"Grouped Expense: Account Name: {item.Key}, Total Amount: {item.Value}, Item Counter: {itemCounter}");
+                    itemCounter++;
+                    count++;
+                }
+            }
+            // Indicate if there are more pages
+            if (currentPage < 2 - 1)
+            {
+                e.HasMorePages = true;
+            }*/
+
+            // Loop to implement pagination and break when it's time for the next page
+            /*while (itemCounter < totalItemCount && count < GlobalVariables.itemsPerPageAPV)
+            {
+                // Reset the count for the current page
+                count = 0;
+
+                // Display grouped items
+                foreach (var item in groupedItemData)
+                {
+                    if (itemCounter >= GlobalVariables.itemsPerPageAPV) break; // Stop if we reach the items per page limit
+                    Console.WriteLine($"Grouped Items: Account Name: {item.Key}, Total Amount: {item.Value}, Item Counter: {itemCounter}");
+                    itemCounter++;
+                    count++;
+                }
+
+                // Display grouped expenses
+                foreach (var item in groupedExpenseData)
+                {
+                    if (itemCounter >= GlobalVariables.itemsPerPageAPV) break; // Stop if we reach the items per page limit
+                    Console.WriteLine($"Grouped Expense: Account Name: {item.Key}, Total Amount: {item.Value}, Item Counter: {itemCounter}");
+                    itemCounter++;
+                    count++;
+                }
+
+                // If we have printed all items for the current page
+                if (itemCounter < totalItemCount)
+                {
+                    pageCounter++;
+                    e.HasMorePages = true; // Indicates more pages to print
+                    Console.WriteLine($"Page Counter add: {pageCounter}");
+                }
+                else
+                {
+                    e.HasMorePages = false; // No more pages to print
+                    Console.WriteLine($"Page Counter end: {pageCounter}");
+                }
+
+                // Break out of the loop after the current page is processed
+                //if (!e.HasMorePages) break;
+            }*/
+
+            /*foreach (var bill in billData)
+            {
+                try
+                {
+                    for (int i = 0; i < bill.AccountNameParticularsList.Count; i++)
+                    {
+                        //string itemName = bill.AccountNameParticularsList[i];
+                        string itemName = bill.ItemDetails[i].ItemLineItemRefFullName;
+                        double itemAmount = bill.ItemDetails[i].ItemLineAmount;
+
+                        if (itemCounter >= GlobalVariables.itemsPerPageAPV)
+                        {
+                            Console.WriteLine("Out");
+                            return;
+                        }
+                        if (itemAmount < 0)
+                        {
+                            double absoluteAmount = Math.Abs(itemAmount);
+                            creditTotalAmount += absoluteAmount;
+                        }
+                        else if (itemAmount > 0)
+                        {
+                            debitTotalAmount += itemAmount;
+                        }
+                        
+                        itemCounter++;
+
+                        Console.WriteLine($"Items: Item Name: {itemName}, Item Price: {itemAmount}, Credit: {creditTotalAmount}, Debit: {debitTotalAmount}, Item Counter: {itemCounter}");
+                    }
+
+                    foreach (var item in bill.ItemDetails)
+                    {
+                        if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                        {
+                            string expenseName = item.ExpenseLineItemRefFullName;
+                            double expenseAmount = item.ExpenseLineAmount;
+
+                            if (itemCounter >= GlobalVariables.itemsPerPageAPV)
+                            {
+                                Console.WriteLine("Out");
+                                return;
+                            }
+                            if (expenseAmount > 0)
+                            {
+                                debitTotalAmount += expenseAmount;
+                            }
+                            itemCounter++;
+
+                            Console.WriteLine($"Expenses: Account Name: {expenseName}, Expense Amount: {expenseAmount}, Item Counter: {itemCounter}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"An error occurred while printing entries: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }*/
+            //e.HasMorePages = currentPrintIndex < itemCounter;
+
+            // adi main
             foreach (var bill in billData)
             {
                 foreach (var item in groupedItemData)
                 {
-                    Console.WriteLine($"Grouped Items: Account Name: {item.Key}, Total Amount: {item.Value}");
+                    //Console.WriteLine($"Grouped Items: Account Name: {item.Key}, Total Amount: {item.Value}");
                     e.Graphics.DrawString($"{item.Key}", font_Nine, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 100), 25));
                     e.Graphics.DrawString($"{item.Value:N2}", font_Nine, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + 20 + 4 + pos, 150, perItemHeight), sfAlignRight); // Credit
 
                     if (item.Value > 0)
                     {
                         debitTotalAmount += item.Value;
-                        pos += 25;
                     }
+                    pos += 25;
                 }
 
                 amountPos += pos + 25;
@@ -864,7 +999,7 @@ namespace VoucherPro.Clients
                 {
                     if (items.Key != "")
                     {
-                        Console.WriteLine($"Grouped Expense: Account Name: {items.Key}, Total Amount: {items.Value}");
+                        //Console.WriteLine($"Grouped Expense: Account Name: {items.Key}, Total Amount: {items.Value}");
                         e.Graphics.DrawString(items.Key, font_Nine, Brushes.Black, new RectangleF(50 + 4, firstTableYPos + amountPos, tableWidth - (300 + 100), perItemHeight));
                         if (items.Value < 0)
                         {
@@ -877,9 +1012,9 @@ namespace VoucherPro.Clients
                             e.Graphics.DrawString(items.Value.ToString("N2"), font_Nine, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + amountPos, 150, perItemHeight), sfAlignRight); // Debit
                             debitTotalAmount += items.Value;
                         }
-                        amountPos += 25;
                     }
                     //pos += 25;
+                    amountPos += 25;
                 }
             }
 
@@ -895,12 +1030,12 @@ namespace VoucherPro.Clients
 
             // Debit Credit Total
             e.Graphics.DrawString("₱", font_Header, Brushes.Black, new RectangleF(50 + 450 + 5, secondTableYPos - 6, 150, tableHeight), sfAlignLeftCenter);
-            e.Graphics.DrawString(debitTotalAmount.ToString("N2"), font_Header, Brushes.Black, new RectangleF(50 + 450 - 5, secondTableYPos - 6, 150, tableHeight), sfAlignRight);
+            e.Graphics.DrawString(debitTotalAmount.ToString("N2"), font_Header, Brushes.Black, new RectangleF(50 + 450 - 5, secondTableYPos + 9, 150, tableHeight), sfAlignRight);
             e.Graphics.DrawLine(Pens.Black, 50 + 450 + 5, secondTableYPos + 25, 50 + 450 - 5 + 150, secondTableYPos + 25);
             e.Graphics.DrawLine(Pens.Black, 50 + 450 + 5, secondTableYPos + 28, 50 + 450 - 5 + 150, secondTableYPos + 28);
 
             e.Graphics.DrawString("₱", font_Header, Brushes.Black, new RectangleF(50 + 600 + 5, secondTableYPos - 6, 150, tableHeight), sfAlignLeftCenter);
-            e.Graphics.DrawString(creditTotalAmount.ToString("N2"), font_Header, Brushes.Black, new RectangleF(50 + 600 - 5, secondTableYPos - 6, 150, tableHeight), sfAlignRight);
+            e.Graphics.DrawString(creditTotalAmount.ToString("N2"), font_Header, Brushes.Black, new RectangleF(50 + 600 - 5, secondTableYPos + 9, 150, tableHeight), sfAlignRight);
             e.Graphics.DrawLine(Pens.Black, 50 + 600 + 5, secondTableYPos + 25, 50 + 600 - 5 + 150, secondTableYPos + 25);
             e.Graphics.DrawLine(Pens.Black, 50 + 600 + 5, secondTableYPos + 28, 50 + 600 - 5 + 150, secondTableYPos + 28);
 
@@ -959,14 +1094,19 @@ namespace VoucherPro.Clients
             Font font_Details = font_Eight;
 
             Rectangle rectReceivingPoint = new Rectangle(165, 226, 359, 15);
-            Rectangle rectReceivingAddress = new Rectangle(110, 257, 410, 15);
+            Rectangle rectReceivingAddress = new Rectangle(110, 257, 610, 15);
             Rectangle rectDate = new Rectangle(616, 226, 200, 15);
 
-            e.Graphics.DrawRectangle(Pens.Black, rectReceivingPoint);
-            e.Graphics.DrawRectangle(Pens.Black, rectReceivingAddress);
-            e.Graphics.DrawRectangle(Pens.Black, rectDate);
+            //e.Graphics.DrawRectangle(Pens.Black, rectReceivingPoint);
+            //e.Graphics.DrawRectangle(Pens.Black, rectReceivingAddress);
+            //e.Graphics.DrawRectangle(Pens.Black, rectDate);
 
-            e.Graphics.DrawString(receiptData[0].Memo.ToString(), font_Details, Brushes.Black, rectReceivingPoint);
+            string vendor = receiptData[0].PayeeFullName;
+            string fullAddress = receiptData[0].Addr1.ToString() + receiptData[0].Addr2.ToString() + receiptData[0].Addr3.ToString() + receiptData[0].Addr4.ToString() + receiptData[0].AddrCity.ToString();
+
+            //e.Graphics.DrawString(receiptData[0].Memo.ToString(), font_Details, Brushes.Black, rectReceivingPoint);
+            //e.Graphics.DrawString(fullAddress, font_Details, Brushes.Black, rectReceivingAddress);
+            e.Graphics.DrawString(receiptData[0].DateCreated.ToString("MM/dd/yyyy"), font_Details, Brushes.Black, rectDate);
 
             // TABLE
             Rectangle rectItemNo = new Rectangle(44, 329, 52, 24);
@@ -974,27 +1114,59 @@ namespace VoucherPro.Clients
             Rectangle rectItemUnit = new Rectangle(44 + 52 + 92, 329, 140, 24);
             Rectangle rectItemDescription = new Rectangle(44 + 52 + 92 + 140, 329, 487, 24);
 
-            e.Graphics.DrawRectangle(Pens.Black, rectItemNo);
-            e.Graphics.DrawRectangle(Pens.Black, rectItemQuantity);
-            e.Graphics.DrawRectangle(Pens.Black, rectItemUnit);
-            e.Graphics.DrawRectangle(Pens.Black, rectItemDescription);
+            //e.Graphics.DrawRectangle(Pens.Black, rectItemNo);
+            //e.Graphics.DrawRectangle(Pens.Black, rectItemQuantity);
+            //e.Graphics.DrawRectangle(Pens.Black, rectItemUnit);
+            //e.Graphics.DrawRectangle(Pens.Black, rectItemDescription);
+
+            int itemHeight = 0;
+            int tabDataHeight = 23;
+            int counter = 1;
+
+            for (int i = 0; i < receiptData.Count; i++)
+            {
+                if (receiptData[i] == null)
+                {
+                    continue;
+                }
+
+                if (receiptData[i].ItemQuantity == 0.00)
+                {
+                    continue;
+                }
+
+                var itemUM = receiptData[i].ItemUM ?? string.Empty;
+                var itemDescription = receiptData[i].ItemDescription ?? string.Empty;
+
+                e.Graphics.DrawString(counter.ToString(), font_Details, Brushes.Black, new Rectangle(44, 320 + itemHeight, 52, 24 + tabDataHeight), sfAlignCenter);
+                e.Graphics.DrawString(receiptData[i].ItemQuantity.ToString("N2"), font_Details, Brushes.Black, new Rectangle(44 + 52, 320 + itemHeight, 92, 24 + tabDataHeight), sfAlignCenter);
+                e.Graphics.DrawString(itemUM, font_Details, Brushes.Black, new Rectangle(96 + 92, 320 + itemHeight, 140, 24 + tabDataHeight), sfAlignCenter);
+                e.Graphics.DrawString(itemDescription, font_Details, Brushes.Black, new Rectangle(44 + 52 + 92 + 140, 320 + itemHeight, 487, 24 + tabDataHeight), sfAlignLeftCenter);
+
+                itemHeight += tabDataHeight;
+                counter++;
+            }
 
             // SIGNATORY || LEFT
             Rectangle rectSupplier = new Rectangle(128, 534, 270, 18);
             Rectangle rectBroker = new Rectangle(128, 538 + 18, 270, 18);
-            Rectangle rectAddress = new Rectangle(128, 541 + 36, 270, 18);
+            //Rectangle rectAddress = new Rectangle(128, 541 + 36, 270, 30);
+            Rectangle rectAddress = new Rectangle(128, 541 + 40, 270, 30);
 
             Rectangle rectDeliveryReceiptNo = new Rectangle(154, 619, 244, 18);
             Rectangle rectInvoiceNo = new Rectangle(154, 621 + 18, 244, 18);
             Rectangle rectDateDelivered = new Rectangle(154, 642 + 18, 244, 18);
 
-            e.Graphics.DrawRectangle(Pens.Black, rectSupplier);
-            e.Graphics.DrawRectangle(Pens.Black, rectBroker);
-            e.Graphics.DrawRectangle(Pens.Black, rectAddress);
+            //e.Graphics.DrawRectangle(Pens.Black, rectSupplier);
+            //e.Graphics.DrawRectangle(Pens.Black, rectBroker);
+            //e.Graphics.DrawRectangle(Pens.Black, rectAddress);
 
-            e.Graphics.DrawRectangle(Pens.Black, rectDeliveryReceiptNo);
-            e.Graphics.DrawRectangle(Pens.Black, rectInvoiceNo);
-            e.Graphics.DrawRectangle(Pens.Black, rectDateDelivered);
+            e.Graphics.DrawString(vendor, font_Details, Brushes.Black, rectSupplier);
+            e.Graphics.DrawString(fullAddress, font_Details, Brushes.Black, rectAddress);
+
+            //e.Graphics.DrawRectangle(Pens.Black, rectDeliveryReceiptNo);
+            //e.Graphics.DrawRectangle(Pens.Black, rectInvoiceNo);
+            //e.Graphics.DrawRectangle(Pens.Black, rectDateDelivered);
 
             // RIGHT
             Rectangle rectReceivedBy = new Rectangle(540, 536, 274, 18);
@@ -1003,11 +1175,11 @@ namespace VoucherPro.Clients
             Rectangle rectDeliveredBy = new Rectangle(540, 640, 274, 18);
             Rectangle rectPlateNo = new Rectangle(540, 645 + 18, 274, 18);
 
-            e.Graphics.DrawRectangle(Pens.Black, rectReceivedBy);
-            e.Graphics.DrawRectangle(Pens.Black, rectCheckedBy);
+            //e.Graphics.DrawRectangle(Pens.Black, rectReceivedBy);
+            //e.Graphics.DrawRectangle(Pens.Black, rectCheckedBy);
 
-            e.Graphics.DrawRectangle(Pens.Black, rectDeliveredBy);
-            e.Graphics.DrawRectangle(Pens.Black, rectPlateNo);
+            //e.Graphics.DrawRectangle(Pens.Black, rectDeliveredBy);
+            //e.Graphics.DrawRectangle(Pens.Black, rectPlateNo);
         }
     }
 }

@@ -21,6 +21,7 @@ namespace VoucherPro
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
         public static bool isPrinting = false;
+        public static int itemsPerPageAPV = 10;
     }
     public partial class Dashboard : Form
     {
@@ -37,8 +38,18 @@ namespace VoucherPro
         FlowLayoutPanel panel_Printing;
         FlowLayoutPanel panel_SeriesNumber;
 
+        List<CheckTable> cheque = new List<CheckTable>();
+        List<BillTable> bills = new List<BillTable>();
+        List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
+        List<ItemReciept> receipts = new List<ItemReciept>();
+        List<BillTable> apvData = new List<BillTable>();
+
         static int sideBarWidth = 250;
-        string seriesNumber;
+        int seriesNumber = 1;
+
+        //private const int itemsPerPage = 16;
+        private int itemCounter;
+        private int pageCounter;
 
         Font font_Label = new Font("Microsoft Sans Serif", 9);
         public Dashboard()
@@ -49,6 +60,9 @@ namespace VoucherPro
 
             this.WindowState = FormWindowState.Maximized;
             this.Text = "VoucherPro";
+
+            Bitmap bitmapIcon = Properties.Resources.logo1;
+            this.Icon = Icon.FromHandle(bitmapIcon.GetHicon());
 
             Panel panel_Container = ContainerPanel();
             this.Controls.Add(panel_Container);
@@ -256,8 +270,10 @@ namespace VoucherPro
                 Width = 156,
                 Font = new Font("Microsoft Sans Serif", 10),
             };
+            textBox_SeriesNumber.TextChanged += TextBox_SeriesNumber_TextChanged;
+            textBox_SeriesNumber.Leave += TextBox_SeriesNumber_Leave;
 
-            Button button_SubtractSeriesNum = new Button
+            Button button_Decrement = new Button
             {
                 Parent = panel_SeriesNumber,
                 Height = 28,
@@ -267,8 +283,16 @@ namespace VoucherPro
                 Margin = new Padding(0, 1, 0, 0),
                 BackColor = Color.Transparent,
             };
+            button_Decrement.Click += (sender, e) =>
+            {
+                if (seriesNumber != 0)
+                {
+                    seriesNumber--;
+                    UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
+                }
+            };
 
-            Button button_AddSeriesNum = new Button
+            Button button_Increment = new Button
             {
                 Parent = panel_SeriesNumber,
                 Height = 28,
@@ -277,6 +301,11 @@ namespace VoucherPro
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(3, 1, 3, 0),
                 BackColor = Color.Transparent,
+            };
+            button_Increment.Click += (sender, e) =>
+            {
+                seriesNumber++;
+                UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
             };
 
             return panel_SeriesNumber;
@@ -330,21 +359,21 @@ namespace VoucherPro
                     string refNumber = textBox_ReferenceNumber.Text;
                     AccessQueries queries = new AccessQueries();
 
-                    List<CheckTable> cheque = new List<CheckTable>();
-                    List<BillTable> bills = new List<BillTable>();
-                    List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
-                    List<ItemReciept> receipts = new List<ItemReciept>();
-                    List<BillTable> apvData = new List<BillTable>();
+                    cheque = new List<CheckTable>();
+                    bills = new List<BillTable>();
+                    checks = new List<CheckTableExpensesAndItems>();
+                    receipts = new List<ItemReciept>();
+                    apvData = new List<BillTable>();
 
                     object data = null;
                     if (GlobalVariables.client == "LEADS")
                     {
-                        if (comboBox_Forms.SelectedIndex == 1)
+                        if (comboBox_Forms.SelectedIndex == 1) // Check
                         {
                             cheque = queries.GetCheckData(refNumber);
                             data = cheque;
                         }
-                        else if (comboBox_Forms.SelectedIndex == 2)
+                        else if (comboBox_Forms.SelectedIndex == 2) // CV
                         {
                             checks = queries.GetCheckExpensesAndItemsData_LEADS(refNumber);
                             if (checks.Count == 0)
@@ -357,7 +386,7 @@ namespace VoucherPro
                                 data = checks;
                             }
                         }
-                        else if (comboBox_Forms.SelectedIndex == 3)
+                        else if (comboBox_Forms.SelectedIndex == 3) // APV
                         {
                             apvData = queries.GetAccountsPayableData_LEADS(refNumber);
                             data = apvData;
@@ -383,9 +412,29 @@ namespace VoucherPro
                             printDocument.DefaultPageSettings.PaperSize = paperSize;
                             printDocument.PrinterSettings.DefaultPageSettings.PaperSize = paperSize;
 
+                            int selectedIndex = comboBox_Forms.SelectedIndex;
+                            string seriesNumber = textBox_SeriesNumber.Text;
+
+                            // Reset counters for new print job
+                            itemCounter = 0;
+                            pageCounter = 1;
+
+                            if (comboBox_Forms.SelectedIndex == 3) // APV
+                            {
+                                // Calculate the total number of pages
+                                int totalItemDetails = apvData.Sum(apvData => apvData.ItemDetails.Count);
+
+                                int totalPages = (int)Math.Ceiling((double)totalItemDetails / GlobalVariables.itemsPerPageAPV);
+                                Console.WriteLine($"Generate: APV Data Count: {totalItemDetails}, Total Pages: {totalPages}");
+                                printDocument.PrinterSettings.MaximumPage = totalPages;
+                            }
+                            
+                            // Update preview control to start at the first page
+                            printPreviewControl.StartPage = 0;
+
                             printDocument.PrintPage += (s, ev) =>
                             {
-                                layouts_LEADS.PrintPage_LEADS(s, ev, comboBox_Forms.SelectedIndex, data);
+                                layouts_LEADS.PrintPage_LEADS(s, ev, selectedIndex, seriesNumber, data);
                                 //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
                             };
                         }
@@ -564,7 +613,7 @@ namespace VoucherPro
             {
                 //Parent = panel_SideBar,
                 Dock = DockStyle.Top,
-                Height = 80,
+                Height = 110,
                 Width = sideBarWidth - 10,
                 BackColor = Color.LightGray,
                 Padding = new Padding(5),
@@ -601,6 +650,38 @@ namespace VoucherPro
                 printPreviewControl.Zoom += 0.1;
             };
 
+            Button button_PreviousPage = new Button
+            {
+                Parent = panel_Printing,
+                Text = "Previous Page",
+                Height = 28,
+                Width = 108,
+                BackColor = Color.Transparent,
+            };
+            button_PreviousPage.Click += (sender, e) =>
+            {
+                if (printPreviewControl.StartPage > 0)
+                {
+                    printPreviewControl.StartPage--;
+                }
+            };
+
+            Button button_NextPage = new Button
+            {
+                Parent = panel_Printing,
+                Text = "Next Page",
+                Height = 28,
+                Width = 108,
+                BackColor = Color.Transparent,
+            };
+            button_NextPage.Click += (sender, e) =>
+            {
+                if (printPreviewControl.StartPage < pageCounter - 1)
+                {
+                    printPreviewControl.StartPage++;
+                }
+            };
+
             Button button_Print = new Button
             {
                 Parent = panel_Printing,
@@ -613,6 +694,27 @@ namespace VoucherPro
             {
                 try
                 {
+                    // Reset counters for new print job
+                    itemCounter = 0;
+                    pageCounter = 1;
+
+                    if (comboBox_Forms.SelectedIndex == 3) // APV
+                    {
+                        /*// Calculate the total number of pages
+                        int totalPages = (int)Math.Ceiling((double)apvData.Count / itemsPerPage);
+                        printDocument.PrinterSettings.MaximumPage = totalPages;*/
+                        // Calculate the total number of pages
+                        int totalItemDetails = apvData.Sum(apvData => apvData.ItemDetails.Count);
+
+                        int totalPages = (int)Math.Ceiling((double)totalItemDetails / GlobalVariables.itemsPerPageAPV);
+                        Console.WriteLine($"Print: APV Data Count: {totalItemDetails}, Total Pages: {totalPages}");
+                        printDocument.PrinterSettings.MaximumPage = totalPages;
+                    }
+                    
+
+                    // Update preview control to start at the first page
+                    printPreviewControl.StartPage = 0;
+
                     PrintDialog printDialog = new PrintDialog
                     {
                         Document = printDocument,
@@ -625,6 +727,12 @@ namespace VoucherPro
                         printPreviewControl.Visible = false;
                         printPreviewControl.Zoom = 1;
                         panel_Printing.Visible = false;
+                        
+                        string columnName = comboBox_Forms.SelectedIndex == 2 ? "CVSeries" : "APVSeries";
+                        accessToDatabase.IncrementSeriesNumberInDatabase(columnName); // Increment for next print
+                      
+                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
+                        UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
                     }
                 }
                 catch (Exception ex)
@@ -641,7 +749,7 @@ namespace VoucherPro
         {
             if (GlobalVariables.client == "LEADS")
             {
-                if (comboBox_Forms.SelectedIndex == 0)
+                /*if (comboBox_Forms.SelectedIndex == 0)
                 {
                     panel_SeriesNumber.Visible = false;
                 }
@@ -653,18 +761,44 @@ namespace VoucherPro
                 {
                     panel_SeriesNumber.Visible = true;
                     label_SeriesNumberText.Text = "Current Series Number: CV";
-                    textBox_SeriesNumber.Text = "CV" + seriesNumber;
+                    textBox_SeriesNumber.Text = "CV" + seriesNumber.ToString("D3");
                 }
                 else if (comboBox_Forms.SelectedIndex == 3) // APV
                 {
                     panel_SeriesNumber.Visible = true;
                     label_SeriesNumberText.Text = "Current Series Number: APV";
-                    textBox_SeriesNumber.Text = "test2" + seriesNumber;
+                    textBox_SeriesNumber.Text = "APV" + seriesNumber.ToString("D3");
                 }
                 else if (comboBox_Forms.SelectedIndex == 4)
                 {
                     panel_SeriesNumber.Visible = false;
+                }*/
+
+                string prefix = "";
+                panel_SeriesNumber.Visible = false;
+
+                switch (comboBox_Forms.SelectedIndex)
+                {
+                    case 2: // CV
+                        prefix = "CV";
+                        panel_SeriesNumber.Visible = true;
+                        label_SeriesNumberText.Text = "Current Series Number: CV";
+                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");
+                        break;
+
+                    case 3: // APV
+                        prefix = "APV";
+                        panel_SeriesNumber.Visible = true;
+                        label_SeriesNumberText.Text = "Current Series Number: APV";
+                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("APVSeries");
+                        break;
+
+                    default:
+                        panel_SeriesNumber.Visible = false;
+                        return;
                 }
+
+                UpdateSeriesNumber(prefix);
             }
             else
             {
@@ -693,6 +827,41 @@ namespace VoucherPro
                     panel_SeriesNumber.Visible = false;
                 }
             }
+        }
+
+        private void TextBox_SeriesNumber_TextChanged(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(textBox_SeriesNumber.Text))
+            {
+                string prefix = comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV";
+                string input = textBox_SeriesNumber.Text.Replace(prefix, "").Trim();
+
+                if (int.TryParse(input, out int adjustedSeries))
+                {
+                    seriesNumber = adjustedSeries;
+                }
+                else
+                {
+                    MessageBox.Show("Invalid series number format. Please enter a numeric value.");
+                    textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}"; // Revert to the current value
+                }
+            }
+        }
+        private void TextBox_SeriesNumber_Leave(object sender, EventArgs e)
+        {
+            string columnName = comboBox_Forms.SelectedIndex == 2 ? "CVSeries" : "APVSeries";
+            accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment
+        }
+
+        private void UpdateSeriesNumber(string prefix)
+        {
+            textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}"; // Formats seriesNumber as a 3-digit number
+        }
+        private void RefreshSeriesNumber(string columnName)
+        {
+            seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
+            string prefix = comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV";
+            textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}";
         }
     }
 }
