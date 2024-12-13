@@ -686,6 +686,7 @@ namespace VoucherPro
                        Bill.DueDate, 
                        Bill.AmountDue, 
                        Bill.Memo,
+                       Bill.IsPaid,
                        Bill.APAccountRefFullName,
                        Bill.APAccountRefListID,
                        Bill.TxnID
@@ -710,6 +711,7 @@ namespace VoucherPro
                                     DueDate = reader["DueDate"] != DBNull.Value ? Convert.ToDateTime(reader["DueDate"]).Date : DateTime.MinValue,
                                     AmountDue = reader["AmountDue"] != DBNull.Value ? Convert.ToDouble(reader["AmountDue"]) : 0.0,
                                     Memo = reader["Memo"] != DBNull.Value ? reader["Memo"].ToString() : string.Empty,
+                                    IsPaid = reader["IsPaid"] != DBNull.Value ? Convert.ToBoolean(reader["IsPaid"]) : false,
 
                                     // Increment
                                     IncrementalID = nextID.ToString("D6")
@@ -718,6 +720,7 @@ namespace VoucherPro
                                 string secondQuery = @"SELECT TOP 1000
                                         BillItemLine.ItemLineItemRefFullName AS AccountRefFullName, 
                                         BillItemLine.ItemLineAmount AS Amount,
+                                        BillItemLine.ItemLineClassRefFullName AS ClassRefFullName,
                                         BillItemLine.ItemLineitemRefListID AS BillRefListID,
                                         BillItemLine.ItemLineDesc AS ItemExpenseMemo
                                     FROM 
@@ -740,9 +743,10 @@ namespace VoucherPro
                                             {
                                                 string itemLineItemRefFullName = secondReader["AccountRefFullName"] != DBNull.Value ? secondReader["AccountRefFullName"].ToString() : string.Empty;
                                                 double itemLineAmount = secondReader["Amount"] != DBNull.Value ? Convert.ToDouble(secondReader["Amount"]) : 0.0;
+                                                string itemLineClassRefFullName = secondReader["ClassRefFullName"] != DBNull.Value ? secondReader["ClassRefFullName"].ToString() : string.Empty;
                                                 string itemLineItemMemo = secondReader["ItemExpenseMemo"] != DBNull.Value ? secondReader["ItemExpenseMemo"].ToString() : string.Empty;
 
-                                                Console.WriteLine($"Item: {itemLineItemRefFullName}, Amount: {itemLineAmount}, Memo: {itemLineItemMemo}");
+                                                Console.WriteLine($"Item: {itemLineItemRefFullName}, Class: {itemLineClassRefFullName}, Amount: {itemLineAmount}, Memo: {itemLineItemMemo}");
 
 
                                                 //Console.WriteLine(itemLineAmount);
@@ -750,6 +754,7 @@ namespace VoucherPro
                                                 {
                                                     ItemLineItemRefFullName = itemLineItemRefFullName,
                                                     ItemLineAmount = itemLineAmount,
+                                                    ItemLineClassRefFullName = itemLineClassRefFullName,
                                                     ItemLineMemo = itemLineItemMemo,
                                                 });
 
@@ -795,6 +800,7 @@ namespace VoucherPro
                                 string secondQuery2 = @"SELECT
                                         BillExpenseLine.ExpenseLineAccountRefFullName AS AccountRefFullName, 
                                         BillExpenseLine.ExpenseLineAmount AS Amount,
+                                        BillExpenseLine.ExpenseLineClassRefFullName AS ClassRefFullName,
                                         BillExpenseLine.ExpenseLineAccountRefListID AS BillRefListID,
                                         BillExpenseLine.ExpenseLineMemo AS ItemExpenseMemo
                                     FROM 
@@ -816,6 +822,7 @@ namespace VoucherPro
                                             {
                                                 string itemLineItemRefFullName = secondReader["AccountRefFullName"] != DBNull.Value ? secondReader["AccountRefFullName"].ToString() : string.Empty;
                                                 double itemLineAmount = secondReader["Amount"] != DBNull.Value ? Convert.ToDouble(secondReader["Amount"]) : 0.0;
+                                                string itemLineClassRefFullName = secondReader["ClassRefFullName"] != DBNull.Value ? secondReader["ClassRefFullName"].ToString() : string.Empty;
                                                 string itemLineItemMemo = secondReader["ItemExpenseMemo"] != DBNull.Value ? secondReader["ItemExpenseMemo"].ToString() : string.Empty;
 
                                                 Console.WriteLine($"Item: {itemLineItemRefFullName}, Amount: {itemLineAmount}, Memo: {itemLineItemMemo}");
@@ -825,6 +832,7 @@ namespace VoucherPro
                                                 {
                                                     ExpenseLineItemRefFullName = itemLineItemRefFullName,
                                                     ExpenseLineAmount = itemLineAmount,
+                                                    ExpenseLineClassRefFullName = itemLineClassRefFullName,
                                                     ExpenseLineMemo = itemLineItemMemo,
                                                 });
                                             }

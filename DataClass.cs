@@ -41,6 +41,7 @@ namespace VoucherPro
             public string Remarks { get; set; }
             public string AccountName { get; set; }
             public string AccountNumber { get; set; }
+            public bool IsPaid { get; set; }
             public List<string> AccountNameParticularsList { get; set; }
             public List<string> AccountNumberParticularsList { get; set; }
 
@@ -61,11 +62,19 @@ namespace VoucherPro
         {
             public string ItemLineItemRefFullName { get; set; }
             public double ItemLineAmount { get; set; }
+            public string ItemLineClassRefFullName { get; set; }
             public string ItemLineMemo { get; set; }
 
             public string ExpenseLineItemRefFullName { get; set; }
             public double ExpenseLineAmount { get; set; }
+            public string ExpenseLineClassRefFullName { get; set; }
             public string ExpenseLineMemo { get; set; }
+        }
+
+        public class APVData // For Grouping Data in APV LEADS
+        {
+            public double Amount { get; set; }
+            public string Class { get; set; }
         }
 
         public class CheckTable // For Print Check

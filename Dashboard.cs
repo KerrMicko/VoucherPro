@@ -32,11 +32,16 @@ namespace VoucherPro
         ComboBox comboBox_Forms;
 
         Label label_SeriesNumberText;
+        Label label_SignatoryRRStatus;
 
         TextBox textBox_SeriesNumber;
+        TextBox textBox_ReceivedByRR;
+        TextBox textBox_CheckedByRR;
 
         FlowLayoutPanel panel_Printing;
         FlowLayoutPanel panel_SeriesNumber;
+        FlowLayoutPanel panel_Signatory;
+        FlowLayoutPanel panel_RRSignatory;
 
         List<CheckTable> cheque = new List<CheckTable>();
         List<BillTable> bills = new List<BillTable>();
@@ -149,15 +154,25 @@ namespace VoucherPro
             // - SERIES NUMBER ------------------------------------------
             panel_SeriesNumber = Panel_SBSeriesNumber();
             panel_SeriesNumber.Parent = panel_SideBar;
+            panel_SeriesNumber.Visible = false;
 
             // - REF NUMBER ---------------------------------------------
             FlowLayoutPanel panel_RefNumber = Panel_SBRefNumber();
             panel_RefNumber.Parent = panel_SideBar;
 
             // - SIGNATORY ----------------------------------------------
-            FlowLayoutPanel panel_Signatory = Panel_SBSignatory();
+            panel_Signatory = Panel_SBSignatory();
             panel_Signatory.Parent = panel_SideBar;
-            
+            panel_Signatory.Visible = false;
+
+            // - RR SIGNATORY -------------------------------------------
+            if (GlobalVariables.client == "LEADS")
+            {
+                panel_RRSignatory = Panel_SBRRSignatory();
+                panel_RRSignatory.Parent = panel_SideBar;
+                panel_RRSignatory.Visible = false;
+            }
+
             // - PRINTING -----------------------------------------------
             FlowLayoutPanel panel_Printing = Panel_SBPrinting();
             panel_Printing.Parent = panel_SideBar;
@@ -623,6 +638,104 @@ namespace VoucherPro
             return panel_Signatory;
         }
 
+        private FlowLayoutPanel Panel_SBRRSignatory()
+        {
+            FlowLayoutPanel panel_RRSignatory = new FlowLayoutPanel
+            {
+                //Parent = groupBox_Signatory,
+                //Parent = panel_SideBar,
+                Dock = DockStyle.Top,
+                Height = 106,
+                Width = sideBarWidth - 10,
+                //BackColor = Color.Transparent,
+                BackColor = Color.LightGray,
+                Padding = new Padding(5, 2, 5, 0),
+                BorderStyle = BorderStyle.FixedSingle,
+                //Visible = false
+            };
+
+            Label panel_Title = new Label
+            {
+                Parent = panel_RRSignatory,
+                Dock = DockStyle.Top,
+                Text = "SIGNATORY (RR)",
+                Width = sideBarWidth - 30,
+                //BackColor = Color.SandyBrown,
+                TextAlign = ContentAlignment.MiddleCenter,
+            };
+
+            Label label_ReceivedBy = new Label
+            {
+                Parent = panel_RRSignatory,
+                Dock = DockStyle.Top,
+                Text = "Received By:",
+                TextAlign = ContentAlignment.MiddleLeft,
+                Width = 71,
+                //BackColor = Color.ForestGreen,
+            };
+
+            textBox_ReceivedByRR = new TextBox
+            {
+                Parent = panel_RRSignatory,
+                Dock = DockStyle.Top,
+                Width = 145,
+                Margin = new Padding(0, 2, 0, 0),
+            };
+
+            Label label_CheckedBy = new Label
+            {
+                Parent = panel_RRSignatory,
+                Dock = DockStyle.Top,
+                Text = "Checked By:",
+                TextAlign = ContentAlignment.MiddleLeft,
+                Width = 71,
+                //BackColor = Color.ForestGreen,
+            };
+
+            textBox_CheckedByRR = new TextBox
+            {
+                Parent = panel_RRSignatory,
+                Dock = DockStyle.Top,
+                Width = 145,
+                Margin = new Padding(0, 2, 0, 0),
+            };
+
+            Button button_SaveRRSignatory = new Button
+            {
+                Parent = panel_RRSignatory,
+                Height = 25,
+                Width = 100,
+                Text = "SAVE",
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Microsoft Sans Serif", 8),
+                BackColor = Color.Transparent,
+            };
+
+            label_SignatoryRRStatus = new Label
+            {
+                Parent = panel_RRSignatory,
+                Height = 22,
+                Width = 110,
+                //Text = "Saved!",
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Microsoft Sans Serif", 8),
+                Margin = new Padding(0, 3, 0, 0),
+            };
+
+            button_SaveRRSignatory.Click += (sender, e) =>
+            {
+                string signatoryName = textBox_ReceivedByRR.Text;
+                string signatoryPosition = textBox_CheckedByRR.Text;
+
+                //int choice = comboBox_Signatory.SelectedIndex;
+
+                accessToDatabase.SaveSignatoryRRData(signatoryName, signatoryPosition);
+                label_SignatoryRRStatus.Text = "Saved";
+            };
+
+            return panel_RRSignatory;
+        }
+
         private FlowLayoutPanel Panel_SBPrinting()
         {
             panel_Printing = new FlowLayoutPanel
@@ -727,7 +840,6 @@ namespace VoucherPro
                         printDocument.PrinterSettings.MaximumPage = totalPages;
                     }
                     
-
                     // Update preview control to start at the first page
                     printPreviewControl.StartPage = 0;
 
@@ -739,6 +851,11 @@ namespace VoucherPro
                     if (printDialog.ShowDialog() == DialogResult.OK)
                     {
                         GlobalVariables.includeImage = false;
+
+                        /*if (comboBox_Forms.SelectedIndex == 1)
+                        {
+                            GlobalVariables.isPrinting = true;
+                        }*/
                         printDialog.Document.Print();
                         printPreviewControl.Visible = false;
                         printPreviewControl.Zoom = 1;
@@ -791,13 +908,20 @@ namespace VoucherPro
                 }*/
 
                 string prefix = "";
-                panel_SeriesNumber.Visible = false;
+                //panel_SeriesNumber.Visible = false;
 
                 switch (comboBox_Forms.SelectedIndex)
                 {
+                    case 1: // Check
+                        panel_SeriesNumber.Visible = false;
+                        panel_Signatory.Visible = false;
+                        panel_RRSignatory.Visible = false;
+                        break;
                     case 2: // CV
                         prefix = "CV";
                         panel_SeriesNumber.Visible = true;
+                        panel_Signatory.Visible = true;
+                        panel_RRSignatory.Visible = false;
                         label_SeriesNumberText.Text = "Current Series Number: CV";
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");
                         break;
@@ -805,11 +929,26 @@ namespace VoucherPro
                     case 3: // APV
                         prefix = "APV";
                         panel_SeriesNumber.Visible = true;
+                        panel_Signatory.Visible = true;
+                        panel_RRSignatory.Visible = false;
                         label_SeriesNumberText.Text = "Current Series Number: APV";
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("APVSeries");
                         break;
 
+                    case 4: // RR
+                        panel_SeriesNumber.Visible = false;
+                        panel_Signatory.Visible = false;
+                        panel_RRSignatory.Visible = true;
+
+                        var text = accessToDatabase.RetrieveSignatoryRRData();
+                        label_SignatoryRRStatus.Text = "";
+                        textBox_ReceivedByRR.Text = text.ReceivedBy;
+                        textBox_CheckedByRR.Text = text.CheckedBy;
+                        break;
+
                     default:
+                        panel_Signatory.Visible = false;
+                        panel_RRSignatory.Visible = false;
                         panel_SeriesNumber.Visible = false;
                         return;
                 }

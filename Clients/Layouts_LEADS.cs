@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static VoucherPro.DataClass;
 using static VoucherPro.AccessToDatabase;
+using System.Drawing.Drawing2D;
 //using static System.Net.Mime.MediaTypeNames;
 namespace VoucherPro.Clients
 {
@@ -69,12 +70,12 @@ namespace VoucherPro.Clients
             string year = dateCreated.ToString("yyyy");
 
             // Insert spaces between characters
-            string formattedMonth = string.Join("    ", month.ToCharArray());
-            string formattedDay = string.Join("    ", day.ToCharArray());
-            string formattedYear = string.Join("    ", year.ToCharArray());
+            string formattedMonth = string.Join("   ", month.ToCharArray());
+            string formattedDay = string.Join("   ", day.ToCharArray());
+            string formattedYear = string.Join("   ", year.ToCharArray());
 
             // Combine the parts with additional spaces between sections
-            string formattedDate = $"{formattedMonth}       {formattedDay}       {formattedYear}";
+            string formattedDate = $"{formattedMonth}     {formattedDay}     {formattedYear}";
 
             /*string formattedDate = dateCreated.ToString("MM    dd     yyyy");
             formattedDate = string.Join(" ", formattedDate.Select(c => c.ToString()));*/
@@ -83,7 +84,7 @@ namespace VoucherPro.Clients
             double amount = checkTableData[0].Amount;
             string amountInWords = AmountToWordsConverter.Convert(amount);
 
-            Font amountinWordsFont = new Font("Microsoft Sans Serif", 9, FontStyle.Regular);
+            Font amountinWordsFont = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
             Font dateFont = new Font("Microsoft Sans Serif", 9, FontStyle.Regular);
             Font payeeFont = new Font("Microsoft Sans Serif", 11, FontStyle.Regular);
             /*
@@ -114,11 +115,13 @@ namespace VoucherPro.Clients
                 e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(90 - 30, 20 + 380));
                 e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(520 + 3, 20 + 380 - 30));
                 e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(55 - 30, 50 + 380));*/
+                int minusX = 30;
+                int minusY = 35 + 15;
 
-                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(155, 110));
-                e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(625 + 3, 75));
-                e.Graphics.DrawString(amount.ToString("N2"), dateFont, Brushes.Black, new PointF(520 + 130, 110));
-                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(125, 155));
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(155 - minusX, 110 - minusY));
+                e.Graphics.DrawString(formattedDate, payeeFont, Brushes.Black, new PointF(625 + 3 - minusX, 75 - minusY));
+                e.Graphics.DrawString(amount.ToString("N2"), payeeFont, Brushes.Black, new PointF(520 + 115 - minusX, 110 - minusY));
+                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(125 - minusX, 145 - minusY));
             }
         }
 
@@ -676,6 +679,25 @@ namespace VoucherPro.Clients
             e.Graphics.DrawString(companyTelNo, font_Seven, Brushes.Black, new PointF(200, 106));
             e.Graphics.DrawString(apvText, font_TwelveBold, Brushes.Black, new PointF(370 - 15, 110 + 5));
 
+            bool isPaid = billData[0].IsPaid;
+            if (isPaid)
+            {
+                string text = "PAID";
+                Font font = new Font("Stencil", 28, FontStyle.Bold);
+
+                // Save the current state of the Graphics object
+                GraphicsState state = e.Graphics.Save();
+
+                // Apply a rotation transformation
+                e.Graphics.TranslateTransform(540, 88); // Move the origin to the specified position
+                e.Graphics.RotateTransform(-30); // Rotate the text by -45 degrees (adjust angle as needed)
+
+                e.Graphics.DrawString(text, font, Brushes.Gray, 0, 0);
+
+                // Restore the original state of the Graphics object
+                e.Graphics.Restore(state);
+            }
+
             // 1st Table - Details
             int tableWidth = 750;
             int tableHeight = 40;
@@ -729,7 +751,7 @@ namespace VoucherPro.Clients
             int secondTableHeight = 75 - 14; // 75
 
             // Dictionary to store the grouped amounts by AccountNameParticulars
-            Dictionary<string, double> groupedItemData = new Dictionary<string, double>();
+            /*Dictionary<string, double> groupedItemData = new Dictionary<string, double>();
             Dictionary<string, double> groupedExpenseData = new Dictionary<string, double>();
 
             int totalItemCount = 0;
@@ -743,6 +765,7 @@ namespace VoucherPro.Clients
                         //string itemName = bill.AccountNameParticularsList[i];
                         string itemName = bill.ItemDetails[i].ItemLineItemRefFullName;
                         double itemAmount = bill.ItemDetails[i].ItemLineAmount;
+                        string itemClass = bill.ItemDetails[i].ItemLineClassRefFullName;
 
                         if (groupedItemData.ContainsKey(itemName))
                         {
@@ -780,6 +803,56 @@ namespace VoucherPro.Clients
                 }
 
                 Console.WriteLine($"Total Count: {totalItemCount}");
+            }*/
+
+            Dictionary<string, List<APVData>> groupedItemData = new Dictionary<string, List<APVData>>();
+            Dictionary<string, List<APVData>> groupedExpenseData = new Dictionary<string, List<APVData>>();
+
+            int totalItemCount = 0;
+
+            foreach (var bill in billData)
+            {
+                try
+                {
+                    for (int i = 0; i < bill.AccountNameParticularsList.Count; i++)
+                    {
+                        string itemName = bill.ItemDetails[i].ItemLineItemRefFullName;
+                        double itemAmount = bill.ItemDetails[i].ItemLineAmount;
+                        string itemClass = bill.ItemDetails[i].ItemLineClassRefFullName;
+
+                        if (!groupedItemData.ContainsKey(itemName))
+                        {
+                            groupedItemData[itemName] = new List<APVData>();
+                        }
+                        groupedItemData[itemName].Add(new APVData { Amount = itemAmount, Class = itemClass });
+
+                        totalItemCount++;
+                    }
+
+                    foreach (var item in bill.ItemDetails)
+                    {
+                        if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                        {
+                            string expenseName = item.ExpenseLineItemRefFullName;
+                            double expenseAmount = item.ExpenseLineAmount;
+                            string expenseClass = item.ExpenseLineClassRefFullName;
+
+                            if (!groupedExpenseData.ContainsKey(expenseName))
+                            {
+                                groupedExpenseData[expenseName] = new List<APVData>();
+                            }
+                            groupedExpenseData[expenseName].Add(new APVData { Amount = expenseAmount, Class = expenseClass });
+
+                            totalItemCount++;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"An error occurred while grouping entries: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
+                Console.WriteLine($"Total Count: {totalItemCount}");
             }
 
             /*foreach (var bill in billData)
@@ -791,7 +864,7 @@ namespace VoucherPro.Clients
             }*/
             try
             {
-                foreach (var bill in billData)
+                /*foreach (var bill in billData)
                 {
                     foreach (var entry in groupedItemData)
                     {
@@ -802,6 +875,10 @@ namespace VoucherPro.Clients
                     {
                         secondTableHeight += 25;
                     }
+                }*/
+                for (int i = 0; i < totalItemCount; i++)
+                {
+                    secondTableHeight += 25;
                 }
             }
             catch (Exception ex)
@@ -978,7 +1055,7 @@ namespace VoucherPro.Clients
             //e.HasMorePages = currentPrintIndex < itemCounter;
 
             // adi main
-            foreach (var bill in billData)
+            /*foreach (var bill in billData)
             {
                 foreach (var item in groupedItemData)
                 {
@@ -1015,6 +1092,53 @@ namespace VoucherPro.Clients
                     }
                     //pos += 25;
                     amountPos += 25;
+                }
+            }*/
+            foreach (var bill in billData)
+            {
+                foreach (var item in groupedItemData)
+                {
+                    //Console.WriteLine($"Grouped Items: Account Name: {item.Key}, Total Amount: {item.Value}");
+                    foreach (var data in item.Value) // Iterate through each ItemData object for the current key
+                    {
+                        e.Graphics.DrawString($"{item.Key}", font_Nine, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 100), 25));
+                        e.Graphics.DrawString($"{data.Class}", font_Nine, Brushes.Black, new RectangleF(50 + 300 + 50 + 3, firstTableYPos + 20 + 4 + pos, 100, 25));
+                        e.Graphics.DrawString($"{data.Amount:N2}", font_Nine, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + 20 + 4 + pos, 150, perItemHeight), sfAlignRight);
+
+                        if (data.Amount > 0)
+                        {
+                            debitTotalAmount += data.Amount;
+                        }
+                        pos += 25;
+                    }
+                }
+
+                amountPos += pos + 25;
+
+                foreach (var expense in groupedExpenseData)
+                {
+                    foreach (var data in expense.Value) // Iterate through each ItemData object for the current expense key
+                    {
+                        if (!string.IsNullOrEmpty(expense.Key))
+                        {
+                            e.Graphics.DrawString(expense.Key, font_Nine, Brushes.Black, new RectangleF(50 + 4, firstTableYPos + amountPos, tableWidth - (300 + 100), perItemHeight));
+                            e.Graphics.DrawString($"{data.Class}", font_Nine, Brushes.Black, new RectangleF(50 + 300 + 50 + 3, firstTableYPos + amountPos, 100, perItemHeight));
+                            
+                            if (data.Amount < 0)
+                            {
+                                double absoluteAmount = Math.Abs(data.Amount);
+                                e.Graphics.DrawString(absoluteAmount.ToString("N2"), font_Nine, Brushes.Black, new RectangleF(50 + 600 - 5, firstTableYPos + amountPos, 150, perItemHeight), sfAlignRight); // Credit
+                                creditTotalAmount += absoluteAmount;
+                            }
+                            else if (data.Amount > 0)
+                            {
+                                e.Graphics.DrawString(data.Amount.ToString("N2"), font_Nine, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + amountPos, 150, perItemHeight), sfAlignRight); // Debit
+                                debitTotalAmount += data.Amount;
+                            }
+
+                            amountPos += 25;
+                        }
+                    }
                 }
             }
 
@@ -1091,11 +1215,11 @@ namespace VoucherPro.Clients
                 e.Graphics.DrawImage(image, e.PageBounds);
             }
 
-            Font font_Details = font_Eight;
+            Font font_Details = font_Ten;
 
-            Rectangle rectReceivingPoint = new Rectangle(165, 226, 359, 15);
-            Rectangle rectReceivingAddress = new Rectangle(110, 257, 610, 15);
-            Rectangle rectDate = new Rectangle(616, 226, 200, 15);
+            Rectangle rectReceivingPoint = new Rectangle(165, 226 - 10, 359, 15);
+            Rectangle rectReceivingAddress = new Rectangle(110, 257 - 10, 610, 15);
+            Rectangle rectDate = new Rectangle(616 + 10, 226 - 10, 200, 15);
 
             //e.Graphics.DrawRectangle(Pens.Black, rectReceivingPoint);
             //e.Graphics.DrawRectangle(Pens.Black, rectReceivingAddress);
@@ -1109,10 +1233,10 @@ namespace VoucherPro.Clients
             e.Graphics.DrawString(receiptData[0].DateCreated.ToString("MM/dd/yyyy"), font_Details, Brushes.Black, rectDate);
 
             // TABLE
-            Rectangle rectItemNo = new Rectangle(44, 329, 52, 24);
-            Rectangle rectItemQuantity = new Rectangle(44 + 52, 329, 92, 24);
-            Rectangle rectItemUnit = new Rectangle(44 + 52 + 92, 329, 140, 24);
-            Rectangle rectItemDescription = new Rectangle(44 + 52 + 92 + 140, 329, 487, 24);
+            Rectangle rectItemNo = new Rectangle(44, 329 - 12, 52, 24);
+            Rectangle rectItemQuantity = new Rectangle(44 + 52, 329 - 12, 92, 24);
+            Rectangle rectItemUnit = new Rectangle(44 + 52 + 92, 329 - 12, 140, 24);
+            Rectangle rectItemDescription = new Rectangle(44 + 52 + 92 + 140 + 15, 329 - 12, 487, 24);
 
             //e.Graphics.DrawRectangle(Pens.Black, rectItemNo);
             //e.Graphics.DrawRectangle(Pens.Black, rectItemQuantity);
@@ -1148,10 +1272,10 @@ namespace VoucherPro.Clients
             }
 
             // SIGNATORY || LEFT
-            Rectangle rectSupplier = new Rectangle(128, 534, 270, 18);
-            Rectangle rectBroker = new Rectangle(128, 538 + 18, 270, 18);
+            Rectangle rectSupplier = new Rectangle(128 + 5, 534, 270, 18);
+            Rectangle rectBroker = new Rectangle(128 + 5, 538 + 18, 270, 18);
             //Rectangle rectAddress = new Rectangle(128, 541 + 36, 270, 30);
-            Rectangle rectAddress = new Rectangle(128, 541 + 40, 270, 30);
+            Rectangle rectAddress = new Rectangle(128 + 5, 541 + 40, 270, 30);
 
             Rectangle rectDeliveryReceiptNo = new Rectangle(154, 619, 244, 18);
             Rectangle rectInvoiceNo = new Rectangle(154, 621 + 18, 244, 18);
@@ -1174,6 +1298,12 @@ namespace VoucherPro.Clients
 
             Rectangle rectDeliveredBy = new Rectangle(540, 640, 274, 18);
             Rectangle rectPlateNo = new Rectangle(540, 645 + 18, 274, 18);
+
+            AccessToDatabase accessToDatabase = new AccessToDatabase();
+            var text = accessToDatabase.RetrieveSignatoryRRData();
+
+            e.Graphics.DrawString(text.ReceivedBy, font_Details, Brushes.Black, rectReceivedBy, sfAlignCenter);
+            e.Graphics.DrawString(text.CheckedBy, font_Details, Brushes.Black, rectCheckedBy, sfAlignCenter);
 
             //e.Graphics.DrawRectangle(Pens.Black, rectReceivedBy);
             //e.Graphics.DrawRectangle(Pens.Black, rectCheckedBy);

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace VoucherPro
 {
@@ -676,6 +677,134 @@ namespace VoucherPro
                 receivedByName, receivedByPosition
                 );
         }
+
+
+        // ----------------------------------------------------------------------------------------------
+        public void SaveSignatoryRRData(string receivedBy, string checkedBy)
+        {
+            string accessConnectionString = GetAccessConnectionString();
+
+            try
+            {
+                using (OleDbConnection connection = new OleDbConnection(accessConnectionString))
+                {
+                    connection.Open();
+
+                    string selectQuery = "SELECT COUNT(*) FROM SignatoryForRR";
+                    int rowCount;
+
+                    using (OleDbCommand selectCommand = new OleDbCommand(selectQuery, connection))
+                    {
+                        rowCount = (int)selectCommand.ExecuteScalar();
+                    }
+
+                    string signatoryQuery = null;
+
+                    if (rowCount > 0)
+                    {
+                        signatoryQuery = "UPDATE SignatoryForRR SET ReceivedBy = ?, CheckedBy = ?";
+                    }
+                    else
+                    {
+                        signatoryQuery = "INSERT INTO SignatoryForRR (ReceivedBy, CheckedBy) VALUES (?, ?)";
+                    }
+
+                    using (OleDbCommand signatoryCommand = new OleDbCommand(signatoryQuery, connection))
+                    {
+                        signatoryCommand.Parameters.AddWithValue("@ReceivedBy", receivedBy);
+                        signatoryCommand.Parameters.AddWithValue("@CheckedBy", checkedBy);
+                        
+                        int rowsAffected = signatoryCommand.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine("Data inserted/updated successfully.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("No rows were affected.");
+                        }
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while updating SignatoryForRR table: {ex.Message}");
+            }
+        }
+        public (string ReceivedBy, string CheckedBy) RetrieveSignatoryRRData()
+        {
+            string receivedBy = null;
+            string checkedBy = null;
+
+            string accessConnectionString = GetAccessConnectionString();
+
+            try
+            {
+                using (OleDbConnection connection = new OleDbConnection(accessConnectionString))
+                {
+                    connection.Open();
+
+                    string query = "SELECT TOP 1 ReceivedBy, CheckedBy FROM SignatoryForRR";
+                    
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        using (OleDbDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                receivedBy = reader["ReceivedBy"].ToString();
+                                checkedBy = reader["CheckedBy"].ToString();
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while retrieving signatory for rr data: {ex.Message}");
+            }
+
+            return (receivedBy, checkedBy);
+        }
+        /*public (string ReceivedBy, string CheckedBy) RetrieveAllSignatoryForRRData()
+        {
+            string receivedBy = null;
+            string checkedBy = null;
+
+            string accessConnectionString = GetAccessConnectionString();
+
+            try
+            {
+                using (OleDbConnection connection = new OleDbConnection(accessConnectionString))
+                {
+                    connection.Open();
+                    string query = "SELECT TOP 1 ReceivedBy, CheckedBy FROM SignatoryForRR";
+
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        using (OleDbDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                receivedBy = reader["ReceivedBy"].ToString();
+                                checkedBy = reader["CheckedBy"].ToString();
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while retrieving all signatory data: {ex.Message}");
+            }
+
+            return (receivedBy, checkedBy);
+        }*/
+        // ----------------------------------------------------------------------------------------------
 
         public int GetSeriesNumberFromDatabase(string columnName)
         {
