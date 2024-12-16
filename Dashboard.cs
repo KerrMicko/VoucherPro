@@ -5,9 +5,14 @@ using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CrystalDecisions.CrystalReports.Engine;
+using CrystalDecisions.ReportAppServer;
+using CrystalDecisions.Shared;
+using CrystalDecisions.Windows.Forms;
 
 using VoucherPro.Clients;
 using static VoucherPro.DataClass;
@@ -27,6 +32,7 @@ namespace VoucherPro
     {
         private PrintDocument printDocument;
         private PrintPreviewControl printPreviewControl;
+        private CrystalReportViewer reportViewer;
         private AccessToDatabase accessToDatabase;
 
         ComboBox comboBox_Forms;
@@ -38,10 +44,15 @@ namespace VoucherPro
         TextBox textBox_ReceivedByRR;
         TextBox textBox_CheckedByRR;
 
+        Panel panel_Main;
+        Panel panel_Main_CR;
+
         FlowLayoutPanel panel_Printing;
         FlowLayoutPanel panel_SeriesNumber;
         FlowLayoutPanel panel_Signatory;
         FlowLayoutPanel panel_RRSignatory;
+        FlowLayoutPanel panel_RefNumber;
+        FlowLayoutPanel panel_RefNumberCrystalReport;
 
         List<CheckTable> cheque = new List<CheckTable>();
         List<BillTable> bills = new List<BillTable>();
@@ -81,12 +92,14 @@ namespace VoucherPro
             };
 
             Panel panel_Title = TitlePanel();
-            Panel panel_Main = MainPanel();
+            panel_Main = MainPanel();
+            panel_Main_CR = MainPanel_CR();
             Panel panel_SideBar = SideBarPanel();
 
             panel_SideBar.Parent = panel_Container;
             panel_Title.Parent = panel_Container;
             panel_Main.Parent = panel_Container;
+            panel_Main_CR.Parent = panel_Container;
 
             return panel_Container;
         }
@@ -136,6 +149,34 @@ namespace VoucherPro
             return panel_Main;
         }
 
+        private Panel MainPanel_CR()
+        {
+            Panel panel_Main_CR = new Panel
+            {
+                BackColor = Color.LightGray,
+                Dock = DockStyle.Fill,
+                Padding = new Padding(sideBarWidth, 50, 0, 0),
+                //Height = 300,
+            };
+
+            reportViewer = new CrystalReportViewer
+            {
+                Parent = panel_Main_CR,
+                Dock = DockStyle.Fill,
+                //ReportSource = report2,
+                ShowCopyButton = false,
+                //ShowPrintButton = false,
+                ShowExportButton = false,
+                ShowRefreshButton = false,
+                ShowGroupTreeButton = false,
+                ShowTextSearchButton = false,
+                ShowParameterPanelButton = false,
+                ToolPanelView = ToolPanelViewType.None
+            };
+
+            return panel_Main_CR;
+        }
+
         private Panel SideBarPanel()
         {
             FlowLayoutPanel panel_SideBar = new FlowLayoutPanel
@@ -157,8 +198,12 @@ namespace VoucherPro
             panel_SeriesNumber.Visible = false;
 
             // - REF NUMBER ---------------------------------------------
-            FlowLayoutPanel panel_RefNumber = Panel_SBRefNumber();
+            panel_RefNumber = Panel_SBRefNumber();
+            panel_RefNumberCrystalReport = Panel_SBRefNumber_CR();
             panel_RefNumber.Parent = panel_SideBar;
+            panel_RefNumberCrystalReport.Parent = panel_SideBar;
+            panel_RefNumber.Visible = false;
+            panel_RefNumberCrystalReport.Visible = false;
 
             // - SIGNATORY ----------------------------------------------
             panel_Signatory = Panel_SBSignatory();
@@ -326,6 +371,108 @@ namespace VoucherPro
             return panel_SeriesNumber;
         }
 
+
+        private FlowLayoutPanel Panel_SBRefNumber_CR()
+        {
+            FlowLayoutPanel panel_RefNumber_CR = new FlowLayoutPanel
+            {
+                //Parent = panel_SideBar,
+                Dock = DockStyle.Top,
+                Height = 90,
+                Width = sideBarWidth - 10,
+                BackColor = Color.LightGray,
+                Padding = new Padding(5, 2, 5, 5),
+                BorderStyle = BorderStyle.FixedSingle,
+                //Visible = false
+            };
+
+            Label label_RefNumberText = new Label
+            {
+                Parent = panel_RefNumber_CR,
+                Width = sideBarWidth - 30,
+                Text = "ENTER REFERENCE NUMBER: CR",
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = font_Label,
+            };
+
+            TextBox textBox_ReferenceNumber_CR = new TextBox
+            {
+                Parent = panel_RefNumber_CR,
+                Width = sideBarWidth - 30, // 190
+                Font = font_Label,
+            };
+
+            Button button_SearchRefNum_CR = new Button
+            {
+                Parent = panel_RefNumber_CR,
+                Height = 26,
+                Width = sideBarWidth - 30,
+                Text = "SEARCH",
+                BackColor = Color.Transparent,
+            };
+            button_SearchRefNum_CR.Click += (sender, e) =>
+            {
+                if (comboBox_Forms.SelectedIndex == 0)
+                {
+                    MessageBox.Show("Please select a form.", "Notice", MessageBoxButtons.OK);
+                }
+                else if (comboBox_Forms.SelectedIndex != 0 && textBox_ReferenceNumber_CR.Text != "")
+                {
+                    try
+                    {
+                        CRAPV_LEADS cRAPV_LEADS = new CRAPV_LEADS();
+
+                        AccessQueries accessQueries = new AccessQueries();
+                        string refNumberCR = textBox_ReferenceNumber_CR.Text;
+
+                        apvData = new List<BillTable>();
+                        apvData = accessQueries.GetAccountsPayableData_LEADS(refNumberCR);
+
+                        if (apvData.Count > 0)
+                        {
+                            TextObject textObject_RefNumber = cRAPV_LEADS.ReportDefinition.ReportObjects["TextRefNo"] as TextObject;
+                            TextObject textObject_APVSeries = cRAPV_LEADS.ReportDefinition.ReportObjects["TextSeriesNumber"] as TextObject;
+                            TextObject textObject_BillDate = cRAPV_LEADS.ReportDefinition.ReportObjects["TextBillDate"] as TextObject;
+                            TextObject textObject_DueDate = cRAPV_LEADS.ReportDefinition.ReportObjects["TextDueDate"] as TextObject;
+                            TextObject textObject_Terms = cRAPV_LEADS.ReportDefinition.ReportObjects["TextTerms"] as TextObject;
+                            TextObject textObject_Amount = cRAPV_LEADS.ReportDefinition.ReportObjects["TextAmount"] as TextObject;
+                            TextObject textObject_AmountInWords = cRAPV_LEADS.ReportDefinition.ReportObjects["TextAmountInWords"] as TextObject;
+
+                            string refNumber = textBox_ReferenceNumber_CR.Text;
+                            double amount = apvData[0].AmountDue;
+                            string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
+
+                            textObject_RefNumber.Text = refNumber;
+                            textObject_APVSeries.Text = textBox_SeriesNumber.Text;
+                            textObject_BillDate.Text = apvData[0].DateCreated.ToString("dd-MM-yyyy");
+                            textObject_DueDate.Text = apvData[0].DueDate.ToString("MM/dd/yyyy");
+                            textObject_Terms.Text = apvData[0].TermsRefFullName;
+                            textObject_Amount.Text = amount.ToString("N2");
+                            textObject_AmountInWords.Text = amountInWords;
+
+                            cRAPV_LEADS.SetParameterValue("ReferenceNumber", refNumber);
+
+                            reportViewer.ReportSource = cRAPV_LEADS;
+                            reportViewer.RefreshReport();
+                        }
+                        else
+                        {
+                            MessageBox.Show("No data found for the provided reference number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"An error occurred while loading the report:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Please enter a reference number.", "Notice", MessageBoxButtons.OK);
+                }
+            };
+
+            return panel_RefNumber_CR;
+        }
         private FlowLayoutPanel Panel_SBRefNumber()
         {
             FlowLayoutPanel panel_RefNumber = new FlowLayoutPanel
@@ -337,6 +484,7 @@ namespace VoucherPro
                 BackColor = Color.LightGray,
                 Padding = new Padding(5, 2, 5, 5),
                 BorderStyle = BorderStyle.FixedSingle,
+                //Visible = false
             };
 
             Label label_RefNumberText = new Label
@@ -363,6 +511,7 @@ namespace VoucherPro
                 Text = "SEARCH",
                 BackColor = Color.Transparent,
             };
+
             button_SearchRefNum.Click += (sender, e) =>
             {
                 if (comboBox_Forms.SelectedIndex == 0)
@@ -421,7 +570,7 @@ namespace VoucherPro
                             Layouts_LEADS layouts_LEADS = new Layouts_LEADS();
                             //Layouts layouts = new Layouts();
 
-                            PaperSize paperSize = new PaperSize("Custom", 850, 1100);
+                            System.Drawing.Printing.PaperSize paperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
 
                             printDocument = new PrintDocument();
                             printDocument.DefaultPageSettings.PaperSize = paperSize;
@@ -457,7 +606,7 @@ namespace VoucherPro
                         {
                             Layouts layouts = new Layouts();
 
-                            PaperSize paperSize = new PaperSize("Custom", 850, 1100);
+                            System.Drawing.Printing.PaperSize paperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
 
                             printDocument = new PrintDocument();
                             printDocument.DefaultPageSettings.PaperSize = paperSize;
@@ -914,29 +1063,46 @@ namespace VoucherPro
                 {
                     case 1: // Check
                         panel_SeriesNumber.Visible = false;
+                        panel_RefNumber.Visible = true;
+                        panel_RefNumberCrystalReport.Visible = false;
                         panel_Signatory.Visible = false;
                         panel_RRSignatory.Visible = false;
+
+                        panel_Main.Visible = true;
+                        panel_Main_CR.Visible = false;
                         break;
                     case 2: // CV
                         prefix = "CV";
                         panel_SeriesNumber.Visible = true;
+                        panel_RefNumber.Visible = true;
+                        panel_RefNumberCrystalReport.Visible = false;
                         panel_Signatory.Visible = true;
                         panel_RRSignatory.Visible = false;
                         label_SeriesNumberText.Text = "Current Series Number: CV";
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");
+
+                        panel_Main.Visible = true;
+                        panel_Main_CR.Visible = false;
                         break;
 
                     case 3: // APV
                         prefix = "APV";
                         panel_SeriesNumber.Visible = true;
+                        panel_RefNumber.Visible = false;
+                        panel_RefNumberCrystalReport.Visible = true;
                         panel_Signatory.Visible = true;
                         panel_RRSignatory.Visible = false;
                         label_SeriesNumberText.Text = "Current Series Number: APV";
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("APVSeries");
+
+                        panel_Main.Visible = false;
+                        panel_Main_CR.Visible = true;
                         break;
 
                     case 4: // RR
                         panel_SeriesNumber.Visible = false;
+                        panel_RefNumber.Visible = true;
+                        panel_RefNumberCrystalReport.Visible = false;
                         panel_Signatory.Visible = false;
                         panel_RRSignatory.Visible = true;
 
@@ -944,12 +1110,20 @@ namespace VoucherPro
                         label_SignatoryRRStatus.Text = "";
                         textBox_ReceivedByRR.Text = text.ReceivedBy;
                         textBox_CheckedByRR.Text = text.CheckedBy;
+
+                        panel_Main.Visible = true;
+                        panel_Main_CR.Visible = false;
                         break;
 
                     default:
+                        panel_RefNumber.Visible = false;
+                        panel_RefNumberCrystalReport.Visible = false;
                         panel_Signatory.Visible = false;
                         panel_RRSignatory.Visible = false;
                         panel_SeriesNumber.Visible = false;
+
+                        panel_Main.Visible = false;
+                        panel_Main_CR.Visible = false;
                         return;
                 }
 

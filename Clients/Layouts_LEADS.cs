@@ -119,8 +119,8 @@ namespace VoucherPro.Clients
                 int minusY = 35 + 15;
 
                 e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(155 - minusX, 110 - minusY));
-                e.Graphics.DrawString(formattedDate, payeeFont, Brushes.Black, new PointF(625 + 3 - minusX, 75 - minusY));
-                e.Graphics.DrawString(amount.ToString("N2"), payeeFont, Brushes.Black, new PointF(520 + 115 - minusX, 110 - minusY));
+                e.Graphics.DrawString(formattedDate, payeeFont, Brushes.Black, new PointF(625 + 3 - minusX, 75 + 4 - minusY));
+                e.Graphics.DrawString(amount.ToString("N2"), payeeFont, Brushes.Black, new PointF(520 + 115 - minusX, 110 + 4 - minusY));
                 e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(125 - minusX, 145 - minusY));
             }
         }
