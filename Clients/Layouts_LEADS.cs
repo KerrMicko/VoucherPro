@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using static VoucherPro.DataClass;
 using static VoucherPro.AccessToDatabase;
 using System.Drawing.Drawing2D;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 //using static System.Net.Mime.MediaTypeNames;
 namespace VoucherPro.Clients
 {
@@ -1094,7 +1095,9 @@ namespace VoucherPro.Clients
                     amountPos += 25;
                 }
             }*/
-            foreach (var bill in billData)
+
+            // latest 09-01-25
+            /*foreach (var bill in billData)
             {
                 foreach (var item in groupedItemData)
                 {
@@ -1140,7 +1143,64 @@ namespace VoucherPro.Clients
                         }
                     }
                 }
+            }*/
+
+            int totalPages = (int)Math.Ceiling((double)totalItemCount / 10);
+
+            int pageCounter = 1;
+            int itemCounter = 0;
+            int totalItemCounter = 0;
+            //int xkek = 0;
+            Console.WriteLine($"Initial Page Count: {pageCounter}, Item Count: {itemCounter}, Total Item Count: {totalItemCounter}, Total Page Count (supposedly) {totalPages}");
+            foreach (var bill in billData)
+            {
+                for (int i = 0; i < bill.ItemDetails.Count; i++)
+                {
+                    if (itemCounter < 10 && totalItemCounter < bill.ItemDetails.Count)
+                    {
+                        e.Graphics.DrawString($"{bill.ItemDetails[i].ItemLineItemRefFullName}", font_Nine, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 100), 25));
+
+                        pos += 25;
+                        itemCounter++;
+                        totalItemCounter++;
+
+                        Console.WriteLine($"I = {i}, Page Count: {pageCounter}, Item Count: {itemCounter}, Total Item Count: {totalItemCounter}");
+                        //e.HasMorePages = false;
+                    }
+                    //pageCounter < totalPages && 
+                    else if (itemCounter >= 10 && totalItemCounter < bill.ItemDetails.Count)
+                    {
+                        pos = 0;
+                        itemCounter = 0;
+                        i--;
+                        pageCounter++;
+                        //e.HasMorePages = pageCounter < totalPages;
+                        e.HasMorePages = true;
+                        if (e.HasMorePages)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            e.HasMorePages = false;
+                            break;
+                        }
+                    }
+                }
             }
+            //e.HasMorePages = false;
+            /*if (pageCounter < totalPages) // Check if there are more pages to print
+            {
+                e.Graphics.DrawString($"{pageCounter}", new Font("Times New Roman", 14, FontStyle.Bold), Brushes.Black, 60, 10);
+                pageCounter++; // Move to the next page
+                e.HasMorePages = pageCounter < totalPages; // Set HasMorePages based on the current page index
+            }
+            else
+            {
+                e.HasMorePages = false; // No more pages to print
+            }*/
+            //e.HasMorePages = false;
+
 
             creditTotalAmount += amount;
 

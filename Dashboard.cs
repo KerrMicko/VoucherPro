@@ -26,6 +26,7 @@ namespace VoucherPro
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
         public static bool isPrinting = false;
+        public static bool useCrystalReports_LEADS = false;
         public static int itemsPerPageAPV = 10;
     }
     public partial class Dashboard : Form
@@ -267,37 +268,6 @@ namespace VoucherPro
             comboBox_Forms.SelectedIndex = 0;
             comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
 
-            /*if (GlobalVariables.client == "LEADS")
-            {
-                comboBox_Forms.Items.AddRange(new string[]
-                {
-                    "",
-                    "Collection Receipt", // smol
-                    "Delivery Receipt",
-                    "Provisional Receipt", // smol
-                    "Sales Invoice",
-                    "Service Invoice",
-                });
-                comboBox_Forms.SelectedIndex = 0;
-            }
-            else
-            {
-                comboBox_Forms.Items.AddRange(new string[]
-                {
-                    "",
-                    "Credit Note - BIR",
-                    "Credit Note - Non BIR",
-                    "Debit Note - BIR",
-                    "Debit Note - Non BIR",
-                    "Delivery Receipt",
-                    "Office Receipt",
-                    "Office Receipt - Non BIR",
-                    "Sales Invoice",
-                    "Sales Invoice Summary",
-                });
-                comboBox_Forms.SelectedIndex = 0;
-            }*/
-
             return panel_Forms;
         }
 
@@ -450,6 +420,23 @@ namespace VoucherPro
                             textObject_Amount.Text = amount.ToString("N2");
                             textObject_AmountInWords.Text = amountInWords;
 
+                            // Locate the subreport object in the main report
+                            SubreportObject subreportObject = cRAPV_LEADS.ReportDefinition.ReportObjects["Subreport1"] as SubreportObject;
+
+                            /*if (subreportObject != null)
+                            {
+                                // Get the ReportDocument of the subreport
+                                ReportDocument reportDocument = cRAPV_LEADS.OpenSubreport(subreportObject.SubreportName);
+
+                                // Access the desired TextObject in the subreport
+                                TextObject textObject_SampleText = reportDocument.ReportDefinition.ReportObjects["SRA_SampleText1"] as TextObject;
+
+                                if (textObject_SampleText != null)
+                                {
+                                    
+                                }
+                            }*/
+
                             cRAPV_LEADS.SetParameterValue("ReferenceNumber", refNumber);
 
                             reportViewer.ReportSource = cRAPV_LEADS;
@@ -583,10 +570,11 @@ namespace VoucherPro
                             itemCounter = 0;
                             pageCounter = 1;
 
+                            int totalItemDetails = 0;
                             if (comboBox_Forms.SelectedIndex == 3) // APV
                             {
                                 // Calculate the total number of pages
-                                int totalItemDetails = apvData.Sum(apvData => apvData.ItemDetails.Count);
+                                totalItemDetails = apvData.Sum(apvData => apvData.ItemDetails.Count);
 
                                 int totalPages = (int)Math.Ceiling((double)totalItemDetails / GlobalVariables.itemsPerPageAPV);
                                 Console.WriteLine($"Generate: APV Data Count: {totalItemDetails}, Total Pages: {totalPages}");
@@ -599,6 +587,11 @@ namespace VoucherPro
                             printDocument.PrintPage += (s, ev) =>
                             {
                                 layouts_LEADS.PrintPage_LEADS(s, ev, selectedIndex, seriesNumber, data);
+                                /*if (pageCounter < totalItemDetails)
+                                {
+                                    pageCounter++;
+                                    ev.HasMorePages = pageCounter != totalItemDetails;
+                                }*/
                                 //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
                             };
                         }
@@ -1088,15 +1081,25 @@ namespace VoucherPro
                     case 3: // APV
                         prefix = "APV";
                         panel_SeriesNumber.Visible = true;
-                        panel_RefNumber.Visible = false;
-                        panel_RefNumberCrystalReport.Visible = true;
                         panel_Signatory.Visible = true;
                         panel_RRSignatory.Visible = false;
                         label_SeriesNumberText.Text = "Current Series Number: APV";
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("APVSeries");
 
-                        panel_Main.Visible = false;
-                        panel_Main_CR.Visible = true;
+                        if (GlobalVariables.useCrystalReports_LEADS)
+                        {
+                            panel_RefNumber.Visible = false;
+                            panel_RefNumberCrystalReport.Visible = true;
+                            panel_Main.Visible = false;
+                            panel_Main_CR.Visible = true;
+                        }
+                        else
+                        {
+                            panel_RefNumber.Visible = true;
+                            panel_RefNumberCrystalReport.Visible = false;
+                            panel_Main.Visible = true;
+                            panel_Main_CR.Visible = false;
+                        }
                         break;
 
                     case 4: // RR
