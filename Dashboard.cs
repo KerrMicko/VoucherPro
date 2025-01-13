@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.OleDb;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Linq;
@@ -26,7 +27,7 @@ namespace VoucherPro
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
         public static bool isPrinting = false;
-        public static bool useCrystalReports_LEADS = false;
+        public static bool useCrystalReports_LEADS = true;
         public static int itemsPerPageAPV = 10;
     }
     public partial class Dashboard : Form
@@ -400,6 +401,8 @@ namespace VoucherPro
 
                         if (apvData.Count > 0)
                         {
+                            //List<CR_APV_LEADS> result = new List<CR_APV_LEADS>();
+
                             TextObject textObject_RefNumber = cRAPV_LEADS.ReportDefinition.ReportObjects["TextRefNo"] as TextObject;
                             TextObject textObject_APVSeries = cRAPV_LEADS.ReportDefinition.ReportObjects["TextSeriesNumber"] as TextObject;
                             TextObject textObject_BillDate = cRAPV_LEADS.ReportDefinition.ReportObjects["TextBillDate"] as TextObject;
@@ -421,21 +424,82 @@ namespace VoucherPro
                             textObject_AmountInWords.Text = amountInWords;
 
                             // Locate the subreport object in the main report
-                            SubreportObject subreportObject = cRAPV_LEADS.ReportDefinition.ReportObjects["Subreport1"] as SubreportObject;
+                            SubreportObject subreportObject = cRAPV_LEADS.ReportDefinition.ReportObjects["Subreport2"] as SubreportObject;
 
-                            /*if (subreportObject != null)
+                            if (subreportObject != null)
                             {
                                 // Get the ReportDocument of the subreport
-                                ReportDocument reportDocument = cRAPV_LEADS.OpenSubreport(subreportObject.SubreportName);
+                                ReportDocument subReportDocument = cRAPV_LEADS.OpenSubreport(subreportObject.SubreportName);
 
                                 // Access the desired TextObject in the subreport
-                                TextObject textObject_SampleText = reportDocument.ReportDefinition.ReportObjects["SRA_SampleText1"] as TextObject;
+                                //TextObject textObject_ParticularColumnName = subReportDocument.ReportDefinition.ReportObjects["Text4"] as TextObject;
+                                //TextObject textObject_SampleText = subReportDocument.ReportDefinition.ReportObjects["Text6"] as TextObject;
 
-                                if (textObject_SampleText != null)
+                                // Create a DataTable with 4 columns
+                                DataTable dataTable = new DataTable();
+                                dataTable.Columns.Add("Particulars", typeof(string)); // First column
+                                dataTable.Columns.Add("Class", typeof(string)); // Second column
+                                dataTable.Columns.Add("Debit", typeof(string)); // Third column
+                                dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
+
+
+                                Dictionary<string, List<APVData>> groupedItemData = new Dictionary<string, List<APVData>>();
+                                Dictionary<string, List<APVData>> groupedExpenseData = new Dictionary<string, List<APVData>>();
+
+                                int totalItemCount = 0;
+
+                                // Group
+                                foreach (var bill in apvData)
                                 {
-                                    
+                                    try
+                                    {
+                                        foreach (var item in bill.ItemDetails)
+                                        {
+                                            // Process items
+                                            if (!string.IsNullOrEmpty(item.ItemLineItemRefFullName))
+                                            {
+                                                string itemName = item.ItemLineItemRefFullName;
+                                                double itemAmount = item.ItemLineAmount;
+                                                string itemClass = item.ItemLineClassRefFullName;
+
+                                                if (!groupedItemData.TryGetValue(itemName, out var itemList))
+                                                {
+                                                    itemList = new List<APVData>();
+                                                    groupedItemData[itemName] = itemList;
+                                                }
+                                                itemList.Add(new APVData { Amount = itemAmount, Class = itemClass });
+
+                                                totalItemCount++;
+                                            }
+
+                                            // Process expenses
+                                            if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                                            {
+                                                string expenseName = item.ExpenseLineItemRefFullName;
+                                                double expenseAmount = item.ExpenseLineAmount;
+                                                string expenseClass = item.ExpenseLineClassRefFullName;
+
+                                                if (!groupedExpenseData.TryGetValue(expenseName, out var expenseList))
+                                                {
+                                                    expenseList = new List<APVData>();
+                                                    groupedExpenseData[expenseName] = expenseList;
+                                                }
+                                                expenseList.Add(new APVData { Amount = expenseAmount, Class = expenseClass });
+
+                                                totalItemCount++;
+                                            }
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        MessageBox.Show($"An error occurred while grouping entries: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    }
+
+                                    Console.WriteLine($"Total Count: {totalItemCount}");
                                 }
-                            }*/
+
+                                InsertDataToCVCompiled(refNumber, groupedItemData, groupedExpenseData);
+                            }
 
                             cRAPV_LEADS.SetParameterValue("ReferenceNumber", refNumber);
 
@@ -460,6 +524,99 @@ namespace VoucherPro
 
             return panel_RefNumber_CR;
         }
+        public static void InsertDataToCVCompiled(string refNumber, Dictionary<string, List<APVData>> groupedItemData, Dictionary<string, List<APVData>> groupedExpenseData)
+        {
+            string connectionString = AccessToDatabase.GetAccessConnectionString();
+
+            using (OleDbConnection connection = new OleDbConnection(connectionString))
+            {
+                connection.Open();
+
+                // Step 1: Delete all existing data in CV_compiled table
+                string deleteQuery = "DELETE FROM CV_compiled";
+
+                using (OleDbCommand deleteCommand = new OleDbCommand(deleteQuery, connection))
+                {
+                    try
+                    {
+                        // Execute the DELETE query to clear the table
+                        deleteCommand.ExecuteNonQuery();
+                        Console.WriteLine("Old data has been deleted from CV_compiled.");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"An error occurred while deleting data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;  // Exit the method if the DELETE fails
+                    }
+                }
+
+                string insertQuery = "INSERT INTO CV_compiled (RefNumber, Particulars, Class, Debit, Credit) VALUES (@RefNumber, @Particulars, @Class, @Debit, @Credit)";
+
+                // Step 2: Insert new data into CV_compiled table
+                // Process groupedItemData
+                foreach (var itemGroup in groupedItemData)
+                {
+                    string itemName = itemGroup.Key;
+
+                    foreach (var item in itemGroup.Value)
+                    {
+                        string debit = item.Amount > 0 ? item.Amount.ToString("F2") : "";
+                        string credit = item.Amount < 0 ? Math.Abs(item.Amount).ToString("F2") : "";
+
+                        // Insert statement
+                        //string insertQuery = "INSERT INTO CV_compiled (RefNumber, Particulars, Class, Debit, Credit) VALUES (@RefNumber, @Particulars, @Class, @Debit, @Credit)";
+
+                        using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                        {
+                            // Add parameters to avoid SQL injection
+                            command.Parameters.AddWithValue("@RefNumber", refNumber);
+                            command.Parameters.AddWithValue("@Particulars", itemName);
+                            command.Parameters.AddWithValue("@Class", item.Class);
+                            command.Parameters.AddWithValue("@Debit", debit);
+                            command.Parameters.AddWithValue("@Credit", credit);
+
+                            // Execute the insert command
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                }
+
+                // Process groupedExpenseData
+                foreach (var expenseGroup in groupedExpenseData)
+                {
+                    string expenseName = expenseGroup.Key;
+
+                    foreach (var expense in expenseGroup.Value)
+                    {
+                        string debit = expense.Amount > 0 ? expense.Amount.ToString("F2") : "";
+                        string credit = expense.Amount < 0 ? Math.Abs(expense.Amount).ToString("F2") : "";
+
+                        // Insert statement for expenses
+                        //string insertQuery = "INSERT INTO CV_compiled (Particulars, Class, Debit, Credit) VALUES (@Particulars, @Class, @Debit, @Credit)";
+
+                        using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                        {
+                            // Add parameters to avoid SQL injection
+                            command.Parameters.AddWithValue("@RefNumber", refNumber);
+                            command.Parameters.AddWithValue("@Particulars", expenseName);
+                            command.Parameters.AddWithValue("@Class", expense.Class);
+                            command.Parameters.AddWithValue("@Debit", debit);
+                            command.Parameters.AddWithValue("@Credit", credit);
+
+                            // Execute the insert command
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                }
+
+                // Close the connection
+                connection.Close();
+            }
+
+            //MessageBox.Show("Data has been inserted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+
         private FlowLayoutPanel Panel_SBRefNumber()
         {
             FlowLayoutPanel panel_RefNumber = new FlowLayoutPanel
@@ -1081,8 +1238,6 @@ namespace VoucherPro
                     case 3: // APV
                         prefix = "APV";
                         panel_SeriesNumber.Visible = true;
-                        panel_Signatory.Visible = true;
-                        panel_RRSignatory.Visible = false;
                         label_SeriesNumberText.Text = "Current Series Number: APV";
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("APVSeries");
 
@@ -1100,6 +1255,9 @@ namespace VoucherPro
                             panel_Main.Visible = true;
                             panel_Main_CR.Visible = false;
                         }
+
+                        panel_Signatory.Visible = true;
+                        panel_RRSignatory.Visible = false;
                         break;
 
                     case 4: // RR

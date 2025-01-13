@@ -1165,7 +1165,7 @@ namespace VoucherPro.Clients
                         totalItemCounter++;
 
                         Console.WriteLine($"I = {i}, Page Count: {pageCounter}, Item Count: {itemCounter}, Total Item Count: {totalItemCounter}");
-                        //e.HasMorePages = false;
+                        e.HasMorePages = false;
                     }
                     //pageCounter < totalPages && 
                     else if (itemCounter >= 10 && totalItemCounter < bill.ItemDetails.Count)

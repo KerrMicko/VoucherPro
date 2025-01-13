@@ -163,5 +163,13 @@ namespace VoucherPro
             ReceiptItem,
             RecieptExpense
         }
+
+        public class CR_APV_LEADS
+        {
+            public string Particular {  get; set; }
+            public string Class {  get; set; }
+            public string Debit {  get; set; }
+            public string Credit {  get; set; }
+        }
     }
 }
