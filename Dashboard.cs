@@ -410,6 +410,8 @@ namespace VoucherPro
                             TextObject textObject_Terms = cRAPV_LEADS.ReportDefinition.ReportObjects["TextTerms"] as TextObject;
                             TextObject textObject_Amount = cRAPV_LEADS.ReportDefinition.ReportObjects["TextAmount"] as TextObject;
                             TextObject textObject_AmountInWords = cRAPV_LEADS.ReportDefinition.ReportObjects["TextAmountInWords"] as TextObject;
+                            TextObject textObject_TotalDebit = cRAPV_LEADS.ReportDefinition.ReportObjects["TextTotalDebit"] as TextObject;
+                            TextObject textObject_TotalCredit = cRAPV_LEADS.ReportDefinition.ReportObjects["TextTotalCredit"] as TextObject;
 
                             string refNumber = textBox_ReferenceNumber_CR.Text;
                             double amount = apvData[0].AmountDue;
@@ -422,6 +424,9 @@ namespace VoucherPro
                             textObject_Terms.Text = apvData[0].TermsRefFullName;
                             textObject_Amount.Text = amount.ToString("N2");
                             textObject_AmountInWords.Text = amountInWords;
+
+                            double debitTotalAmount = 0;
+                            double creditTotalAmount = 0;
 
                             // Locate the subreport object in the main report
                             SubreportObject subreportObject = cRAPV_LEADS.ReportDefinition.ReportObjects["Subreport2"] as SubreportObject;
@@ -442,64 +447,53 @@ namespace VoucherPro
                                 dataTable.Columns.Add("Debit", typeof(string)); // Third column
                                 dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
 
+                                InsertDataToCVCompiled(refNumber, apvData);
+                            }
 
-                                Dictionary<string, List<APVData>> groupedItemData = new Dictionary<string, List<APVData>>();
-                                Dictionary<string, List<APVData>> groupedExpenseData = new Dictionary<string, List<APVData>>();
-
-                                int totalItemCount = 0;
-
-                                // Group
-                                foreach (var bill in apvData)
+                            foreach (var bill in apvData)
+                            {
+                                try
                                 {
-                                    try
+                                    for (int i = 0; i < bill.AccountNameParticularsList.Count; i++)
                                     {
-                                        foreach (var item in bill.ItemDetails)
+                                        double itemAmount = bill.ItemDetails[i].ItemLineAmount;
+
+                                        if (itemAmount > 0)
                                         {
-                                            // Process items
-                                            if (!string.IsNullOrEmpty(item.ItemLineItemRefFullName))
+                                            debitTotalAmount += itemAmount;
+                                        }
+                                        else if (itemAmount < 0)
+                                        {
+                                            creditTotalAmount += Math.Abs(itemAmount);
+                                        }
+                                    }
+
+                                    foreach (var item in bill.ItemDetails)
+                                    {
+                                        if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                                        {
+                                            double expenseAmount = item.ExpenseLineAmount;
+
+                                            if (expenseAmount > 0)
                                             {
-                                                string itemName = item.ItemLineItemRefFullName;
-                                                double itemAmount = item.ItemLineAmount;
-                                                string itemClass = item.ItemLineClassRefFullName;
-
-                                                if (!groupedItemData.TryGetValue(itemName, out var itemList))
-                                                {
-                                                    itemList = new List<APVData>();
-                                                    groupedItemData[itemName] = itemList;
-                                                }
-                                                itemList.Add(new APVData { Amount = itemAmount, Class = itemClass });
-
-                                                totalItemCount++;
+                                                debitTotalAmount += expenseAmount;
                                             }
-
-                                            // Process expenses
-                                            if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                                            else if (expenseAmount < 0)
                                             {
-                                                string expenseName = item.ExpenseLineItemRefFullName;
-                                                double expenseAmount = item.ExpenseLineAmount;
-                                                string expenseClass = item.ExpenseLineClassRefFullName;
-
-                                                if (!groupedExpenseData.TryGetValue(expenseName, out var expenseList))
-                                                {
-                                                    expenseList = new List<APVData>();
-                                                    groupedExpenseData[expenseName] = expenseList;
-                                                }
-                                                expenseList.Add(new APVData { Amount = expenseAmount, Class = expenseClass });
-
-                                                totalItemCount++;
+                                                creditTotalAmount += Math.Abs(expenseAmount);
                                             }
                                         }
                                     }
-                                    catch (Exception ex)
-                                    {
-                                        MessageBox.Show($"An error occurred while grouping entries: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                    }
-
-                                    Console.WriteLine($"Total Count: {totalItemCount}");
+                                    debitTotalAmount -= creditTotalAmount;
                                 }
-
-                                InsertDataToCVCompiled(refNumber, groupedItemData, groupedExpenseData);
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show($"An error occurred while computing for total debit and credit: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                }
                             }
+
+                            textObject_TotalDebit.Text = debitTotalAmount.ToString();
+                            textObject_TotalCredit.Text = creditTotalAmount.ToString();
 
                             cRAPV_LEADS.SetParameterValue("ReferenceNumber", refNumber);
 
@@ -524,95 +518,121 @@ namespace VoucherPro
 
             return panel_RefNumber_CR;
         }
-        public static void InsertDataToCVCompiled(string refNumber, Dictionary<string, List<APVData>> groupedItemData, Dictionary<string, List<APVData>> groupedExpenseData)
+        public static void InsertDataToCVCompiled(string refNumber, List<BillTable> billData)
         {
             string connectionString = AccessToDatabase.GetAccessConnectionString();
+            double debitTotalAmount = 0;
+            double creditTotalAmount = 0;
 
             using (OleDbConnection connection = new OleDbConnection(connectionString))
             {
                 connection.Open();
 
-                // Step 1: Delete all existing data in CV_compiled table
+                // Delete all existing data in CV_compiled table
                 string deleteQuery = "DELETE FROM CV_compiled";
-
                 using (OleDbCommand deleteCommand = new OleDbCommand(deleteQuery, connection))
                 {
                     try
                     {
-                        // Execute the DELETE query to clear the table
                         deleteCommand.ExecuteNonQuery();
                         Console.WriteLine("Old data has been deleted from CV_compiled.");
                     }
                     catch (Exception ex)
                     {
                         MessageBox.Show($"An error occurred while deleting data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;  // Exit the method if the DELETE fails
+                        return; // Exit if delete fails
                     }
                 }
 
                 string insertQuery = "INSERT INTO CV_compiled (RefNumber, Particulars, Class, Debit, Credit) VALUES (@RefNumber, @Particulars, @Class, @Debit, @Credit)";
 
-                // Step 2: Insert new data into CV_compiled table
-                // Process groupedItemData
-                foreach (var itemGroup in groupedItemData)
+                // Process bills and insert data directly
+                foreach (var bill in billData)
                 {
-                    string itemName = itemGroup.Key;
-
-                    foreach (var item in itemGroup.Value)
+                    try
                     {
-                        string debit = item.Amount > 0 ? item.Amount.ToString("F2") : "";
-                        string credit = item.Amount < 0 ? Math.Abs(item.Amount).ToString("F2") : "";
-
-                        // Insert statement
-                        //string insertQuery = "INSERT INTO CV_compiled (RefNumber, Particulars, Class, Debit, Credit) VALUES (@RefNumber, @Particulars, @Class, @Debit, @Credit)";
-
-                        using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                        // Process item details
+                        for (int i = 0; i < bill.AccountNameParticularsList.Count; i++)
                         {
-                            // Add parameters to avoid SQL injection
-                            command.Parameters.AddWithValue("@RefNumber", refNumber);
-                            command.Parameters.AddWithValue("@Particulars", itemName);
-                            command.Parameters.AddWithValue("@Class", item.Class);
-                            command.Parameters.AddWithValue("@Debit", debit);
-                            command.Parameters.AddWithValue("@Credit", credit);
+                            string itemName = bill.ItemDetails[i].ItemLineItemRefFullName;
+                            string itemClass = bill.ItemDetails[i].ItemLineClassRefFullName;
+                            double itemAmount = bill.ItemDetails[i].ItemLineAmount;
 
-                            // Execute the insert command
-                            command.ExecuteNonQuery();
+                            string debit = itemAmount > 0 ? itemAmount.ToString("F2") : "";
+                            string credit = itemAmount < 0 ? Math.Abs(itemAmount).ToString("F2") : "";
+
+                            if (itemAmount > 0)
+                            {
+                                debitTotalAmount += itemAmount;
+                            }
+                            else if (itemAmount < 0)
+                            {
+                                creditTotalAmount += Math.Abs(itemAmount);
+                            }
+
+                            //string insertQuery = "INSERT INTO CV_compiled (Particulars, Class, Debit, Credit) VALUES (@Particulars, @Class, @Debit, @Credit)";
+                            using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                            {
+                                command.Parameters.AddWithValue("@RefNumber", refNumber);
+                                command.Parameters.AddWithValue("@Particulars", itemName);
+                                command.Parameters.AddWithValue("@Class", itemClass);
+                                command.Parameters.AddWithValue("@Debit", debit);
+                                command.Parameters.AddWithValue("@Credit", credit);
+
+                                command.ExecuteNonQuery();
+                            }
+
+                            Console.WriteLine($"Inserted Item: {itemName}, Debit: {debit}, Credit: {credit}");
                         }
+
+                        // Process expense details
+                        foreach (var item in bill.ItemDetails)
+                        {
+                            if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                            {
+                                string expenseName = item.ExpenseLineItemRefFullName;
+                                string expenseClass = item.ExpenseLineClassRefFullName;
+                                double expenseAmount = item.ExpenseLineAmount;
+
+                                string debit = expenseAmount > 0 ? expenseAmount.ToString("F2") : "";
+                                string credit = expenseAmount < 0 ? Math.Abs(expenseAmount).ToString("F2") : "";
+
+                                if (expenseAmount > 0)
+                                {
+                                    debitTotalAmount += expenseAmount;
+                                }
+                                else if (expenseAmount < 0)
+                                {
+                                    creditTotalAmount += Math.Abs(expenseAmount);
+                                }
+
+                                //string insertQuery = "INSERT INTO CV_compiled (Particulars, Class, Debit, Credit) VALUES (@Particulars, @Class, @Debit, @Credit)";
+                                using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                                {
+                                    command.Parameters.AddWithValue("@RefNumber", refNumber);
+                                    command.Parameters.AddWithValue("@Particulars", expenseName);
+                                    command.Parameters.AddWithValue("@Class", expenseClass);
+                                    command.Parameters.AddWithValue("@Debit", debit);
+                                    command.Parameters.AddWithValue("@Credit", credit);
+
+                                    command.ExecuteNonQuery();
+                                }
+
+                                Console.WriteLine($"Inserted Expense: {expenseName}, Debit: {debit}, Credit: {credit}");
+                            }
+                        }
+                        debitTotalAmount -= creditTotalAmount;
                     }
-                }
-
-                // Process groupedExpenseData
-                foreach (var expenseGroup in groupedExpenseData)
-                {
-                    string expenseName = expenseGroup.Key;
-
-                    foreach (var expense in expenseGroup.Value)
+                    catch (Exception ex)
                     {
-                        string debit = expense.Amount > 0 ? expense.Amount.ToString("F2") : "";
-                        string credit = expense.Amount < 0 ? Math.Abs(expense.Amount).ToString("F2") : "";
-
-                        // Insert statement for expenses
-                        //string insertQuery = "INSERT INTO CV_compiled (Particulars, Class, Debit, Credit) VALUES (@Particulars, @Class, @Debit, @Credit)";
-
-                        using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
-                        {
-                            // Add parameters to avoid SQL injection
-                            command.Parameters.AddWithValue("@RefNumber", refNumber);
-                            command.Parameters.AddWithValue("@Particulars", expenseName);
-                            command.Parameters.AddWithValue("@Class", expense.Class);
-                            command.Parameters.AddWithValue("@Debit", debit);
-                            command.Parameters.AddWithValue("@Credit", credit);
-
-                            // Execute the insert command
-                            command.ExecuteNonQuery();
-                        }
+                        MessageBox.Show($"An error occurred while processing bill data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
 
                 // Close the connection
                 connection.Close();
             }
-
+            Console.WriteLine($"Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
             //MessageBox.Show("Data has been inserted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 

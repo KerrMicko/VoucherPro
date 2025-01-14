@@ -996,7 +996,7 @@ namespace VoucherPro.Clients
                 //if (!e.HasMorePages) break;
             }*/
 
-            /*foreach (var bill in billData)
+            foreach (var bill in billData)
             {
                 try
                 {
@@ -1004,13 +1004,9 @@ namespace VoucherPro.Clients
                     {
                         //string itemName = bill.AccountNameParticularsList[i];
                         string itemName = bill.ItemDetails[i].ItemLineItemRefFullName;
+                        string itemClass = bill.ItemDetails[i].ItemLineClassRefFullName;
                         double itemAmount = bill.ItemDetails[i].ItemLineAmount;
 
-                        if (itemCounter >= GlobalVariables.itemsPerPageAPV)
-                        {
-                            Console.WriteLine("Out");
-                            return;
-                        }
                         if (itemAmount < 0)
                         {
                             double absoluteAmount = Math.Abs(itemAmount);
@@ -1020,10 +1016,8 @@ namespace VoucherPro.Clients
                         {
                             debitTotalAmount += itemAmount;
                         }
-                        
-                        itemCounter++;
 
-                        Console.WriteLine($"Items: Item Name: {itemName}, Item Price: {itemAmount}, Credit: {creditTotalAmount}, Debit: {debitTotalAmount}, Item Counter: {itemCounter}");
+                        Console.WriteLine($"Items: Item Name: {itemName}, Item Price: {itemAmount}, Credit: {creditTotalAmount}, Debit: {debitTotalAmount}");
                     }
 
                     foreach (var item in bill.ItemDetails)
@@ -1031,20 +1025,15 @@ namespace VoucherPro.Clients
                         if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
                         {
                             string expenseName = item.ExpenseLineItemRefFullName;
+                            string expenseClass = item.ExpenseLineClassRefFullName;
                             double expenseAmount = item.ExpenseLineAmount;
 
-                            if (itemCounter >= GlobalVariables.itemsPerPageAPV)
-                            {
-                                Console.WriteLine("Out");
-                                return;
-                            }
                             if (expenseAmount > 0)
                             {
                                 debitTotalAmount += expenseAmount;
                             }
-                            itemCounter++;
 
-                            Console.WriteLine($"Expenses: Account Name: {expenseName}, Expense Amount: {expenseAmount}, Item Counter: {itemCounter}");
+                            Console.WriteLine($"Expenses: Account Name: {expenseName}, Expense Amount: {expenseAmount}");
                         }
                     }
                 }
@@ -1052,7 +1041,7 @@ namespace VoucherPro.Clients
                 {
                     MessageBox.Show($"An error occurred while printing entries: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-            }*/
+            }
             //e.HasMorePages = currentPrintIndex < itemCounter;
 
             // adi main
