@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using CrystalDecisions.CrystalReports.Engine;
 using CrystalDecisions.ReportAppServer;
 using CrystalDecisions.Shared;
@@ -413,6 +414,23 @@ namespace VoucherPro
                             TextObject textObject_TotalDebit = cRAPV_LEADS.ReportDefinition.ReportObjects["TextTotalDebit"] as TextObject;
                             TextObject textObject_TotalCredit = cRAPV_LEADS.ReportDefinition.ReportObjects["TextTotalCredit"] as TextObject;
 
+                            TextObject textObject_PreparedBy = cRAPV_LEADS.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
+                            TextObject textObject_PreparedByPos = cRAPV_LEADS.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
+                            TextObject textObject_CheckedBy = cRAPV_LEADS.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
+                            TextObject textObject_CheckedByPos = cRAPV_LEADS.ReportDefinition.ReportObjects["TextCheckedByPosition"] as TextObject;
+                            TextObject textObject_ApprovedBy = cRAPV_LEADS.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
+                            TextObject textObject_ApprovedByPos = cRAPV_LEADS.ReportDefinition.ReportObjects["TextApprovedByPosition"] as TextObject;
+                            TextObject textObject_ReceivedBy = cRAPV_LEADS.ReportDefinition.ReportObjects["TextReceivedBy"] as TextObject;
+                            TextObject textObject_ReceivedByPos = cRAPV_LEADS.ReportDefinition.ReportObjects["TextReceivedByPosition"] as TextObject;
+
+                            AccessToDatabase accessToDatabase = new AccessToDatabase();
+
+                            var (PreparedByName, PreparedByPosition,
+                                ReviewedByName, ReviewedByPosition,
+                                RecommendingApprovalName, RecommendingApprovalPosition,
+                                ApprovedByName, ApprovedByPosition,
+                                ReceivedByName, ReceivedByPosition) = accessToDatabase.RetrieveAllSignatoryData();
+
                             string refNumber = textBox_ReferenceNumber_CR.Text;
                             double amount = apvData[0].AmountDue;
                             string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
@@ -424,6 +442,14 @@ namespace VoucherPro
                             textObject_Terms.Text = apvData[0].TermsRefFullName;
                             textObject_Amount.Text = amount.ToString("N2");
                             textObject_AmountInWords.Text = amountInWords;
+                            textObject_PreparedBy.Text = PreparedByName;
+                            textObject_PreparedByPos.Text = PreparedByPosition;
+                            textObject_CheckedBy.Text = ReviewedByName;
+                            textObject_CheckedByPos.Text = ReviewedByPosition;
+                            textObject_ApprovedBy.Text = ApprovedByName;
+                            textObject_ApprovedByPos.Text = ApprovedByPosition;
+                            textObject_ReceivedBy.Text = ReceivedByName;
+                            textObject_ReceivedByPos.Text = ReceivedByPosition;
 
                             double debitTotalAmount = 0;
                             double creditTotalAmount = 0;
@@ -847,7 +873,7 @@ namespace VoucherPro
                     "Prepared By:",
                     "Checked By:",
                     "Approved By:",
-                    "Noted By:",
+                    "Received By:",
                 });
             }
             else
