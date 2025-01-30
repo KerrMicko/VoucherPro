@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.OleDb;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -392,7 +393,10 @@ namespace VoucherPro
                 {
                     try
                     {
+
                         CRAPV_LEADS cRAPV_LEADS = new CRAPV_LEADS();
+                        string databasePath = Path.Combine(Application.StartupPath, "CheckDatabase.accdb");
+                        SetDatabaseLocation(cRAPV_LEADS, databasePath);
 
                         AccessQueries accessQueries = new AccessQueries();
                         string refNumberCR = textBox_ReferenceNumber_CR.Text;
@@ -510,7 +514,7 @@ namespace VoucherPro
                                             }
                                         }
                                     }
-                                    debitTotalAmount -= creditTotalAmount;
+                                    /*debitTotalAmount -= creditTotalAmount;*/
                                 }
                                 catch (Exception ex)
                                 {
@@ -1361,6 +1365,38 @@ namespace VoucherPro
                 else if (comboBox_Forms.SelectedIndex == 4)
                 {
                     panel_SeriesNumber.Visible = false;
+                }
+            }
+        }
+
+        private void SetDatabaseLocation(ReportDocument reportDocument, string databasePath)
+        {
+            // Iterate through each table in the report
+            foreach (Table table in reportDocument.Database.Tables)
+            {
+                TableLogOnInfo tableLogOnInfo = table.LogOnInfo;
+
+                // Update the connection information
+                tableLogOnInfo.ConnectionInfo.ServerName = databasePath;
+                tableLogOnInfo.ConnectionInfo.DatabaseName = databasePath;
+                tableLogOnInfo.ConnectionInfo.UserID = ""; // Leave blank for Access
+                tableLogOnInfo.ConnectionInfo.Password = ""; // Leave blank for Access
+
+                // Apply the updated information to the table
+                table.ApplyLogOnInfo(tableLogOnInfo);
+            }
+
+            // Update subreports if any
+            foreach (Section section in reportDocument.ReportDefinition.Sections)
+            {
+                foreach (ReportObject reportObject in section.ReportObjects)
+                {
+                    if (reportObject.Kind == ReportObjectKind.SubreportObject)
+                    {
+                        SubreportObject subreportObject = (SubreportObject)reportObject;
+                        ReportDocument subreportDocument = subreportObject.OpenSubreport(subreportObject.SubreportName);
+                        SetDatabaseLocation(subreportDocument, databasePath);
+                    }
                 }
             }
         }
