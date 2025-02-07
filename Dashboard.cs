@@ -575,7 +575,7 @@ namespace VoucherPro
                     }
                 }
 
-                string insertQuery = "INSERT INTO CV_compiled (RefNumber, Particulars, Memo, Class, Debit, Credit) VALUES (@RefNumber, @Particulars, @Memo, @Class, @Debit, @Credit)";
+                string insertQuery = "INSERT INTO CV_compiled (RefNumber, Particulars, [Memo], [Class], Debit, Credit) VALUES (@RefNumber, @Particulars, @Memo, @Class, @Debit, @Credit)";
 
                 // Process bills and insert data directly
                 foreach (var bill in billData)
@@ -607,8 +607,8 @@ namespace VoucherPro
                             {
                                 command.Parameters.AddWithValue("@RefNumber", refNumber);
                                 command.Parameters.AddWithValue("@Particulars", itemName);
-                                command.Parameters.AddWithValue("@Memo", itemMemo);
-                                command.Parameters.AddWithValue("@Class", itemClass);
+                                command.Parameters.AddWithValue("@Memo", string.IsNullOrEmpty(itemMemo) ? (object)DBNull.Value : itemMemo);
+                                command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(itemClass) ? (object)DBNull.Value : itemClass);
                                 command.Parameters.AddWithValue("@Debit", debit);
                                 command.Parameters.AddWithValue("@Credit", credit);
 
@@ -645,8 +645,8 @@ namespace VoucherPro
                                 {
                                     command.Parameters.AddWithValue("@RefNumber", refNumber);
                                     command.Parameters.AddWithValue("@Particulars", expenseName);
-                                    command.Parameters.AddWithValue("@Memo", expenseMemo);
-                                    command.Parameters.AddWithValue("@Class", expenseClass);
+                                    command.Parameters.AddWithValue("@Memo", string.IsNullOrEmpty(expenseMemo) ? (object)DBNull.Value : expenseMemo);
+                                    command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(expenseClass) ? (object)DBNull.Value : expenseClass);
                                     command.Parameters.AddWithValue("@Debit", debit);
                                     command.Parameters.AddWithValue("@Credit", credit);
 
