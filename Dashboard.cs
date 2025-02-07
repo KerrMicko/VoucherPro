@@ -473,6 +473,7 @@ namespace VoucherPro
                                 // Create a DataTable with 4 columns
                                 DataTable dataTable = new DataTable();
                                 dataTable.Columns.Add("Particulars", typeof(string)); // First column
+                                dataTable.Columns.Add("Memo", typeof(string)); // First column
                                 dataTable.Columns.Add("Class", typeof(string)); // Second column
                                 dataTable.Columns.Add("Debit", typeof(string)); // Third column
                                 dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
@@ -574,7 +575,7 @@ namespace VoucherPro
                     }
                 }
 
-                string insertQuery = "INSERT INTO CV_compiled (RefNumber, Particulars, Class, Debit, Credit) VALUES (@RefNumber, @Particulars, @Class, @Debit, @Credit)";
+                string insertQuery = "INSERT INTO CV_compiled (RefNumber, Particulars, Memo, Class, Debit, Credit) VALUES (@RefNumber, @Particulars, @Memo, @Class, @Debit, @Credit)";
 
                 // Process bills and insert data directly
                 foreach (var bill in billData)
@@ -586,6 +587,7 @@ namespace VoucherPro
                         {
                             string itemName = bill.ItemDetails[i].ItemLineItemRefFullName;
                             string itemClass = bill.ItemDetails[i].ItemLineClassRefFullName;
+                            string itemMemo = bill.ItemDetails[i].ItemLineMemo;
                             double itemAmount = bill.ItemDetails[i].ItemLineAmount;
 
                             string debit = itemAmount > 0 ? itemAmount.ToString("F2") : "";
@@ -605,6 +607,7 @@ namespace VoucherPro
                             {
                                 command.Parameters.AddWithValue("@RefNumber", refNumber);
                                 command.Parameters.AddWithValue("@Particulars", itemName);
+                                command.Parameters.AddWithValue("@Memo", itemMemo);
                                 command.Parameters.AddWithValue("@Class", itemClass);
                                 command.Parameters.AddWithValue("@Debit", debit);
                                 command.Parameters.AddWithValue("@Credit", credit);
@@ -612,7 +615,7 @@ namespace VoucherPro
                                 command.ExecuteNonQuery();
                             }
 
-                            Console.WriteLine($"Inserted Item: {itemName}, Debit: {debit}, Credit: {credit}");
+                            Console.WriteLine($"Inserted Item: {itemName}, Memo: {itemMemo}, Debit: {debit}, Credit: {credit}");
                         }
 
                         // Process expense details
@@ -622,6 +625,7 @@ namespace VoucherPro
                             {
                                 string expenseName = item.ExpenseLineItemRefFullName;
                                 string expenseClass = item.ExpenseLineClassRefFullName;
+                                string expenseMemo = item.ExpenseLineMemo;
                                 double expenseAmount = item.ExpenseLineAmount;
 
                                 string debit = expenseAmount > 0 ? expenseAmount.ToString("F2") : "";
@@ -641,6 +645,7 @@ namespace VoucherPro
                                 {
                                     command.Parameters.AddWithValue("@RefNumber", refNumber);
                                     command.Parameters.AddWithValue("@Particulars", expenseName);
+                                    command.Parameters.AddWithValue("@Memo", expenseMemo);
                                     command.Parameters.AddWithValue("@Class", expenseClass);
                                     command.Parameters.AddWithValue("@Debit", debit);
                                     command.Parameters.AddWithValue("@Credit", credit);
@@ -648,7 +653,7 @@ namespace VoucherPro
                                     command.ExecuteNonQuery();
                                 }
 
-                                Console.WriteLine($"Inserted Expense: {expenseName}, Debit: {debit}, Credit: {credit}");
+                                Console.WriteLine($"Inserted Expense: {expenseName},  Memo: {expenseMemo}, Debit: {debit}, Credit: {credit}");
                             }
                         }
                         debitTotalAmount -= creditTotalAmount;
