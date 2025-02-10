@@ -409,6 +409,8 @@ namespace VoucherPro
                             //List<CR_APV_LEADS> result = new List<CR_APV_LEADS>();
 
                             TextObject textObject_RefNumber = cRAPV_LEADS.ReportDefinition.ReportObjects["TextRefNo"] as TextObject;
+                            TextObject textObject_Paid = cRAPV_LEADS.ReportDefinition.ReportObjects["TextPaid"] as TextObject;
+                            TextObject textObject_Payee = cRAPV_LEADS.ReportDefinition.ReportObjects["TextPayee"] as TextObject;
                             TextObject textObject_APVSeries = cRAPV_LEADS.ReportDefinition.ReportObjects["TextSeriesNumber"] as TextObject;
                             TextObject textObject_BillDate = cRAPV_LEADS.ReportDefinition.ReportObjects["TextBillDate"] as TextObject;
                             TextObject textObject_DueDate = cRAPV_LEADS.ReportDefinition.ReportObjects["TextDueDate"] as TextObject;
@@ -439,9 +441,19 @@ namespace VoucherPro
                             double amount = apvData[0].AmountDue;
                             string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
 
+                            if (apvData[0].IsPaid)
+                            {
+                                textObject_Paid.Text = "PAID";
+                            }
+                            else
+                            {
+                                textObject_Paid.Text = "";
+                            }
+
                             textObject_RefNumber.Text = refNumber;
+                            textObject_Payee.Text = apvData[0].Vendor.ToString();
                             textObject_APVSeries.Text = textBox_SeriesNumber.Text;
-                            textObject_BillDate.Text = apvData[0].DateCreated.ToString("dd-MM-yyyy");
+                            textObject_BillDate.Text = apvData[0].DateCreated.ToString("dd-MMM-yyyy");
                             textObject_DueDate.Text = apvData[0].DueDate.ToString("MM/dd/yyyy");
                             textObject_Terms.Text = apvData[0].TermsRefFullName;
                             textObject_Amount.Text = amount.ToString("N2");
@@ -523,8 +535,8 @@ namespace VoucherPro
                                 }
                             }
 
-                            textObject_TotalDebit.Text = debitTotalAmount.ToString();
-                            textObject_TotalCredit.Text = creditTotalAmount.ToString();
+                            textObject_TotalDebit.Text = debitTotalAmount.ToString("N2");
+                            textObject_TotalCredit.Text = creditTotalAmount.ToString("N2");
 
                             cRAPV_LEADS.SetParameterValue("ReferenceNumber", refNumber);
 
@@ -590,8 +602,8 @@ namespace VoucherPro
                             string itemMemo = bill.ItemDetails[i].ItemLineMemo;
                             double itemAmount = bill.ItemDetails[i].ItemLineAmount;
 
-                            string debit = itemAmount > 0 ? itemAmount.ToString("F2") : "";
-                            string credit = itemAmount < 0 ? Math.Abs(itemAmount).ToString("F2") : "";
+                            string debit = itemAmount > 0 ? itemAmount.ToString("N2") : "";
+                            string credit = itemAmount < 0 ? Math.Abs(itemAmount).ToString("N2") : "";
 
                             if (itemAmount > 0)
                             {
@@ -628,8 +640,8 @@ namespace VoucherPro
                                 string expenseMemo = item.ExpenseLineMemo;
                                 double expenseAmount = item.ExpenseLineAmount;
 
-                                string debit = expenseAmount > 0 ? expenseAmount.ToString("F2") : "";
-                                string credit = expenseAmount < 0 ? Math.Abs(expenseAmount).ToString("F2") : "";
+                                string debit = expenseAmount > 0 ? expenseAmount.ToString("N2") : "";
+                                string credit = expenseAmount < 0 ? Math.Abs(expenseAmount).ToString("N2") : "";
 
                                 if (expenseAmount > 0)
                                 {
