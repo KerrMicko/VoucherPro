@@ -470,29 +470,6 @@ namespace VoucherPro
                             double debitTotalAmount = 0;
                             double creditTotalAmount = 0;
 
-                            // Locate the subreport object in the main report
-                            SubreportObject subreportObject = cRAPV_LEADS.ReportDefinition.ReportObjects["Subreport2"] as SubreportObject;
-
-                            if (subreportObject != null)
-                            {
-                                // Get the ReportDocument of the subreport
-                                ReportDocument subReportDocument = cRAPV_LEADS.OpenSubreport(subreportObject.SubreportName);
-
-                                // Access the desired TextObject in the subreport
-                                //TextObject textObject_ParticularColumnName = subReportDocument.ReportDefinition.ReportObjects["Text4"] as TextObject;
-                                //TextObject textObject_SampleText = subReportDocument.ReportDefinition.ReportObjects["Text6"] as TextObject;
-
-                                // Create a DataTable with 4 columns
-                                DataTable dataTable = new DataTable();
-                                dataTable.Columns.Add("Particulars", typeof(string)); // First column
-                                dataTable.Columns.Add("Memo", typeof(string)); // First column
-                                dataTable.Columns.Add("Class", typeof(string)); // Second column
-                                dataTable.Columns.Add("Debit", typeof(string)); // Third column
-                                dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
-
-                                InsertDataToCVCompiled(refNumber, apvData);
-                            }
-
                             foreach (var bill in apvData)
                             {
                                 try
@@ -536,7 +513,83 @@ namespace VoucherPro
                             }
 
                             textObject_TotalDebit.Text = debitTotalAmount.ToString("N2");
-                            textObject_TotalCredit.Text = creditTotalAmount.ToString("N2");
+                            textObject_TotalCredit.Text = debitTotalAmount.ToString("N2");
+
+                            // Locate the subreport object in the main report
+                            SubreportObject subreportObject = cRAPV_LEADS.ReportDefinition.ReportObjects["Subreport2"] as SubreportObject;
+
+                            if (subreportObject != null)
+                            {
+                                // Get the ReportDocument of the subreport
+                                ReportDocument subReportDocument = cRAPV_LEADS.OpenSubreport(subreportObject.SubreportName);
+
+                                // Access the desired TextObject in the subreport
+
+                                TextObject textObject_Payable = subReportDocument.ReportDefinition.ReportObjects["TextPayable"] as TextObject;
+                                TextObject textObject_PayableAmount = subReportDocument.ReportDefinition.ReportObjects["TextPayableAmount"] as TextObject;
+                                TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
+                                //TextObject textObject_ParticularColumnName = subReportDocument.ReportDefinition.ReportObjects["Text4"] as TextObject;
+                                //TextObject textObject_SampleText = subReportDocument.ReportDefinition.ReportObjects["Text6"] as TextObject;
+
+                                debitTotalAmount -= creditTotalAmount;
+
+                                textObject_Payable.Text = apvData[0].AccountNumber.ToString() + " - " + apvData[0].AccountName.ToString();
+                                textObject_PayableAmount.Text = debitTotalAmount.ToString("N2");
+                                textObject_Remarks.Text = "Remarks: " + apvData[0].Memo.ToString();
+                                // Create a DataTable with 4 columns
+                                DataTable dataTable = new DataTable();
+                                dataTable.Columns.Add("Particulars", typeof(string)); // First column
+                                dataTable.Columns.Add("Memo", typeof(string)); // First column
+                                dataTable.Columns.Add("Class", typeof(string)); // Second column
+                                dataTable.Columns.Add("Debit", typeof(string)); // Third column
+                                dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
+
+                                InsertDataToCVCompiled(refNumber, apvData);
+                            }
+
+                            /*foreach (var bill in apvData)
+                            {
+                                try
+                                {
+                                    for (int i = 0; i < bill.AccountNameParticularsList.Count; i++)
+                                    {
+                                        double itemAmount = bill.ItemDetails[i].ItemLineAmount;
+
+                                        if (itemAmount > 0)
+                                        {
+                                            debitTotalAmount += itemAmount;
+                                        }
+                                        else if (itemAmount < 0)
+                                        {
+                                            creditTotalAmount += Math.Abs(itemAmount);
+                                        }
+                                    }
+
+                                    foreach (var item in bill.ItemDetails)
+                                    {
+                                        if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                                        {
+                                            double expenseAmount = item.ExpenseLineAmount;
+
+                                            if (expenseAmount > 0)
+                                            {
+                                                debitTotalAmount += expenseAmount;
+                                            }
+                                            else if (expenseAmount < 0)
+                                            {
+                                                creditTotalAmount += Math.Abs(expenseAmount);
+                                            }
+                                        }
+                                    }
+                                    *//*debitTotalAmount -= creditTotalAmount;*//*
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show($"An error occurred while computing for total debit and credit: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                }
+                            }*/
+
+                            
 
                             cRAPV_LEADS.SetParameterValue("ReferenceNumber", refNumber);
 
