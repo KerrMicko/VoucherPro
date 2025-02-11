@@ -406,8 +406,6 @@ namespace VoucherPro
 
                         if (apvData.Count > 0)
                         {
-                            //List<CR_APV_LEADS> result = new List<CR_APV_LEADS>();
-
                             TextObject textObject_RefNumber = cRAPV_LEADS.ReportDefinition.ReportObjects["TextRefNo"] as TextObject;
                             TextObject textObject_Paid = cRAPV_LEADS.ReportDefinition.ReportObjects["TextPaid"] as TextObject;
                             TextObject textObject_Payee = cRAPV_LEADS.ReportDefinition.ReportObjects["TextPayee"] as TextObject;
@@ -528,9 +526,6 @@ namespace VoucherPro
                                 TextObject textObject_Payable = subReportDocument.ReportDefinition.ReportObjects["TextPayable"] as TextObject;
                                 TextObject textObject_PayableAmount = subReportDocument.ReportDefinition.ReportObjects["TextPayableAmount"] as TextObject;
                                 TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
-                                //TextObject textObject_ParticularColumnName = subReportDocument.ReportDefinition.ReportObjects["Text4"] as TextObject;
-                                //TextObject textObject_SampleText = subReportDocument.ReportDefinition.ReportObjects["Text6"] as TextObject;
-
                                 debitTotalAmount -= creditTotalAmount;
 
                                 textObject_Payable.Text = apvData[0].AccountNumber.ToString() + " - " + apvData[0].AccountName.ToString();
@@ -546,49 +541,6 @@ namespace VoucherPro
 
                                 InsertDataToCVCompiled(refNumber, apvData);
                             }
-
-                            /*foreach (var bill in apvData)
-                            {
-                                try
-                                {
-                                    for (int i = 0; i < bill.AccountNameParticularsList.Count; i++)
-                                    {
-                                        double itemAmount = bill.ItemDetails[i].ItemLineAmount;
-
-                                        if (itemAmount > 0)
-                                        {
-                                            debitTotalAmount += itemAmount;
-                                        }
-                                        else if (itemAmount < 0)
-                                        {
-                                            creditTotalAmount += Math.Abs(itemAmount);
-                                        }
-                                    }
-
-                                    foreach (var item in bill.ItemDetails)
-                                    {
-                                        if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
-                                        {
-                                            double expenseAmount = item.ExpenseLineAmount;
-
-                                            if (expenseAmount > 0)
-                                            {
-                                                debitTotalAmount += expenseAmount;
-                                            }
-                                            else if (expenseAmount < 0)
-                                            {
-                                                creditTotalAmount += Math.Abs(expenseAmount);
-                                            }
-                                        }
-                                    }
-                                    *//*debitTotalAmount -= creditTotalAmount;*//*
-                                }
-                                catch (Exception ex)
-                                {
-                                    MessageBox.Show($"An error occurred while computing for total debit and credit: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                }
-                            }*/
-
                             
 
                             cRAPV_LEADS.SetParameterValue("ReferenceNumber", refNumber);
@@ -1301,31 +1253,6 @@ namespace VoucherPro
         {
             if (GlobalVariables.client == "LEADS")
             {
-                /*if (comboBox_Forms.SelectedIndex == 0)
-                {
-                    panel_SeriesNumber.Visible = false;
-                }
-                else if (comboBox_Forms.SelectedIndex == 1) // Check
-                {
-                    panel_SeriesNumber.Visible = false;
-                }
-                else if (comboBox_Forms.SelectedIndex == 2) // CV
-                {
-                    panel_SeriesNumber.Visible = true;
-                    label_SeriesNumberText.Text = "Current Series Number: CV";
-                    textBox_SeriesNumber.Text = "CV" + seriesNumber.ToString("D3");
-                }
-                else if (comboBox_Forms.SelectedIndex == 3) // APV
-                {
-                    panel_SeriesNumber.Visible = true;
-                    label_SeriesNumberText.Text = "Current Series Number: APV";
-                    textBox_SeriesNumber.Text = "APV" + seriesNumber.ToString("D3");
-                }
-                else if (comboBox_Forms.SelectedIndex == 4)
-                {
-                    panel_SeriesNumber.Visible = false;
-                }*/
-
                 string prefix = "";
                 //panel_SeriesNumber.Visible = false;
 
