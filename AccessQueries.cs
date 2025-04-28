@@ -545,6 +545,7 @@ namespace VoucherPro
                         "Check.Memo, " +
                         "CheckItemLine.ItemLineItemRefFullName, " +
                         "CheckItemLine.ItemLineDesc, " +
+                        "CheckItemLine.ItemLineClassRefFullName, " +
                         "CheckItemLine.ItemLineItemRefListID, " +
                         "CheckItemLine.ItemLineAmount, " +
                         "CheckItemLine.PayeeEntityReflistID " +
@@ -572,6 +573,7 @@ namespace VoucherPro
 
                                     Item = itemReader["ItemLineItemRefFullName"] != DBNull.Value ? itemReader["ItemLineItemRefFullName"].ToString() : string.Empty,
                                     ItemDescription = itemReader["ItemLineDesc"] != DBNull.Value ? itemReader["ItemLineDesc"].ToString() : string.Empty,
+                                    ItemClass = itemReader["ItemLineClassRefFullName"] != DBNull.Value ? itemReader["ItemLineClassRefFullName"].ToString() : string.Empty,
                                     ItemAmount = itemReader["ItemLineAmount"] != DBNull.Value ? Convert.ToDouble(itemReader["ItemLineAmount"]) : 0.0,
                                     ItemType = ItemType.Item,
 

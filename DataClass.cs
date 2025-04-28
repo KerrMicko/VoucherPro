@@ -101,6 +101,7 @@ namespace VoucherPro
             // Properties specific to items
             public string Item { get; set; }
             public string ItemDescription { get; set; }
+            public string ItemClass { get; set; }
             public double ItemAmount { get; set; }
 
             // Properties specific to expenses
