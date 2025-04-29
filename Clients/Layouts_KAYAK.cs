@@ -460,11 +460,11 @@ namespace VoucherPro.Clients
             string apvFieldText = string.Empty;
             if (apvFieldText == "")
             {
-                particularAccount = billData[0].APAccountRefFullName + " (Bill#: " + billData[0].AppliedRefNumber + ")";
+                particularAccount = billData[0].AccountNumber + " - " + billData[0].APAccountRefFullName + " (Bill#: " + billData[0].AppliedRefNumber + ")";
             }
             else
             {
-                particularAccount = billData[0].APAccountRefFullName + " (Bill#: " + billData[0].AppliedRefNumber + " / " + "APV#: " + apvFieldText + ")";
+                particularAccount = billData[0].AccountNumber + " - " + billData[0].AccountNumber + billData[0].APAccountRefFullName + " (Bill#: " + billData[0].AppliedRefNumber + " / " + "APV#: " + apvFieldText + ")";
             }
 
 

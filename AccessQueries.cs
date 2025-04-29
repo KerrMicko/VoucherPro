@@ -397,7 +397,16 @@ namespace VoucherPro
                                     // Increment
                                     IncrementalID = nextID.ToString("D6")
                                 };
-
+                                string accountNumberQuery = "SELECT AccountNumber FROM Account WHERE ListID = ?";
+                                using (OleDbCommand accountNumberCmd = new OleDbCommand(accountNumberQuery, accessConnection))
+                                {
+                                    accountNumberCmd.Parameters.AddWithValue("ListID", OleDbType.VarChar).Value = reader["APAccountRefListID"];
+                                    object accountNumberResult = accountNumberCmd.ExecuteScalar();
+                                    if (accountNumberResult != null && accountNumberResult != DBNull.Value)
+                                    {
+                                        newBill.AccountNumber = accountNumberResult.ToString();
+                                    }
+                                }
 
                                 string secondQuery = @"SELECT TOP 1000
                                         BillItemLine.ItemLineItemRefFullName AS AccountRefFullName, 
@@ -448,138 +457,7 @@ namespace VoucherPro
 
                                     secondConnection.Close();
                                 }
-                                string ThirdQuery = @"SELECT 
-                                           ListID
-                                        FROM 
-                                            Vendor
-                                        WHERE 
-                                            Vendor.ListID = ?";
-                                using (OleDbConnection ThirdConnection = new OleDbConnection(accessConnectionString))
-                                {
-                                    ThirdConnection.Open();
-
-                                    using (OleDbCommand ThirdCommand = new OleDbCommand(ThirdQuery, ThirdConnection))
-                                    {
-                                        ThirdCommand.Parameters.AddWithValue("Vendor.ListID", OleDbType.VarChar).Value = reader["VendorReflistID"];
-
-                                        using (OleDbDataReader ThirdReader = ThirdCommand.ExecuteReader())
-                                        {
-                                            if (ThirdReader.HasRows) // Check if there are rows returned by the third query
-                                            {
-                                                while (ThirdReader.Read())
-                                                {
-                                                    //newBill.TinID = ThirdReader["CustomFieldTINNO"] != DBNull.Value ? ThirdReader["CustomFieldTINNO"].ToString() : string.Empty;
-                                                    //newBill.POnumber = ThirdReader["CustomFieldPONO"] != DBNull.Value ? ThirdReader["CustomFieldPONO"].ToString() : string.Empty;
-                                                }
-
-                                                // Execute fourth query only if there are rows in the third query result
-                                                /*string fourthQuery = @"SELECT 
-                                                           Name, AccountNumber
-                                                        FROM 
-                                                            Account
-                                                        WHERE 
-                                                            Account.listID = ? ";
-
-                                                using (OleDbConnection fourthConnection = new OleDbConnection(accessConnectionString))
-                                                {
-                                                    fourthConnection.Open();
-
-                                                    using (OleDbCommand fourthCommand = new OleDbCommand(fourthQuery, fourthConnection))
-                                                    {
-                                                        fourthCommand.Parameters.AddWithValue("Account.ListID", OleDbType.VarChar).Value = reader["APAccountRefListID"];
-
-                                                        using (OleDbDataReader fourthReader = fourthCommand.ExecuteReader())
-                                                        {
-                                                            if (fourthReader.HasRows) // Check if there are rows returned by the fourth query
-                                                            {
-                                                                while (fourthReader.Read())
-                                                                {
-                                                                    newBill.AccountName = fourthReader["Name"] != DBNull.Value ? fourthReader["Name"].ToString() : string.Empty;
-                                                                    newBill.AccountNumber = fourthReader["AccountNumber"] != DBNull.Value ? fourthReader["AccountNumber"].ToString() : string.Empty;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-
-                                                    fourthConnection.Close();
-                                                }*/
-                                            }
-                                        }
-                                    }
-
-                                    ThirdConnection.Close();
-                                }
-                                if (reader["VendorReflistID"] != DBNull.Value)
-                                {
-                                    entityRefListID = reader["VendorReflistID"].ToString();
-                                }
                                 bills.Add(newBill);
-                            }
-                        }
-                    }
-                    string transactionQuery = @"SELECT TOP 4 
-                               Transaction.TxnID, 
-                               Transaction.TxnDate, 
-                               Transaction.Memo, 
-                               Transaction.RefNumber, 
-                               Transaction.Amount,
-                               Transaction.EntityRefListID 
-                           FROM 
-                               [Transaction] 
-                           WHERE 
-                               [Transaction].RefNumber IS NOT NULL 
-                               AND [Transaction].TxnType = 'billpaymentcheck' 
-                               AND [Transaction].EntityRefListID = ?
-                           ORDER BY 
-                               [Transaction].TimeModified DESC";
-
-                    using (OleDbCommand transactionCommand = new OleDbCommand(transactionQuery, accessConnection))
-                    {
-                        transactionCommand.Parameters.AddWithValue("Transaction.EntityRefListID", OleDbType.VarChar).Value = entityRefListID;
-
-                        using (OleDbDataReader transactionReader = transactionCommand.ExecuteReader())
-                        {
-                            while (transactionReader.Read())
-                            {
-                                BillTable newTransaction = new BillTable
-                                {
-                                    DateCreatedHistory = transactionReader["TxnDate"] != DBNull.Value ? Convert.ToDateTime(transactionReader["TxnDate"]).Date : DateTime.MinValue,
-                                    MemoHistory = transactionReader["Memo"] != DBNull.Value ? transactionReader["Memo"].ToString() : string.Empty,
-                                    RefNumberHistory = transactionReader["Refnumber"] != DBNull.Value ? transactionReader["Refnumber"].ToString() : string.Empty,
-                                    AmountHistory = transactionReader["Amount"] != DBNull.Value ? Convert.ToDouble(transactionReader["Amount"]) : 0.0,
-                                };
-                                string billHistoryQuery = @"SELECT 
-                                                               HistoryCVNumber, 
-                                                               HistoryAPVNumber, 
-                                                               Remarks
-                                                           FROM 
-                                                               CheckHistory
-                                                           WHERE 
-                                                               CheckHistory.RefNumber = ? ";
-
-                                using (OleDbConnection billhistoryConnection = new OleDbConnection(accessConnectionString))
-                                {
-                                    billhistoryConnection.Open();
-
-                                    using (OleDbCommand billhistoryCommand = new OleDbCommand(billHistoryQuery, billhistoryConnection))
-                                    {
-                                        billhistoryCommand.Parameters.AddWithValue("CheckHistory.RefNumber", OleDbType.VarChar).Value = transactionReader["RefNumber"];
-
-                                        using (OleDbDataReader billhistoryReader = billhistoryCommand.ExecuteReader())
-                                        {
-                                            while (billhistoryReader.Read())
-                                            {
-                                                newTransaction.HistoryCVNumber = billhistoryReader["HistoryCVNumber"] != DBNull.Value ? billhistoryReader["HistoryCVNumber"].ToString() : string.Empty;
-                                                newTransaction.HistoryAPVNumber = billhistoryReader["HistoryAPVNumber"] != DBNull.Value ? billhistoryReader["HistoryAPVNumber"].ToString() : string.Empty;
-                                                newTransaction.Remarks = billhistoryReader["Remarks"] != DBNull.Value ? billhistoryReader["Remarks"].ToString() : string.Empty;
-                                            }
-                                        }
-                                    }
-
-                                    billhistoryConnection.Close();
-                                }
-                                bills.Add(newTransaction);
-
                             }
                         }
                     }
@@ -592,7 +470,7 @@ namespace VoucherPro
                 MessageBox.Show($"Error retrieving data from bill Access database: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return bills;
-        } // CV BillPaymentCheckLine
+        }
 
         public List<ItemReciept> GetItemRecieptData_LEADS(string refNumber)
         {
