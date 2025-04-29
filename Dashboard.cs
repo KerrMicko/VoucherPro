@@ -1335,11 +1335,24 @@ namespace VoucherPro
                         printPreviewControl.Zoom = 1;
                         panel_Printing.Visible = false;
                         
-                        string columnName = comboBox_Forms.SelectedIndex == 2 ? "CVSeries" : "APVSeries";
-                        accessToDatabase.IncrementSeriesNumberInDatabase(columnName); // Increment for next print
-                      
-                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
-                        UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
+
+                        if (GlobalVariables.client == "LEADS")
+                        {
+                            string columnName = comboBox_Forms.SelectedIndex == 2 ? "CVSeries" : "APVSeries";
+                            accessToDatabase.IncrementSeriesNumberInDatabase(columnName); // Increment for next print
+
+                            seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
+                            UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
+                        }
+                        else if (GlobalVariables.client == "KAYAK")
+                        {
+                            string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
+                            accessToDatabase.IncrementSeriesNumberInDatabase(columnName); // Increment for next print
+
+                            seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
+                            UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
+                        }
+                        
                     }
                 }
                 catch (Exception ex)
