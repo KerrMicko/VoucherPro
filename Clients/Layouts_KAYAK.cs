@@ -374,7 +374,7 @@ namespace VoucherPro.Clients
             int firstTableYPos = 180 + tableHeight + 7;
 
             int payeeWidth = tableWidth - 475; // 450
-            e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 150, 50, 150, tableHeight + 10); // CV Ref. No.
+            //e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 150, 50, 150, tableHeight + 10); // CV Ref. No.
             e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 150, 100, 150, tableHeight); // Print Date
 
             e.Graphics.DrawRectangle(Pens.Black, 50, 140, payeeWidth, tableHeight); // Payee
@@ -386,8 +386,8 @@ namespace VoucherPro.Clients
             e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 150, 180, 150, tableHeight); // Amount
 
             // 1st Table Header
-            e.Graphics.DrawString("CV Ref. No.", font_Header, Brushes.Black, new RectangleF(50 + 3 + tableWidth - 150, 50 + 2, 150, tableHeight + 10));
-            e.Graphics.DrawString("Print Date", font_Header, Brushes.Black, new RectangleF(50 + tableWidth - 150, 100 - 10 - 1, 150, tableHeight), sfAlignCenter);
+            //e.Graphics.DrawString("CV Ref. No.", font_Header, Brushes.Black, new RectangleF(50 + 3 + tableWidth - 150, 50 + 2, 150, tableHeight + 10));
+            e.Graphics.DrawString("CV Ref. No.", font_Header, Brushes.Black, new RectangleF(50 + tableWidth - 190, 100 - 8 - 1, 150, tableHeight), sfAlignCenter);
 
             e.Graphics.DrawString("Payee", font_Header, Brushes.Black, new RectangleF(50 + 3, 140 + 2, payeeWidth, tableHeight));
             e.Graphics.DrawString("Bank", font_Header, Brushes.Black, new RectangleF(50 + 3 + payeeWidth, 140 + 2, 150, tableHeight));
@@ -407,8 +407,8 @@ namespace VoucherPro.Clients
             DateTime dateTime = DateTime.Now; //PRINT DATE
 
 
-            e.Graphics.DrawString(seriesNumber, font_TenBold, Brushes.Black, new RectangleF(50 + tableWidth - 150, 50 + 6, 150, tableHeight + 10), sfAlignCenter); // CV Ref. No.
-            e.Graphics.DrawString(dateTime.ToString("dd-MMM-yyyy"), font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 150, 100 + 8, 150, tableHeight), sfAlignCenter); // Print Date
+            //e.Graphics.DrawString(seriesNumber, font_TenBold, Brushes.Black, new RectangleF(50 + tableWidth - 150, 50 + 6, 150, tableHeight + 10), sfAlignCenter); // CV Ref. No.
+            e.Graphics.DrawString(seriesNumber, font_Data, Brushes.Black, new RectangleF(50 + tableWidth - 150, 100 + 8, 150, tableHeight), sfAlignCenter); // Print Date
 
             e.Graphics.DrawString(payee, font_Data, Brushes.Black, new RectangleF(50 + 15, 140 + 6, payeeWidth, tableHeight), sfAlignLeftCenter); // Payee
             e.Graphics.DrawString(bankAccount, font_Data, Brushes.Black, new RectangleF(50 + payeeWidth, 140 + 6, 150 + 25, tableHeight), sfAlignCenter); // Bank
