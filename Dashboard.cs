@@ -24,7 +24,7 @@ namespace VoucherPro
 {
     public class GlobalVariables
     {
-        public static string client = "LEADS";
+        public static string client = "KAYAK";
         public static bool includeImage = true;
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
@@ -260,7 +260,9 @@ namespace VoucherPro
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = font_Label,
             };
-            comboBox_Forms.Items.AddRange(new string[]
+            if (GlobalVariables.client == "LEADS")
+            {
+                comboBox_Forms.Items.AddRange(new string[]
             {
                 "",
                 "Check",
@@ -268,9 +270,19 @@ namespace VoucherPro
                 "Accounts Payable Voucher",
                 "Item Receipt / Receiving Report",
             });
-            comboBox_Forms.SelectedIndex = 0;
-            comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
-
+                comboBox_Forms.SelectedIndex = 0;
+                comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
+            }
+            else if (GlobalVariables.client == "KAYAK")
+            {
+                comboBox_Forms.Items.AddRange(new string[]
+            {
+                "",
+                "Check Voucher",
+            });
+                comboBox_Forms.SelectedIndex = 0;
+                comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
+            }
             return panel_Forms;
         }
 
@@ -777,6 +789,22 @@ namespace VoucherPro
                             data = receipts;
                         }
                     }
+                    else if (GlobalVariables.client == "KAYAK")
+                    {
+                        if (comboBox_Forms.SelectedIndex == 1) // CV
+                        {
+                            checks = queries.GetCheckExpensesAndItemsData_KAYAK(refNumber);
+                            if (checks.Count == 0)
+                            {
+                                bills = queries.GetBillData_LEADS(refNumber);
+                                data = bills;
+                            }
+                            else
+                            {
+                                data = checks;
+                            }
+                        }
+                    }
 
                     //if (checks.Count > 0 || bills.Count > 0 || receipts.Count > 0)
                     if (data is System.Collections.ICollection colletion && colletion.Count > 0)
@@ -816,6 +844,49 @@ namespace VoucherPro
                             printDocument.PrintPage += (s, ev) =>
                             {
                                 layouts_LEADS.PrintPage_LEADS(s, ev, selectedIndex, seriesNumber, data);
+                                /*if (pageCounter < totalItemDetails)
+                                {
+                                    pageCounter++;
+                                    ev.HasMorePages = pageCounter != totalItemDetails;
+                                }*/
+                                //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
+                            };
+                        }
+                        else if (GlobalVariables.client == "KAYAK")
+                        {
+                            Layouts_KAYAK layouts_KAYAK = new Layouts_KAYAK();
+                            //Layouts layouts = new Layouts();
+
+                            System.Drawing.Printing.PaperSize paperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
+
+                            printDocument = new PrintDocument();
+                            printDocument.DefaultPageSettings.PaperSize = paperSize;
+                            printDocument.PrinterSettings.DefaultPageSettings.PaperSize = paperSize;
+
+                            int selectedIndex = comboBox_Forms.SelectedIndex;
+                            string seriesNumber = textBox_SeriesNumber.Text;
+
+                            // Reset counters for new print job
+                            itemCounter = 0;
+                            pageCounter = 1;
+
+                            int totalItemDetails = 0;
+                            if (comboBox_Forms.SelectedIndex == 3) // APV
+                            {
+                                // Calculate the total number of pages
+                                totalItemDetails = apvData.Sum(apvData => apvData.ItemDetails.Count);
+
+                                int totalPages = (int)Math.Ceiling((double)totalItemDetails / GlobalVariables.itemsPerPageAPV);
+                                Console.WriteLine($"Generate: APV Data Count: {totalItemDetails}, Total Pages: {totalPages}");
+                                printDocument.PrinterSettings.MaximumPage = totalPages;
+                            }
+
+                            // Update preview control to start at the first page
+                            printPreviewControl.StartPage = 0;
+
+                            printDocument.PrintPage += (s, ev) =>
+                            {
+                                layouts_KAYAK.PrintPage_KAYAK(s, ev, selectedIndex, seriesNumber, data);
                                 /*if (pageCounter < totalItemDetails)
                                 {
                                     pageCounter++;
@@ -892,6 +963,17 @@ namespace VoucherPro
             };
 
             if (GlobalVariables.client == "LEADS")
+            {
+                comboBox_Signatory.Items.AddRange(new string[]
+                {
+                    "Select Signatory Option",
+                    "Prepared By:",
+                    "Checked By:",
+                    "Approved By:",
+                    "Received By:",
+                });
+            }
+            else if (GlobalVariables.client == "KAYAK")
             {
                 comboBox_Signatory.Items.AddRange(new string[]
                 {
@@ -1337,31 +1419,45 @@ namespace VoucherPro
 
                 UpdateSeriesNumber(prefix);
             }
+            else if (GlobalVariables.client == "KAYAK")
+            {
+                string prefix = "";
+                //panel_SeriesNumber.Visible = false;
+
+                switch (comboBox_Forms.SelectedIndex)
+                {
+                    case 1: // CV
+                        panel_SeriesNumber.Visible = true;
+                        panel_RefNumber.Visible = true;
+                        panel_RefNumberCrystalReport.Visible = false;
+                        panel_Signatory.Visible = true;
+                        label_SeriesNumberText.Text = "Current Series Number: CV";
+                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");
+
+                        panel_Main.Visible = true;
+                        panel_Main_CR.Visible = false;
+                        break;
+
+                    default:
+                        panel_RefNumber.Visible = false;
+                        panel_RefNumberCrystalReport.Visible = false;
+                        panel_Signatory.Visible = false;
+                        panel_SeriesNumber.Visible = false;
+
+                        panel_Main.Visible = false;
+                        panel_Main_CR.Visible = false;
+                        return;
+                }
+
+                UpdateSeriesNumber(prefix);
+            }
             else
             {
-                if (comboBox_Forms.SelectedIndex == 0)
-                {
-                    panel_SeriesNumber.Visible = false;
-                }
-                else if (comboBox_Forms.SelectedIndex == 1) // Check
-                {
-                    panel_SeriesNumber.Visible = false;
-                }
-                else if (comboBox_Forms.SelectedIndex == 2) // CV
+                if (comboBox_Forms.SelectedIndex == 1) // CV
                 {
                     panel_SeriesNumber.Visible = true;
                     label_SeriesNumberText.Text = "Current Series Number: CV";
                     textBox_SeriesNumber.Text = "CV" + seriesNumber;
-                }
-                else if (comboBox_Forms.SelectedIndex == 3) // APV
-                {
-                    panel_SeriesNumber.Visible = true;
-                    label_SeriesNumberText.Text = "Current Series Number: APV";
-                    textBox_SeriesNumber.Text = "test2" + seriesNumber;
-                }
-                else if (comboBox_Forms.SelectedIndex == 4)
-                {
-                    panel_SeriesNumber.Visible = false;
                 }
             }
         }

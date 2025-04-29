@@ -666,6 +666,151 @@ namespace VoucherPro
             }
             return checks;
         } // CV Check Expense Item
+
+        public List<CheckTableExpensesAndItems> GetCheckExpensesAndItemsData_KAYAK(string refNumber)
+        {
+            List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
+
+            string accessConnectionString = GetAccessConnectionString();
+
+            try
+            {
+                int nextID = GetNextIncrementalID_CV(accessConnectionString);
+                using (OleDbConnection accessConnection = new OleDbConnection(accessConnectionString))
+                {
+                    accessConnection.Open();
+
+                    string itemQuery = "SELECT TOP 1000 Check.TxnDate, " +
+                        "Check.AccountRefFullName, " +
+                        "Check.PayeeEntityRefFullName, " +
+                        "Check.RefNumber, " +
+                        "Check.Amount, " +
+                        "Check.AddressAddr1, " +
+                        "Check.AddressAddr2, " +
+                        "Check.Memo, " +
+                        "CheckItemLine.ItemLineItemRefFullName, " +
+                        "CheckItemLine.ItemLineDesc, " +
+                        "CheckItemLine.ItemLineClassRefFullName, " +
+                        "CheckItemLine.ItemLineItemRefListID, " +
+                        "CheckItemLine.ItemLineAmount, " +
+                        "CheckItemLine.PayeeEntityReflistID " +
+                        "FROM [Check] " +
+                        "INNER JOIN CheckItemLine ON [Check].RefNumber = CheckItemLine.RefNumber " +
+                        "WHERE [Check].RefNumber = ? ";
+
+                    using (OleDbCommand itemCommand = new OleDbCommand(itemQuery, accessConnection))
+                    {
+                        itemCommand.Parameters.AddWithValue("Check.RefNumber", OdbcType.VarChar).Value = refNumber;
+                        using (OleDbDataReader itemReader = itemCommand.ExecuteReader())
+                        {
+                            while (itemReader.Read())
+                            {
+                                CheckTableExpensesAndItems newCheckItem = new CheckTableExpensesAndItems
+                                {
+                                    DateCreated = itemReader["TxnDate"] != DBNull.Value ? Convert.ToDateTime(itemReader["TxnDate"]).Date : DateTime.MinValue,
+                                    BankAccount = itemReader["AccountRefFullname"] != DBNull.Value ? itemReader["AccountRefFullname"].ToString() : string.Empty,
+                                    PayeeFullName = itemReader["PayeeEntityRefFullName"] != DBNull.Value ? itemReader["PayeeEntityRefFullName"].ToString() : string.Empty,
+                                    RefNumber = itemReader["RefNumber"] != DBNull.Value ? itemReader["RefNumber"].ToString() : string.Empty,
+                                    TotalAmount = itemReader["Amount"] != DBNull.Value ? Convert.ToDouble(itemReader["Amount"]) : 0.0,
+                                    Address = itemReader["AddressAddr1"] != DBNull.Value ? itemReader["AddressAddr1"].ToString() : string.Empty,
+                                    Address2 = itemReader["AddressAddr2"] != DBNull.Value ? itemReader["AddressAddr2"].ToString() : string.Empty,
+                                    Memo = itemReader["Memo"] != DBNull.Value ? itemReader["Memo"].ToString() : string.Empty,
+
+                                    Item = itemReader["ItemLineItemRefFullName"] != DBNull.Value ? itemReader["ItemLineItemRefFullName"].ToString() : string.Empty,
+                                    ItemDescription = itemReader["ItemLineDesc"] != DBNull.Value ? itemReader["ItemLineDesc"].ToString() : string.Empty,
+                                    ItemClass = itemReader["ItemLineClassRefFullName"] != DBNull.Value ? itemReader["ItemLineClassRefFullName"].ToString() : string.Empty,
+                                    ItemAmount = itemReader["ItemLineAmount"] != DBNull.Value ? Convert.ToDouble(itemReader["ItemLineAmount"]) : 0.0,
+                                    ItemType = ItemType.Item,
+
+                                    //IncrementalID = nextID,
+                                    IncrementalID = nextID.ToString("D6")
+                                };
+                                string secondQuery = @"SELECT 
+                                                        AssetAccountRefFullname
+                                                    FROM 
+                                                        Item
+                                                    WHERE 
+                                                        Item.listID = ?";
+                                using (OleDbConnection secondConnection = new OleDbConnection(accessConnectionString))
+                                {
+                                    secondConnection.Open();
+
+                                    using (OleDbCommand secondCommand = new OleDbCommand(secondQuery, secondConnection))
+                                    {
+                                        secondCommand.Parameters.AddWithValue("Item.ListID", OleDbType.VarChar).Value = itemReader["ItemLineItemRefListID"];
+
+                                        using (OleDbDataReader secondReader = secondCommand.ExecuteReader())
+                                        {
+                                            while (secondReader.Read())
+                                            {
+                                                newCheckItem.AccountName = secondReader["AssetAccountRefFullname"] != DBNull.Value ? secondReader["AssetAccountRefFullname"].ToString() : string.Empty;
+                                                //newCheckItem.AccountNumber = secondReader["AccountNumber"] != DBNull.Value ? secondReader["AccountNumber"].ToString() : string.Empty;
+                                            }
+                                        }
+                                    }
+
+                                    secondConnection.Close();
+                                }
+                                checks.Add(newCheckItem);
+                            }
+                        }
+                    }
+
+                    string expenseQuery = "SELECT TOP 1000 Check.TxnDate, Check.AccountRefFullName, " +
+                                      "Check.PayeeEntityRefFullName, Check.RefNumber, Check.Amount, " +
+                                      "Check.AddressAddr1, Check.Memo, " +
+                                      "Check.AddressAddr2," +
+                                      "CheckExpenseLine.ExpenseLineAccountRefFullName, " +
+                                      "CheckExpenseLine.ExpenseLineAccountRefListID, " +
+                                      "CheckExpenseLine.ExpenseLineAmount, CheckExpenseLine.ExpenseLineMemo, " +
+                                      "CheckExpenseLine.ExpenseLineCustomerRefFullName, " +
+                                      "CheckExpenseLine.PayeeEntityReflistID " +
+                                      "FROM [Check] " +
+                                      "INNER JOIN CheckExpenseLine ON [Check].RefNumber = CheckExpenseLine.RefNumber " +
+                                      //"WHERE Check.RefNumber = ? AND Check.TimeCreated >= ? AND Check.TimeCreated < ?";
+                                      "WHERE [Check].RefNumber = ?";
+
+
+                    using (OleDbCommand expenseCommand = new OleDbCommand(expenseQuery, accessConnection))
+                    {
+                        expenseCommand.Parameters.AddWithValue("Check.RefNumber", OdbcType.VarChar).Value = refNumber;
+                        using (OleDbDataReader expenseReader = expenseCommand.ExecuteReader())
+                        {
+                            while (expenseReader.Read())
+                            {
+                                CheckTableExpensesAndItems newCheckExpense = new CheckTableExpensesAndItems
+                                {
+                                    DateCreated = expenseReader["TxnDate"] != DBNull.Value ? Convert.ToDateTime(expenseReader["TxnDate"]).Date : DateTime.MinValue,
+                                    BankAccount = expenseReader["AccountRefFullname"] != DBNull.Value ? expenseReader["AccountRefFullname"].ToString() : string.Empty,
+                                    PayeeFullName = expenseReader["PayeeEntityRefFullName"] != DBNull.Value ? expenseReader["PayeeEntityRefFullName"].ToString() : string.Empty,
+                                    RefNumber = expenseReader["RefNumber"] != DBNull.Value ? expenseReader["RefNumber"].ToString() : string.Empty,
+                                    TotalAmount = expenseReader["Amount"] != DBNull.Value ? Convert.ToDouble(expenseReader["Amount"]) : 0.0,
+                                    Address = expenseReader["AddressAddr1"] != DBNull.Value ? expenseReader["AddressAddr1"].ToString() : string.Empty,
+                                    Address2 = expenseReader["AddressAddr2"] != DBNull.Value ? expenseReader["AddressAddr2"].ToString() : string.Empty,
+                                    Memo = expenseReader["Memo"] != DBNull.Value ? expenseReader["Memo"].ToString() : string.Empty,
+
+                                    Account = expenseReader["ExpenseLineAccountRefFullName"] != DBNull.Value ? expenseReader["ExpenseLineAccountRefFullName"].ToString() : string.Empty,
+                                    ExpensesAmount = expenseReader["ExpenseLineAmount"] != DBNull.Value ? Convert.ToDouble(expenseReader["ExpenseLineAmount"]) : 0.0,
+                                    ExpensesMemo = expenseReader["ExpenseLineMemo"] != DBNull.Value ? expenseReader["ExpenseLineMemo"].ToString() : string.Empty,
+                                    ExpensesCustomerJob = expenseReader["ExpenseLineCustomerRefFullName"] != DBNull.Value ? expenseReader["ExpenseLineCustomerRefFullName"].ToString() : string.Empty,
+                                    ItemType = ItemType.Expense,
+
+                                    //IncrementalID = nextID, // Assign the CV000001 here
+                                    IncrementalID = nextID.ToString("D6"),
+                                };
+                                checks.Add(newCheckExpense);
+                            }
+                        }
+                    }
+                    accessConnection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error retrieving data to Access database: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return checks;
+        } // CV Check Expense Item
         public List<BillTable> GetAccountsPayableData_LEADS(string refNumber)
         {
             List<BillTable> bills = new List<BillTable>();
