@@ -24,7 +24,7 @@ namespace VoucherPro
 {
     public class GlobalVariables
     {
-        public static string client = "KAYAK";
+        public static string client = "LEADS";
         public static bool includeImage = true;
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
@@ -796,7 +796,7 @@ namespace VoucherPro
                             checks = queries.GetCheckExpensesAndItemsData_KAYAK(refNumber);
                             if (checks.Count == 0)
                             {
-                                bills = queries.GetBillData_LEADS(refNumber);
+                                bills = queries.GetBillData_KAYAK(refNumber);
                                 data = bills;
                             }
                             else
@@ -871,7 +871,7 @@ namespace VoucherPro
                             pageCounter = 1;
 
                             int totalItemDetails = 0;
-                            if (comboBox_Forms.SelectedIndex == 3) // APV
+                            if (comboBox_Forms.SelectedIndex == 1) // APV
                             {
                                 // Calculate the total number of pages
                                 totalItemDetails = apvData.Sum(apvData => apvData.ItemDetails.Count);

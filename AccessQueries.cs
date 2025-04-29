@@ -329,6 +329,271 @@ namespace VoucherPro
             }
             return bills;
         } // CV BillPaymentCheckLine
+
+        public List<BillTable> GetBillData_KAYAK(string refNumber)
+        {
+            List<BillTable> bills = new List<BillTable>();
+
+            string accessConnectionString = GetAccessConnectionString();
+
+            try
+            {
+                int nextID = GetNextIncrementalID_APV(accessConnectionString);
+                string entityRefListID = string.Empty;
+                using (OleDbConnection accessConnection = new OleDbConnection(accessConnectionString))
+                {
+                    accessConnection.Open();
+
+                    // Retrieve data from Access database
+                    string query = @"select TOP 1000 
+                        BillPaymentCheckLine.TxnDate AS BillPayment_TxnDate,
+                        BillPaymentCheckLine.PayeeEntityRefFullname,
+                        BillPaymentCheckLine.AddressAddr1,
+                        BillPaymentCheckLine.AddressAddr2,
+                        BillPaymentCheckLine.BankAccountRefFullName,
+                        BillPaymentCheckLine.Amount,
+                        BillPaymentCheckLine.Refnumber,
+                        BillPaymentCheckLine.AppliedToTxnRefNumber,
+                        BillPaymentCheckLine.AppliedToTxnTxnID,
+                        BillPaymentCheckLine.APAccountRefFullName,
+                        BillPaymentCheckLine.APAccountRefListID,
+                        BillPaymentCheckLine.Memo,
+                        Bill.Memo,
+                        Bill.AmountDue,
+                        Bill.DueDate,
+                        Bill.VendorReflistID,
+                        Bill.TxnDate AS Bill_TxnDate
+                        FROM 
+                        BillPaymentCheckLine
+                        INNER JOIN 
+                        Bill ON BillPaymentCheckLine.AppliedToTxnTxnID = Bill.TxnID
+                        Where BillPaymentCheckLine.Refnumber = ?";
+
+                    using (OleDbCommand command = new OleDbCommand(query, accessConnection))
+                    {
+                        command.Parameters.AddWithValue("RefNumber", OleDbType.VarChar).Value = refNumber;
+                        using (OleDbDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                BillTable newBill = new BillTable
+                                {
+                                    // BillPaymentCheckLine table
+                                    DateCreated = reader["BillPayment_TxnDate"] != DBNull.Value ? Convert.ToDateTime(reader["BillPayment_TxnDate"]).Date : DateTime.MinValue,
+                                    DueDate = reader["Bill_TxnDate"] != DBNull.Value ? Convert.ToDateTime(reader["Bill_TxnDate"]).Date : DateTime.MinValue,
+                                    PayeeFullName = reader["PayeeEntityRefFullName"] != DBNull.Value ? reader["PayeeEntityRefFullName"].ToString() : string.Empty,
+                                    Address = reader["AddressAddr1"] != DBNull.Value ? reader["AddressAddr1"].ToString() : string.Empty,
+                                    Address2 = reader["AddressAddr2"] != DBNull.Value ? reader["AddressAddr2"].ToString() : string.Empty,
+                                    BankAccount = reader["BankAccountRefFullName"] != DBNull.Value ? reader["BankAccountRefFullName"].ToString() : string.Empty,
+                                    APAccountRefFullName = reader["APAccountRefFullName"] != DBNull.Value ? reader["APAccountRefFullName"].ToString() : string.Empty,
+                                    Amount = reader["Amount"] != DBNull.Value ? Convert.ToDouble(reader["Amount"]) : 0.0,
+                                    RefNumber = reader["RefNumber"] != DBNull.Value ? reader["RefNumber"].ToString() : string.Empty,
+                                    AppliedRefNumber = reader["AppliedToTxnRefNumber"] != DBNull.Value ? reader["AppliedToTxnRefNumber"].ToString() : string.Empty,
+                                    AppliedToTxnTxnID = reader["AppliedToTxnTxnID"] != DBNull.Value ? reader["AppliedToTxnTxnID"].ToString() : string.Empty,
+                                    Memo = reader["BillPaymentCheckLine.Memo"] != DBNull.Value ? reader["BillPaymentCheckLine.Memo"].ToString() : string.Empty,
+                                    BillMemo = reader["Bill.Memo"] != DBNull.Value ? reader["Bill.Memo"].ToString() : string.Empty,
+                                    AmountDue = reader["AmountDue"] != DBNull.Value ? Convert.ToDouble(reader["AmountDue"]) : 0.0,
+
+                                    // Increment
+                                    IncrementalID = nextID.ToString("D6")
+                                };
+
+
+                                string secondQuery = @"SELECT TOP 1000
+                                        BillItemLine.ItemLineItemRefFullName AS AccountRefFullName, 
+                                        BillItemLine.ItemLineAmount AS Amount,
+                                        BillItemLine.ItemLineDesc AS ItemExpenseMemo
+                                    FROM 
+                                        BillItemLine 
+                                    WHERE 
+                                        BillItemLine.TxnID = ?
+
+                                    UNION ALL
+
+                                    SELECT
+                                        BillExpenseLine.ExpenseLineAccountRefFullName AS AccountRefFullName, 
+                                        BillExpenseLine.ExpenseLineAmount AS Amount,
+                                        BillExpenseLine.ExpenseLineMemo AS ItemExpenseMemo
+                                    FROM 
+                                        [BillExpenseLine]
+                                    WHERE 
+                                        BillExpenseLine.TxnID = ?";
+
+                                using (OleDbConnection secondConnection = new OleDbConnection(accessConnectionString))
+                                {
+                                    secondConnection.Open();
+
+                                    using (OleDbCommand secondCommand = new OleDbCommand(secondQuery, secondConnection))
+                                    {
+                                        secondCommand.Parameters.AddWithValue("BillItemLine.TxnID", OleDbType.VarChar).Value = reader["AppliedToTxnTxnID"];
+                                        secondCommand.Parameters.AddWithValue("BillExpenseLine.TxnID", OleDbType.VarChar).Value = reader["AppliedToTxnTxnID"];
+
+                                        using (OleDbDataReader secondReader = secondCommand.ExecuteReader())
+                                        {
+                                            while (secondReader.Read())
+                                            {
+                                                string itemLineItemRefFullName = secondReader["AccountRefFullName"] != DBNull.Value ? secondReader["AccountRefFullName"].ToString() : string.Empty;
+                                                double itemLineAmount = secondReader["Amount"] != DBNull.Value ? Convert.ToDouble(secondReader["Amount"]) : 0.0;
+                                                string itemLineItemMemo = secondReader["ItemExpenseMemo"] != DBNull.Value ? secondReader["ItemExpenseMemo"].ToString() : string.Empty;
+
+                                                newBill.ItemDetails.Add(new ItemDetail
+                                                {
+                                                    ItemLineItemRefFullName = itemLineItemRefFullName,
+                                                    ItemLineAmount = itemLineAmount,
+                                                    ItemLineMemo = itemLineItemMemo,
+                                                });
+                                            }
+                                        }
+                                    }
+
+                                    secondConnection.Close();
+                                }
+                                string ThirdQuery = @"SELECT 
+                                           ListID
+                                        FROM 
+                                            Vendor
+                                        WHERE 
+                                            Vendor.ListID = ?";
+                                using (OleDbConnection ThirdConnection = new OleDbConnection(accessConnectionString))
+                                {
+                                    ThirdConnection.Open();
+
+                                    using (OleDbCommand ThirdCommand = new OleDbCommand(ThirdQuery, ThirdConnection))
+                                    {
+                                        ThirdCommand.Parameters.AddWithValue("Vendor.ListID", OleDbType.VarChar).Value = reader["VendorReflistID"];
+
+                                        using (OleDbDataReader ThirdReader = ThirdCommand.ExecuteReader())
+                                        {
+                                            if (ThirdReader.HasRows) // Check if there are rows returned by the third query
+                                            {
+                                                while (ThirdReader.Read())
+                                                {
+                                                    //newBill.TinID = ThirdReader["CustomFieldTINNO"] != DBNull.Value ? ThirdReader["CustomFieldTINNO"].ToString() : string.Empty;
+                                                    //newBill.POnumber = ThirdReader["CustomFieldPONO"] != DBNull.Value ? ThirdReader["CustomFieldPONO"].ToString() : string.Empty;
+                                                }
+
+                                                // Execute fourth query only if there are rows in the third query result
+                                                /*string fourthQuery = @"SELECT 
+                                                           Name, AccountNumber
+                                                        FROM 
+                                                            Account
+                                                        WHERE 
+                                                            Account.listID = ? ";
+
+                                                using (OleDbConnection fourthConnection = new OleDbConnection(accessConnectionString))
+                                                {
+                                                    fourthConnection.Open();
+
+                                                    using (OleDbCommand fourthCommand = new OleDbCommand(fourthQuery, fourthConnection))
+                                                    {
+                                                        fourthCommand.Parameters.AddWithValue("Account.ListID", OleDbType.VarChar).Value = reader["APAccountRefListID"];
+
+                                                        using (OleDbDataReader fourthReader = fourthCommand.ExecuteReader())
+                                                        {
+                                                            if (fourthReader.HasRows) // Check if there are rows returned by the fourth query
+                                                            {
+                                                                while (fourthReader.Read())
+                                                                {
+                                                                    newBill.AccountName = fourthReader["Name"] != DBNull.Value ? fourthReader["Name"].ToString() : string.Empty;
+                                                                    newBill.AccountNumber = fourthReader["AccountNumber"] != DBNull.Value ? fourthReader["AccountNumber"].ToString() : string.Empty;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    fourthConnection.Close();
+                                                }*/
+                                            }
+                                        }
+                                    }
+
+                                    ThirdConnection.Close();
+                                }
+                                if (reader["VendorReflistID"] != DBNull.Value)
+                                {
+                                    entityRefListID = reader["VendorReflistID"].ToString();
+                                }
+                                bills.Add(newBill);
+                            }
+                        }
+                    }
+                    string transactionQuery = @"SELECT TOP 4 
+                               Transaction.TxnID, 
+                               Transaction.TxnDate, 
+                               Transaction.Memo, 
+                               Transaction.RefNumber, 
+                               Transaction.Amount,
+                               Transaction.EntityRefListID 
+                           FROM 
+                               [Transaction] 
+                           WHERE 
+                               [Transaction].RefNumber IS NOT NULL 
+                               AND [Transaction].TxnType = 'billpaymentcheck' 
+                               AND [Transaction].EntityRefListID = ?
+                           ORDER BY 
+                               [Transaction].TimeModified DESC";
+
+                    using (OleDbCommand transactionCommand = new OleDbCommand(transactionQuery, accessConnection))
+                    {
+                        transactionCommand.Parameters.AddWithValue("Transaction.EntityRefListID", OleDbType.VarChar).Value = entityRefListID;
+
+                        using (OleDbDataReader transactionReader = transactionCommand.ExecuteReader())
+                        {
+                            while (transactionReader.Read())
+                            {
+                                BillTable newTransaction = new BillTable
+                                {
+                                    DateCreatedHistory = transactionReader["TxnDate"] != DBNull.Value ? Convert.ToDateTime(transactionReader["TxnDate"]).Date : DateTime.MinValue,
+                                    MemoHistory = transactionReader["Memo"] != DBNull.Value ? transactionReader["Memo"].ToString() : string.Empty,
+                                    RefNumberHistory = transactionReader["Refnumber"] != DBNull.Value ? transactionReader["Refnumber"].ToString() : string.Empty,
+                                    AmountHistory = transactionReader["Amount"] != DBNull.Value ? Convert.ToDouble(transactionReader["Amount"]) : 0.0,
+                                };
+                                string billHistoryQuery = @"SELECT 
+                                                               HistoryCVNumber, 
+                                                               HistoryAPVNumber, 
+                                                               Remarks
+                                                           FROM 
+                                                               CheckHistory
+                                                           WHERE 
+                                                               CheckHistory.RefNumber = ? ";
+
+                                using (OleDbConnection billhistoryConnection = new OleDbConnection(accessConnectionString))
+                                {
+                                    billhistoryConnection.Open();
+
+                                    using (OleDbCommand billhistoryCommand = new OleDbCommand(billHistoryQuery, billhistoryConnection))
+                                    {
+                                        billhistoryCommand.Parameters.AddWithValue("CheckHistory.RefNumber", OleDbType.VarChar).Value = transactionReader["RefNumber"];
+
+                                        using (OleDbDataReader billhistoryReader = billhistoryCommand.ExecuteReader())
+                                        {
+                                            while (billhistoryReader.Read())
+                                            {
+                                                newTransaction.HistoryCVNumber = billhistoryReader["HistoryCVNumber"] != DBNull.Value ? billhistoryReader["HistoryCVNumber"].ToString() : string.Empty;
+                                                newTransaction.HistoryAPVNumber = billhistoryReader["HistoryAPVNumber"] != DBNull.Value ? billhistoryReader["HistoryAPVNumber"].ToString() : string.Empty;
+                                                newTransaction.Remarks = billhistoryReader["Remarks"] != DBNull.Value ? billhistoryReader["Remarks"].ToString() : string.Empty;
+                                            }
+                                        }
+                                    }
+
+                                    billhistoryConnection.Close();
+                                }
+                                bills.Add(newTransaction);
+
+                            }
+                        }
+                    }
+
+                    accessConnection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error retrieving data from bill Access database: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return bills;
+        } // CV BillPaymentCheckLine
+
         public List<ItemReciept> GetItemRecieptData_LEADS(string refNumber)
         {
             List<ItemReciept> ItemReceipt = new List<ItemReciept>();
