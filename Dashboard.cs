@@ -24,7 +24,7 @@ namespace VoucherPro
 {
     public class GlobalVariables
     {
-        public static string client = "LEADS";
+        public static string client = "KAYAK";
         public static bool includeImage = true;
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
@@ -330,11 +330,23 @@ namespace VoucherPro
             };
             button_Decrement.Click += (sender, e) =>
             {
-                if (seriesNumber != 0)
+                if (GlobalVariables.client == "LEADS")
                 {
-                    seriesNumber--;
-                    UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
+                    if (seriesNumber != 0)
+                    {
+                        seriesNumber--;
+                        UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
+                    }
                 }
+                else if (GlobalVariables.client == "KAYAK")
+                {
+                    if (seriesNumber != 0)
+                    {
+                        seriesNumber--;
+                        UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
+                    }
+                }
+
             };
 
             Button button_Increment = new Button
@@ -349,8 +361,17 @@ namespace VoucherPro
             };
             button_Increment.Click += (sender, e) =>
             {
-                seriesNumber++;
-                UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
+                if (GlobalVariables.client == "LEADS")
+                {
+                    seriesNumber++;
+                    UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
+                }
+                else if (GlobalVariables.client == "KAYAK")
+                {
+                    seriesNumber++;
+                    UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
+                }
+
             };
 
             return panel_SeriesNumber;
@@ -1427,6 +1448,7 @@ namespace VoucherPro
                 switch (comboBox_Forms.SelectedIndex)
                 {
                     case 1: // CV
+                        prefix = "CV";
                         panel_SeriesNumber.Visible = true;
                         panel_RefNumber.Visible = true;
                         panel_RefNumberCrystalReport.Visible = false;
@@ -1496,26 +1518,56 @@ namespace VoucherPro
 
         private void TextBox_SeriesNumber_TextChanged(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(textBox_SeriesNumber.Text))
+            if (GlobalVariables.client == "LEADS")
             {
-                string prefix = comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV";
-                string input = textBox_SeriesNumber.Text.Replace(prefix, "").Trim();
+                if (!string.IsNullOrEmpty(textBox_SeriesNumber.Text))
+                {
+                    string prefix = comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV";
+                    string input = textBox_SeriesNumber.Text.Replace(prefix, "").Trim();
 
-                if (int.TryParse(input, out int adjustedSeries))
-                {
-                    seriesNumber = adjustedSeries;
-                }
-                else
-                {
-                    MessageBox.Show("Invalid series number format. Please enter a numeric value.");
-                    textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}"; // Revert to the current value
+                    if (int.TryParse(input, out int adjustedSeries))
+                    {
+                        seriesNumber = adjustedSeries;
+                    }
+                    else
+                    {
+                        MessageBox.Show("Invalid series number format. Please enter a numeric value.");
+                        textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}"; // Revert to the current value
+                    }
                 }
             }
+            else if (GlobalVariables.client == "KAYAK")
+            {
+                if (!string.IsNullOrEmpty(textBox_SeriesNumber.Text))
+                {
+                    string prefix = comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV";
+                    string input = textBox_SeriesNumber.Text.Replace(prefix, "").Trim();
+
+                    if (int.TryParse(input, out int adjustedSeries))
+                    {
+                        seriesNumber = adjustedSeries;
+                    }
+                    else
+                    {
+                        MessageBox.Show("Invalid series number format. Please enter a numeric value.");
+                        textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}"; // Revert to the current value
+                    }
+                }
+            }
+            
         }
         private void TextBox_SeriesNumber_Leave(object sender, EventArgs e)
         {
-            string columnName = comboBox_Forms.SelectedIndex == 2 ? "CVSeries" : "APVSeries";
-            accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment
+            if (GlobalVariables.client == "LEADS")
+            {
+                string columnName = comboBox_Forms.SelectedIndex == 2 ? "CVSeries" : "APVSeries";
+                accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment
+            }
+            else if (GlobalVariables.client == "KAYAK")
+            {
+                string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
+                accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment
+            }
         }
 
         private void UpdateSeriesNumber(string prefix)
