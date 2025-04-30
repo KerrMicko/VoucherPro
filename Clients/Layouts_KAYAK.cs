@@ -135,8 +135,10 @@ namespace VoucherPro.Clients
                 for (int i = 0; i < checkData.Count; i++)
                 {
                     string itemName = checkData[i].AccountName;
+                    string itemAccountNumber = checkData[i].AccountNumber;
                     double itemAmount = checkData[i].ItemAmount;
                     string itemClass = checkData[i].ItemClass;
+                    string itemAssetNumber = checkData[i].AssetAccountNumber;
 
                     if (itemName != "" && itemAmount != 0)
                     {
@@ -264,7 +266,7 @@ namespace VoucherPro.Clients
 
             foreach (var check in checkData)
             {
-                e.Graphics.DrawString(check.Account, font_Data, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), perItemHeight)); // Item
+                e.Graphics.DrawString(check.AccountNumber + " " + check.Account, font_Data, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), perItemHeight)); // Item
                 e.Graphics.DrawString(check.ItemClass, font_Data2, Brushes.Black, new RectangleF(50 + 300, firstTableYPos + 20 + 4 + pos, tableWidth - (500 + 90), perItemHeight)); // Itemclass
 
                 double expensesAmount = check.ExpensesAmount;

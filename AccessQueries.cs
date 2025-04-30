@@ -868,30 +868,40 @@ namespace VoucherPro
                                     //IncrementalID = nextID,
                                     IncrementalID = nextID.ToString("D6")
                                 };
-                                string secondQuery = @"SELECT 
-                                                        AssetAccountRefFullname
-                                                    FROM 
-                                                        Item
-                                                    WHERE 
-                                                        Item.listID = ?";
+                                string secondQuery = @"SELECT AssetAccountRefFullname, AssetAccountRefListID FROM Item WHERE ListID = ?";
                                 using (OleDbConnection secondConnection = new OleDbConnection(accessConnectionString))
                                 {
                                     secondConnection.Open();
-
                                     using (OleDbCommand secondCommand = new OleDbCommand(secondQuery, secondConnection))
                                     {
-                                        secondCommand.Parameters.AddWithValue("Item.ListID", OleDbType.VarChar).Value = itemReader["ItemLineItemRefListID"];
-
+                                        secondCommand.Parameters.AddWithValue("ListID", OleDbType.VarChar).Value = itemReader["ItemLineItemRefListID"];
                                         using (OleDbDataReader secondReader = secondCommand.ExecuteReader())
                                         {
                                             while (secondReader.Read())
                                             {
                                                 newCheckItem.AccountName = secondReader["AssetAccountRefFullname"] != DBNull.Value ? secondReader["AssetAccountRefFullname"].ToString() : string.Empty;
-                                                //newCheckItem.AccountNumber = secondReader["AccountNumber"] != DBNull.Value ? secondReader["AccountNumber"].ToString() : string.Empty;
+                                                string assetAccountRefListID = secondReader["AssetAccountRefListID"] != DBNull.Value? secondReader["AssetAccountRefListID"].ToString() : string.Empty;
+
+                                                if (!string.IsNullOrEmpty(assetAccountRefListID))
+                                                {
+                                                    // Get AccountNumber from Account table using AssetAccountRefListID
+                                                    string getAssetAccountNumberQuery = @"SELECT AccountNumber FROM Account WHERE ListID = ?";
+                                                    using (OleDbCommand accCmd = new OleDbCommand(getAssetAccountNumberQuery, secondConnection))
+                                                    {
+                                                        accCmd.Parameters.AddWithValue("ListID", OleDbType.VarChar).Value = assetAccountRefListID;
+                                                        using (OleDbDataReader accReader = accCmd.ExecuteReader())
+                                                        {
+                                                            while (accReader.Read())
+                                                            {
+                                                                newCheckItem.AssetAccountNumber = accReader["AccountNumber"] != DBNull.Value
+                                                                    ? accReader["AccountNumber"].ToString() : string.Empty;
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
-
                                     secondConnection.Close();
                                 }
                                 checks.Add(newCheckItem);
@@ -941,6 +951,22 @@ namespace VoucherPro
                                     //IncrementalID = nextID, // Assign the CV000001 here
                                     IncrementalID = nextID.ToString("D6"),
                                 };
+                                string getExpenseAccountNumberQuery = @"SELECT AccountNumber FROM Account WHERE ListID = ?";
+                                using (OleDbConnection accountConn = new OleDbConnection(accessConnectionString))
+                                {
+                                    accountConn.Open();
+                                    using (OleDbCommand accCmd = new OleDbCommand(getExpenseAccountNumberQuery, accountConn))
+                                    {
+                                        accCmd.Parameters.AddWithValue("ListID", OleDbType.VarChar).Value = expenseReader["ExpenseLineAccountRefListID"];
+                                        using (OleDbDataReader accReader = accCmd.ExecuteReader())
+                                        {
+                                            while (accReader.Read())
+                                            {
+                                                newCheckExpense.AccountNumber = accReader["AccountNumber"] != DBNull.Value ? accReader["AccountNumber"].ToString() : string.Empty;
+                                            }
+                                        }
+                                    }
+                                }
                                 checks.Add(newCheckExpense);
                             }
                         }

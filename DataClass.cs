@@ -115,6 +115,7 @@ namespace VoucherPro
             public string POnumber { get; set; }
             public string TxnID { get; set; }
             public DateTime DateCreatedHistory { get; set; }
+            public string AssetAccountNumber { get; set; }
             public string MemoHistory { get; set; }
             public double AmountHistory { get; set; }
             public string RefNumberHistory { get; set; }
