@@ -137,20 +137,21 @@ namespace VoucherPro.Clients
                     string itemAccountNumber = checkData[i].AccountNumber;
                     double itemAmount = checkData[i].ItemAmount;
                     string itemClass = checkData[i].ItemClass;
+                    string itemAssetName = checkData[i].AssetAccountName;
                     string itemAssetNumber = checkData[i].AssetAccountNumber;
 
-                    if (itemName != "" && itemAmount != 0)
+                    if (itemAssetName != "" && itemAmount != 0)
                     {
-                        if (groupedItemData.ContainsKey(itemName))
+                        if (groupedItemData.ContainsKey(itemAssetName))
                         {
                             // Update the existing value by adding the item amount and keeping the itemAssetNumber
-                            var existingData = groupedItemData[itemName];
-                            groupedItemData[itemName] = new Tuple<double, string>(existingData.Item1 + itemAmount, existingData.Item2);
+                            var existingData = groupedItemData[itemAssetName];
+                            groupedItemData[itemAssetName] = new Tuple<double, string>(existingData.Item1 + itemAmount, existingData.Item2);
                         }
                         else
                         {
                             // Add new entry with both amount and asset account number
-                            groupedItemData[itemName] = new Tuple<double, string>(itemAmount, itemAssetNumber);
+                            groupedItemData[itemAssetName] = new Tuple<double, string>(itemAmount, itemAssetNumber);
                         }
                     }
                 }
@@ -184,8 +185,8 @@ namespace VoucherPro.Clients
 
             // 2nd Table Headers
             e.Graphics.DrawRectangle(Pens.Black, 50, firstTableYPos, tableWidth - (300 + 150), 20); // Particular header
-            e.Graphics.DrawRectangle(Pens.Black, 50 + 300, firstTableYPos, 150, 20); // Class header
-            e.Graphics.DrawRectangle(Pens.Black, 50 + 450, firstTableYPos, 150, 20); // Debit header
+            e.Graphics.DrawRectangle(Pens.Black, 50 + 300, firstTableYPos, 155, 20); // Class header
+            e.Graphics.DrawRectangle(Pens.Black, 50 + 455, firstTableYPos, 145, 20); // Debit header
             e.Graphics.DrawRectangle(Pens.Black, 50 + 600, firstTableYPos, 150, 20); // Credit header
 
             e.Graphics.DrawString("Particular", font_Header, Brushes.Black, new RectangleF(25, firstTableYPos, tableWidth - (300 + 100), 20), sfAlignCenter);
@@ -194,7 +195,7 @@ namespace VoucherPro.Clients
             e.Graphics.DrawString("Credit", font_Header, Brushes.Black, new RectangleF(50 + 600, firstTableYPos, 150, 20), sfAlignCenter);
 
             e.Graphics.DrawLine(Pens.Black, 50 + 300, firstTableYPos + 20, 50 + 300, secondTableYPos); // Line ha class
-            e.Graphics.DrawLine(Pens.Black, 50 + 450, firstTableYPos + 20, 50 + 450, secondTableYPos); // Line ha debit
+            e.Graphics.DrawLine(Pens.Black, 50 + 455, firstTableYPos + 20, 50 + 455, secondTableYPos); // Line ha debit
             e.Graphics.DrawLine(Pens.Black, 50 + 600, firstTableYPos + 20, 50 + 600, secondTableYPos); // Line ha credit
             e.Graphics.DrawLine(Pens.Black, 50, secondTableYPos, tableWidth + 50, secondTableYPos); // Line ha ubos
 
@@ -278,7 +279,7 @@ namespace VoucherPro.Clients
 
             foreach (var check in checkData)
             {
-                e.Graphics.DrawString(check.AccountNumber + " - " + check.Account, font_Data, Brushes.Black,new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), perItemHeight)); // Item
+                e.Graphics.DrawString(check.AccountNumber + " " + check.Account, font_Data, Brushes.Black,new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), perItemHeight)); // Item
 
                 e.Graphics.DrawString(check.ItemClass, font_Data2, Brushes.Black, new RectangleF(50 + 300, firstTableYPos + 20 + 4 + pos, tableWidth - (500 + 90), perItemHeight)); // Itemclass
 

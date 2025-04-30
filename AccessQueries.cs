@@ -885,7 +885,7 @@ namespace VoucherPro
                                                 if (!string.IsNullOrEmpty(assetAccountRefListID))
                                                 {
                                                     // Get AccountNumber from Account table using AssetAccountRefListID
-                                                    string getAssetAccountNumberQuery = @"SELECT AccountNumber FROM Account WHERE ListID = ?";
+                                                    string getAssetAccountNumberQuery = @"SELECT AccountNumber, Name FROM Account WHERE ListID = ?";
                                                     using (OleDbCommand accCmd = new OleDbCommand(getAssetAccountNumberQuery, secondConnection))
                                                     {
                                                         accCmd.Parameters.AddWithValue("ListID", OleDbType.VarChar).Value = assetAccountRefListID;
@@ -893,8 +893,8 @@ namespace VoucherPro
                                                         {
                                                             while (accReader.Read())
                                                             {
-                                                                newCheckItem.AssetAccountNumber = accReader["AccountNumber"] != DBNull.Value
-                                                                    ? accReader["AccountNumber"].ToString() : string.Empty;
+                                                                newCheckItem.AssetAccountNumber = accReader["AccountNumber"] != DBNull.Value? accReader["AccountNumber"].ToString() : string.Empty;
+                                                                newCheckItem.AssetAccountName = accReader["Name"] != DBNull.Value ? accReader["Name"].ToString() : string.Empty;
                                                             }
                                                         }
                                                     }
