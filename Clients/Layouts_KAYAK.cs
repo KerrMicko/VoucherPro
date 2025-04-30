@@ -127,8 +127,7 @@ namespace VoucherPro.Clients
 
             int itemsLimit = 8;
 
-            Dictionary<string, double> groupedItemData = new Dictionary<string, double>();
-            //Dictionary<string, double> groupedExpenseData = new Dictionary<string, double>();
+            Dictionary<string, Tuple<double, string>> groupedItemData = new Dictionary<string, Tuple<double, string>>();
 
             try
             {
@@ -144,11 +143,14 @@ namespace VoucherPro.Clients
                     {
                         if (groupedItemData.ContainsKey(itemName))
                         {
-                            groupedItemData[itemName] += itemAmount;
+                            // Update the existing value by adding the item amount and keeping the itemAssetNumber
+                            var existingData = groupedItemData[itemName];
+                            groupedItemData[itemName] = new Tuple<double, string>(existingData.Item1 + itemAmount, existingData.Item2);
                         }
                         else
                         {
-                            groupedItemData[itemName] = itemAmount;
+                            // Add new entry with both amount and asset account number
+                            groupedItemData[itemName] = new Tuple<double, string>(itemAmount, itemAssetNumber);
                         }
                     }
                 }
@@ -251,22 +253,33 @@ namespace VoucherPro.Clients
 
             foreach (var item in groupedItemData)
             {
-                //Console.WriteLine($"Account Name: {entry.Key}, Total Amount: {entry.Value}");
-                e.Graphics.DrawString($"{item.Key}", font_Nine, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), 25));
-                e.Graphics.DrawString($"{item.Value:N2}", font_Nine, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + 20 + 4 + pos, 150, perItemHeight), sfAlignRight); // Credit
+                double totalAmount = item.Value.Item1;  // Total amount (Item1 in Tuple)
+                string assetAccountNumber = item.Value.Item2;  // Asset Account Number (Item2 in Tuple)
 
-                if (item.Value > 0)
+                // Draw the account name (item.Key)
+                e.Graphics.DrawString($"{assetAccountNumber}" + " - "+ $"{item.Key}", font_Nine, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), 25));
+
+                // Draw the total amount (item.Value.Item1)
+                e.Graphics.DrawString($"{totalAmount:N2}", font_Nine, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + 20 + 4 + pos, 150, perItemHeight), sfAlignRight); // Credit
+
+
+                // Accumulate totals if needed
+                if (totalAmount > 0)
                 {
-                    debitTotalAmount += item.Value;
+                    debitTotalAmount += totalAmount;
                 }
+
                 pos += 25;
             }
+
+
 
             amountPos += pos;
 
             foreach (var check in checkData)
             {
-                e.Graphics.DrawString(check.AccountNumber + " " + check.Account, font_Data, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), perItemHeight)); // Item
+                e.Graphics.DrawString(check.AccountNumber + " - " + check.Account, font_Data, Brushes.Black,new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), perItemHeight)); // Item
+
                 e.Graphics.DrawString(check.ItemClass, font_Data2, Brushes.Black, new RectangleF(50 + 300, firstTableYPos + 20 + 4 + pos, tableWidth - (500 + 90), perItemHeight)); // Itemclass
 
                 double expensesAmount = check.ExpensesAmount;
