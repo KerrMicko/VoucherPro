@@ -279,9 +279,9 @@ namespace VoucherPro.Clients
 
             foreach (var check in checkData)
             {
-                e.Graphics.DrawString(check.AccountNumber + " " + check.Account, font_Data, Brushes.Black,new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), perItemHeight)); // Item
+                e.Graphics.DrawString(check.AccountNumber + " - " + check.AccountNameCheck, font_Data, Brushes.Black,new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), perItemHeight)); // Item
 
-                e.Graphics.DrawString(check.ItemClass, font_Data2, Brushes.Black, new RectangleF(50 + 300, firstTableYPos + 20 + 4 + pos, tableWidth - (500 + 90), perItemHeight)); // Itemclass
+                e.Graphics.DrawString(check.ItemClass, font_Data2, Brushes.Black, new RectangleF(50 + 300, firstTableYPos + 20 + 4 + pos, tableWidth - (500 + 90), perItemHeight), sfAlignCenter); // Itemclass
 
                 double expensesAmount = check.ExpensesAmount;
                 if (expensesAmount != 0)

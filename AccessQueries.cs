@@ -951,7 +951,7 @@ namespace VoucherPro
                                     //IncrementalID = nextID, // Assign the CV000001 here
                                     IncrementalID = nextID.ToString("D6"),
                                 };
-                                string getExpenseAccountNumberQuery = @"SELECT AccountNumber FROM Account WHERE ListID = ?";
+                                string getExpenseAccountNumberQuery = @"SELECT AccountNumber, Name FROM Account WHERE ListID = ?";
                                 using (OleDbConnection accountConn = new OleDbConnection(accessConnectionString))
                                 {
                                     accountConn.Open();
@@ -963,6 +963,7 @@ namespace VoucherPro
                                             while (accReader.Read())
                                             {
                                                 newCheckExpense.AccountNumber = accReader["AccountNumber"] != DBNull.Value ? accReader["AccountNumber"].ToString() : string.Empty;
+                                                newCheckExpense.AccountNameCheck = accReader["Name"] != DBNull.Value ? accReader["Name"].ToString() : string.Empty;
                                             }
                                         }
                                     }

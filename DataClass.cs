@@ -107,6 +107,7 @@ namespace VoucherPro
             // Properties specific to expenses
             public string Account { get; set; }
             public string AccountName { get; set; }
+            public string AccountNameCheck { get; set; }
             public string AccountNumber { get; set; }
             public double ExpensesAmount { get; set; }
             public string ExpensesMemo { get; set; }
