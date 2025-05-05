@@ -66,6 +66,12 @@
       <DependentUpon>CRAPV_LEADS.rpt</DependentUpon>
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Clients\CRCV_KAYAK.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CRCV_KAYAK.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Clients\Layouts_KAYAK.cs" />
     <Compile Include="Clients\Layouts_LEADS.cs" />
     <Compile Include="Dashboard.cs" />
@@ -85,6 +91,10 @@
     <EmbeddedResource Include="Clients\CRAPV_LEADS.rpt">
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
       <LastGenOutput>CRAPV_LEADS.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Clients\CRCV_KAYAK.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>CRCV_KAYAK.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
