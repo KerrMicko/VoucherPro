@@ -611,13 +611,13 @@ namespace VoucherPro
                             if (cvData.Count > 0)
                             {
                                 TextObject textObject_CVCheckNumber = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVCheckNumber"] as TextObject;
-                                //TextObject textObject_CVRefNumber = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVRefNumber"] as TextObject;
-                                //TextObject textObject_CVAmountInWords = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVAmountInWords"] as TextObject;
-                                //TextObject textObject_CVBank = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVBank"] as TextObject;
-                                //TextObject textObject_CVCheckDate = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVCheckDate"] as TextObject;
-                                //TextObject textObject_CVPayee = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVPayee"] as TextObject;
-                                //TextObject textObject_CVTotalAmount = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVTotalAmount"] as TextObject;
-                                //TextObject textObject_Paid = cRCV_Kayak.ReportDefinition.ReportObjects["TextPaid"] as TextObject;
+                                TextObject textObject_CVRefNumber = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVRefNumber"] as TextObject;
+                                TextObject textObject_CVAmountInWords = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVAmountInWords"] as TextObject;
+                                TextObject textObject_CVBank = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVBank"] as TextObject;
+                                TextObject textObject_CVCheckDate = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVCheckDate"] as TextObject;
+                                TextObject textObject_CVPayee = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVPayee"] as TextObject;
+                                TextObject textObject_CVTotalAmount = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVTotalAmount"] as TextObject;
+                                TextObject textObject_Paid = cRCV_Kayak.ReportDefinition.ReportObjects["TextPaid"] as TextObject;
 
                                 AccessToDatabase accessToDatabase = new AccessToDatabase();
 
@@ -630,14 +630,14 @@ namespace VoucherPro
                                 double amount = cvData[0].TotalAmount;
                                 string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
 
-                                //textObject_Paid.Text = "";
+                                textObject_Paid.Text = "";
 
-                                //textObject_CVRefNumber.Text = textBox_SeriesNumber.Text;
-                                //textObject_CVAmountInWords.Text = amountInWords;
-                                //textObject_CVBank.Text = cvData[0].BankAccount;
-                                //textObject_CVCheckDate.Text = cvData[0].DateCreated.ToString("dd-MMM-yyyy");
-                                //textObject_CVPayee.Text = cvData[0].PayeeFullName.ToString();
-                                //textObject_CVTotalAmount.Text = cvData[0].TotalAmount.ToString("N2");
+                                textObject_CVRefNumber.Text = textBox_SeriesNumber.Text;
+                                textObject_CVAmountInWords.Text = amountInWords;
+                                textObject_CVBank.Text = cvData[0].BankAccount;
+                                textObject_CVCheckDate.Text = cvData[0].DateCreated.ToString("dd-MMM-yyyy");
+                                textObject_CVPayee.Text = cvData[0].PayeeFullName.ToString();
+                                textObject_CVTotalAmount.Text = cvData[0].TotalAmount.ToString("N2");
 
 
                                 string refNumber = textBox_ReferenceNumber_CR.Text;
@@ -1593,8 +1593,8 @@ namespace VoucherPro
                         label_SeriesNumberText.Text = "Current Series Number: CV";
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");
 
-                        panel_Main.Visible = true;
-                        panel_Main_CR.Visible = false;
+                        panel_Main.Visible = false;
+                        panel_Main_CR.Visible = true;
                         break;
 
                     default:
@@ -1630,7 +1630,7 @@ namespace VoucherPro
 
                 // Update the connection information
                 tableLogOnInfo.ConnectionInfo.ServerName = databasePath;
-                tableLogOnInfo.ConnectionInfo.DatabaseName = "";
+                tableLogOnInfo.ConnectionInfo.DatabaseName = databasePath;
                 tableLogOnInfo.ConnectionInfo.UserID = ""; // Leave blank for Access
                 tableLogOnInfo.ConnectionInfo.Password = ""; // Leave blank for Access
 
@@ -1639,7 +1639,7 @@ namespace VoucherPro
             }
 
             // Update subreports if any
-            /*foreach (Section section in reportDocument.ReportDefinition.Sections)
+            foreach (Section section in reportDocument.ReportDefinition.Sections)
             {
                 foreach (ReportObject reportObject in section.ReportObjects)
                 {
@@ -1650,7 +1650,7 @@ namespace VoucherPro
                         SetDatabaseLocation(subreportDocument, databasePath);
                     }
                 }
-            }*/
+            }
         }
 
         private void TextBox_SeriesNumber_TextChanged(object sender, EventArgs e)
