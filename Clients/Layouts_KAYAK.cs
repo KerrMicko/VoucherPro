@@ -184,17 +184,17 @@ namespace VoucherPro.Clients
             int secondTableYPos = firstTableYPos + 40 + secondTableHeight;
 
             // 2nd Table Headers
-            e.Graphics.DrawRectangle(Pens.Black, 50, firstTableYPos, tableWidth - (300 + 150), 20); // Particular header
-            e.Graphics.DrawRectangle(Pens.Black, 50 + 300, firstTableYPos, 155, 20); // Class header
+            e.Graphics.DrawRectangle(Pens.Black, 50, firstTableYPos, tableWidth - (300 + 180), 20); // Particular header
+            e.Graphics.DrawRectangle(Pens.Black, 50 + 270, firstTableYPos, 185, 20); // Class header
             e.Graphics.DrawRectangle(Pens.Black, 50 + 455, firstTableYPos, 145, 20); // Debit header
             e.Graphics.DrawRectangle(Pens.Black, 50 + 600, firstTableYPos, 150, 20); // Credit header
 
             e.Graphics.DrawString("Particular", font_Header, Brushes.Black, new RectangleF(25, firstTableYPos, tableWidth - (300 + 100), 20), sfAlignCenter);
-            e.Graphics.DrawString("Class", font_Header, Brushes.Black, new RectangleF(50 + 300 + 25, firstTableYPos, 100, 20), sfAlignCenter);
+            e.Graphics.DrawString("Class", font_Header, Brushes.Black, new RectangleF(50 + 300 + 10, firstTableYPos, 100, 20), sfAlignCenter);
             e.Graphics.DrawString("Debit", font_Header, Brushes.Black, new RectangleF(50 + 450, firstTableYPos, 150, 20), sfAlignCenter);
             e.Graphics.DrawString("Credit", font_Header, Brushes.Black, new RectangleF(50 + 600, firstTableYPos, 150, 20), sfAlignCenter);
 
-            e.Graphics.DrawLine(Pens.Black, 50 + 300, firstTableYPos + 20, 50 + 300, secondTableYPos); // Line ha class
+            e.Graphics.DrawLine(Pens.Black, 50 + 270, firstTableYPos + 20, 50 + 270, secondTableYPos); // Line ha class
             e.Graphics.DrawLine(Pens.Black, 50 + 455, firstTableYPos + 20, 50 + 455, secondTableYPos); // Line ha debit
             e.Graphics.DrawLine(Pens.Black, 50 + 600, firstTableYPos + 20, 50 + 600, secondTableYPos); // Line ha credit
             e.Graphics.DrawLine(Pens.Black, 50, secondTableYPos, tableWidth + 50, secondTableYPos); // Line ha ubos
@@ -258,10 +258,10 @@ namespace VoucherPro.Clients
                 string assetAccountNumber = item.Value.Item2;  // Asset Account Number (Item2 in Tuple)
 
                 // Draw the account name (item.Key)
-                e.Graphics.DrawString($"{assetAccountNumber}" + " - "+ $"{item.Key}", font_Nine, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), 25));
+                e.Graphics.DrawString($"{assetAccountNumber}" + " - " + $"{item.Key}", font_Data, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), 25));
 
                 // Draw the total amount (item.Value.Item1)
-                e.Graphics.DrawString($"{totalAmount:N2}", font_Nine, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + 20 + 4 + pos, 150, perItemHeight), sfAlignRight); // Credit
+                e.Graphics.DrawString($"{totalAmount:N2}", font_Data, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + 20 + 4 + pos, 150, perItemHeight), sfAlignRight); // Credit
 
 
                 // Accumulate totals if needed
@@ -279,9 +279,16 @@ namespace VoucherPro.Clients
 
             foreach (var check in checkData)
             {
-                e.Graphics.DrawString(check.AccountNumber + " - " + check.AccountNameCheck, font_Data, Brushes.Black,new RectangleF(50 + 5, firstTableYPos + 20 + 4 + pos, tableWidth - (300 + 150), perItemHeight)); // Item
+                string accNum = check.AccountNumber?.Trim().TrimEnd('-') ?? "";
+                string accName = check.AccountNameCheck?.Trim().TrimStart('-') ?? "";
+                string accountText = string.Join(" - ", new[] { accNum, accName }.Where(s => !string.IsNullOrEmpty(s)));
 
-                e.Graphics.DrawString(check.ItemClass, font_Data2, Brushes.Black, new RectangleF(50 + 300, firstTableYPos + 20 + 4 + pos, tableWidth - (500 + 90), perItemHeight), sfAlignCenter); // Itemclass
+                e.Graphics.DrawString(accountText, font_Data, Brushes.Black,new RectangleF(55, firstTableYPos + 24 + pos, tableWidth - 485, perItemHeight));
+                //e.Graphics.DrawRectangle(Pens.Blue, 55, firstTableYPos + 24 + pos, tableWidth - 485, perItemHeight);
+
+                e.Graphics.DrawString(check.ItemClass, font_Data2, Brushes.Black, new RectangleF(50 + 270, firstTableYPos + 20 + 4 + pos, tableWidth - (500 + 65), perItemHeight), sfAlignCenter); // Itemclass
+                //e.Graphics.DrawRectangle(Pens.Red, 50 + 270, firstTableYPos + 20 + 4 + pos, tableWidth - (500 + 65), perItemHeight);
+
 
                 double expensesAmount = check.ExpensesAmount;
                 if (expensesAmount != 0)
