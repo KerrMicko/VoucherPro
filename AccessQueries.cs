@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static VoucherPro.DataClass;
 using static VoucherPro.AccessToDatabase;
+using static VoucherPro.DataClass.CheckTableExpensesAndItems;
 
 namespace VoucherPro
 {
@@ -866,9 +867,12 @@ namespace VoucherPro
                                     ItemType = ItemType.Item,
 
                                     //IncrementalID = nextID,
-                                    IncrementalID = nextID.ToString("D6")
+                                    IncrementalID = nextID.ToString("D6"),
+
+                                   
                                 };
-                                string secondQuery = @"SELECT AssetAccountRefFullname, AssetAccountRefListID FROM Item WHERE ListID = ?";
+
+                                string secondQuery = @"SELECT Name, AssetAccountRefFullname, AssetAccountRefListID FROM Item WHERE ListID = ?";
                                 using (OleDbConnection secondConnection = new OleDbConnection(accessConnectionString))
                                 {
                                     secondConnection.Open();
@@ -880,6 +884,7 @@ namespace VoucherPro
                                             while (secondReader.Read())
                                             {
                                                 newCheckItem.AccountName = secondReader["AssetAccountRefFullname"] != DBNull.Value ? secondReader["AssetAccountRefFullname"].ToString() : string.Empty;
+                                                newCheckItem.ItemName = secondReader["Name"] != DBNull.Value ? secondReader["Name"].ToString() : string.Empty;
                                                 string assetAccountRefListID = secondReader["AssetAccountRefListID"] != DBNull.Value? secondReader["AssetAccountRefListID"].ToString() : string.Empty;
 
                                                 if (!string.IsNullOrEmpty(assetAccountRefListID))
@@ -914,6 +919,7 @@ namespace VoucherPro
                                       "Check.AddressAddr1, Check.Memo, " +
                                       "Check.AddressAddr2," +
                                       "CheckExpenseLine.ExpenseLineAccountRefFullName, " +
+                                      "CheckExpenseLine.ExpenseLineClassRefFullName, " +
                                       "CheckExpenseLine.ExpenseLineAccountRefListID, " +
                                       "CheckExpenseLine.ExpenseLineAmount, CheckExpenseLine.ExpenseLineMemo, " +
                                       "CheckExpenseLine.ExpenseLineCustomerRefFullName, " +
@@ -943,6 +949,7 @@ namespace VoucherPro
                                     Memo = expenseReader["Memo"] != DBNull.Value ? expenseReader["Memo"].ToString() : string.Empty,
 
                                     Account = expenseReader["ExpenseLineAccountRefFullName"] != DBNull.Value ? expenseReader["ExpenseLineAccountRefFullName"].ToString() : string.Empty,
+                                    ExpenseClass = expenseReader["ExpenseLineClassRefFullName"] != DBNull.Value ? expenseReader["ExpenseLineClassRefFullName"].ToString() : string.Empty,
                                     ExpensesAmount = expenseReader["ExpenseLineAmount"] != DBNull.Value ? Convert.ToDouble(expenseReader["ExpenseLineAmount"]) : 0.0,
                                     ExpensesMemo = expenseReader["ExpenseLineMemo"] != DBNull.Value ? expenseReader["ExpenseLineMemo"].ToString() : string.Empty,
                                     ExpensesCustomerJob = expenseReader["ExpenseLineCustomerRefFullName"] != DBNull.Value ? expenseReader["ExpenseLineCustomerRefFullName"].ToString() : string.Empty,

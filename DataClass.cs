@@ -100,6 +100,7 @@ namespace VoucherPro
 
             // Properties specific to items
             public string Item { get; set; }
+            public string ItemName { get; set; }
             public string ItemDescription { get; set; }
             public string ItemClass { get; set; }
             public double ItemAmount { get; set; }
@@ -112,6 +113,7 @@ namespace VoucherPro
             public double ExpensesAmount { get; set; }
             public string ExpensesMemo { get; set; }
             public string ExpensesCustomerJob { get; set; }
+            public string ExpenseClass { get; set; }
             public string TinID { get; set; }
             public string POnumber { get; set; }
             public string TxnID { get; set; }
@@ -124,6 +126,8 @@ namespace VoucherPro
             public string HistoryCVNumber { get; set; }
             public string HistoryAPVNumber { get; set; }
             public string Remarks { get; set; }
+
+            public string AccountClassCheck { get; set; }
 
             // Indicates whether it's an item or an expense
             public ItemType ItemType { get; set; }

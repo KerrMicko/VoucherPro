@@ -563,9 +563,9 @@ namespace VoucherPro
                                     TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
                                     debitTotalAmount -= creditTotalAmount;
 
-                                    textObject_Payable.Text = apvData[0].AccountNumber.ToString() + " - " + apvData[0].AccountName.ToString();
-                                    textObject_PayableAmount.Text = debitTotalAmount.ToString("N2");
-                                    textObject_Remarks.Text = "Remarks: " + apvData[0].Memo.ToString();
+                                    //textObject_Payable.Text = apvData[0].AccountNumber.ToString() + " - " + apvData[0].AccountName.ToString();
+                                    //textObject_PayableAmount.Text = debitTotalAmount.ToString("N2");
+                                    //textObject_Remarks.Text = "Remarks: " + apvData[0].Memo.ToString();
                                     // Create a DataTable with 4 columns
                                     DataTable dataTable = new DataTable();
                                     dataTable.Columns.Add("Particulars", typeof(string)); // First column
@@ -652,16 +652,16 @@ namespace VoucherPro
                                 textObject_ReceivedBy.Text = ReceivedByName;
                                 textObject_ReceivedByPos.Text = ReceivedByPosition;*/
 
-                                /*double debitTotalAmount = 0;
-                                double creditTotalAmount = 0;*/
+                                double debitTotalAmount = 0;
+                                double creditTotalAmount = 0;
 
-                                /*foreach (var bill in apvData)
+                                /*foreach (var check in cvData)
                                 {
                                     try
                                     {
-                                        for (int i = 0; i < bill.AccountNameParticularsList.Count; i++)
+                                        for (int i = 0; i < check.ItemNames.Count; i++)
                                         {
-                                            double itemAmount = bill.ItemDetails[i].ItemLineAmount;
+                                            double itemAmount = check.ItemAmount;
 
                                             if (itemAmount > 0)
                                             {
@@ -673,11 +673,11 @@ namespace VoucherPro
                                             }
                                         }
 
-                                        foreach (var item in bill.ItemDetails)
+                                        foreach (var expense in cvData)
                                         {
-                                            if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                                            if (!string.IsNullOrEmpty(expense.AccountNameCheck))
                                             {
-                                                double expenseAmount = item.ExpenseLineAmount;
+                                                double expenseAmount = expense.ExpensesAmount;
 
                                                 if (expenseAmount > 0)
                                                 {
@@ -695,10 +695,39 @@ namespace VoucherPro
                                     {
                                         MessageBox.Show($"An error occurred while computing for total debit and credit: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     }
-                                }
+                                }*/
 
-                                textObject_TotalDebit.Text = debitTotalAmount.ToString("N2");
+                                /*textObject_TotalDebit.Text = debitTotalAmount.ToString("N2");
                                 textObject_TotalCredit.Text = debitTotalAmount.ToString("N2");*/
+
+                                // Locate the subreport object in the main report
+                                SubreportObject subreportObject = cRCV_Kayak.ReportDefinition.ReportObjects["SubreportCVDetails"] as SubreportObject;
+
+                                if (subreportObject != null)
+                                {
+                                    // Get the ReportDocument of the subreport
+                                    ReportDocument subReportDocument = cRCV_Kayak.OpenSubreport(subreportObject.SubreportName);
+
+                                    // Access the desired TextObject in the subreport
+
+                                    //TextObject textObject_Payable = subReportDocument.ReportDefinition.ReportObjects["TextPayable"] as TextObject;
+                                    //TextObject textObject_PayableAmount = subReportDocument.ReportDefinition.ReportObjects["TextPayableAmount"] as TextObject;
+                                    //TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
+                                    debitTotalAmount -= creditTotalAmount;
+
+                                    //textObject_Payable.Text = apvData[0].AccountNumber.ToString() + " - " + apvData[0].AccountName.ToString();
+                                    //textObject_PayableAmount.Text = debitTotalAmount.ToString("N2");
+                                    //textObject_Remarks.Text = "Remarks: " + apvData[0].Memo.ToString();
+                                    // Create a DataTable with 4 columns
+
+                                    DataTable dataTable = new DataTable();
+                                    dataTable.Columns.Add("Particulars", typeof(string)); // First column
+                                    dataTable.Columns.Add("Class", typeof(string)); // Second column
+                                    dataTable.Columns.Add("Debit", typeof(string)); // Third column
+                                    dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
+
+                                    InsertDataToCheckVoucherCompiled(refNumber, cvData);
+                                }
 
                                 cRCV_Kayak.SetParameterValue("ReferenceNumber", refNumber);
 
@@ -844,6 +873,117 @@ namespace VoucherPro
             Console.WriteLine($"Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
             //MessageBox.Show("Data has been inserted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
+
+        public static void InsertDataToCheckVoucherCompiled(string refNumber, List<CheckTableExpensesAndItems> checkData)
+        {
+            string connectionString = AccessToDatabase.GetAccessConnectionString();
+            double debitTotalAmount = 0;
+            double creditTotalAmount = 0;
+
+            using (OleDbConnection connection = new OleDbConnection(connectionString))
+            {
+                connection.Open();
+
+                // Clear old data
+                string deleteQuery = "DELETE FROM CheckVoucherCompiled";
+                using (OleDbCommand deleteCommand = new OleDbCommand(deleteQuery, connection))
+                {
+                    try
+                    {
+                        deleteCommand.ExecuteNonQuery();
+                        Console.WriteLine("Old data has been deleted from CheckVoucherCompiled.");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error deleting data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
+
+                string insertQuery = "INSERT INTO CheckVoucherCompiled (RefNumber, Particulars, [Class], Debit, Credit) VALUES (@RefNumber, @Particulars, @Class, @Debit, @Credit)";
+
+                foreach (var check in checkData)
+                {
+                    try
+                    {
+                       
+                        // Insert expense details
+
+                        // KULANG HIN ACCOUNT NUMBER
+                        if (!string.IsNullOrEmpty(check.ItemName))
+                        {
+                            string itemName = check.ItemName;
+                            string itemClass = check.ItemClass;
+                            double itemAmount = check.ItemAmount;
+
+                            string debit = itemAmount > 0 ? itemAmount.ToString("N2") : "";
+                            string credit = itemAmount < 0 ? Math.Abs(itemAmount).ToString("N2") : "";
+
+                            if (itemAmount > 0)
+                            {
+                                debitTotalAmount += itemAmount;
+                            }
+                            else if (itemAmount < 0)
+                            {
+                                creditTotalAmount += Math.Abs(itemAmount);
+                            }
+
+                            using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                            {
+                                command.Parameters.AddWithValue("@RefNumber", refNumber);
+                                command.Parameters.AddWithValue("@Particulars", itemName);
+                                command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(itemClass) ? (object)DBNull.Value : itemClass);
+                                command.Parameters.AddWithValue("@Debit", debit);
+                                command.Parameters.AddWithValue("@Credit", credit);
+                                command.ExecuteNonQuery();
+                            }
+
+                            Console.WriteLine($"Inserted Expense: {itemName}, Debit: {debit}, Credit: {credit}");
+                        }
+
+                        if (!string.IsNullOrEmpty(check.AccountNameCheck))
+                        {
+                            string expenseName = check.AccountNameCheck;
+                            string expenseClass = check.AccountClassCheck;
+                            double expenseAmount = check.ExpensesAmount;
+
+                            string debit = expenseAmount > 0 ? expenseAmount.ToString("N2") : "";
+                            string credit = expenseAmount < 0 ? Math.Abs(expenseAmount).ToString("N2") : "";
+
+                            if (expenseAmount > 0)
+                            {
+                                debitTotalAmount += expenseAmount;
+                            }
+                            else if (expenseAmount < 0)
+                            {
+                                creditTotalAmount += Math.Abs(expenseAmount);
+                            }
+
+                            using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                            {
+                                command.Parameters.AddWithValue("@RefNumber", refNumber);
+                                command.Parameters.AddWithValue("@Particulars", expenseName);
+                                command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(expenseClass) ? (object)DBNull.Value : expenseClass);
+                                command.Parameters.AddWithValue("@Debit", debit);
+                                command.Parameters.AddWithValue("@Credit", credit);
+                                command.ExecuteNonQuery();
+                            }
+
+                            Console.WriteLine($"Inserted Expense: {expenseName}, Debit: {debit}, Credit: {credit}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error processing check data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+
+                connection.Close();
+            }
+
+            Console.WriteLine($"Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
+        }
+
 
 
         private FlowLayoutPanel Panel_SBRefNumber()
