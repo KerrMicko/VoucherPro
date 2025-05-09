@@ -110,6 +110,7 @@ namespace VoucherPro
             public string AccountName { get; set; }
             public string AccountNameCheck { get; set; }
             public string AccountNumber { get; set; }
+            public string BankAccountNumber { get; set; }
             public double ExpensesAmount { get; set; }
             public string ExpensesMemo { get; set; }
             public string ExpensesCustomerJob { get; set; }

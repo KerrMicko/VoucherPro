@@ -826,6 +826,7 @@ namespace VoucherPro
 
                     string itemQuery = "SELECT TOP 1000 Check.TxnDate, " +
                         "Check.AccountRefFullName, " +
+                        "Check.AccountRefListID, " +
                         "Check.PayeeEntityRefFullName, " +
                         "Check.RefNumber, " +
                         "Check.Amount, " +
@@ -871,6 +872,23 @@ namespace VoucherPro
 
                                    
                                 };
+                                string bankAccountRefListID = itemReader["AccountRefListID"] != DBNull.Value ? itemReader["AccountRefListID"].ToString() : string.Empty;
+
+                                if (!string.IsNullOrEmpty(bankAccountRefListID))
+                                {
+                                    string getBankAccountNumberQuery = @"SELECT AccountNumber FROM Account WHERE ListID = ?";
+                                    using (OleDbCommand bankAccCmd = new OleDbCommand(getBankAccountNumberQuery, accessConnection))
+                                    {
+                                        bankAccCmd.Parameters.AddWithValue("ListID", OleDbType.VarChar).Value = bankAccountRefListID;
+                                        using (OleDbDataReader bankReader = bankAccCmd.ExecuteReader())
+                                        {
+                                            while (bankReader.Read())
+                                            {
+                                                newCheckItem.BankAccountNumber = bankReader["AccountNumber"] != DBNull.Value ? bankReader["AccountNumber"].ToString() : string.Empty;
+                                            }
+                                        }
+                                    }
+                                }
 
                                 string secondQuery = @"SELECT Name, AssetAccountRefFullname, AssetAccountRefListID FROM Item WHERE ListID = ?";
                                 using (OleDbConnection secondConnection = new OleDbConnection(accessConnectionString))
@@ -914,7 +932,7 @@ namespace VoucherPro
                         }
                     }
 
-                    string expenseQuery = "SELECT TOP 1000 Check.TxnDate, Check.AccountRefFullName, " +
+                    string expenseQuery = "SELECT TOP 1000 Check.TxnDate, Check.AccountRefListID, Check.AccountRefFullName, " +
                                       "Check.PayeeEntityRefFullName, Check.RefNumber, Check.Amount, " +
                                       "Check.AddressAddr1, Check.Memo, " +
                                       "Check.AddressAddr2," +
@@ -958,6 +976,23 @@ namespace VoucherPro
                                     //IncrementalID = nextID, // Assign the CV000001 here
                                     IncrementalID = nextID.ToString("D6"),
                                 };
+                                string bankAccountRefListID = expenseReader["AccountRefListID"] != DBNull.Value ? expenseReader["AccountRefListID"].ToString() : string.Empty;
+
+                                if (!string.IsNullOrEmpty(bankAccountRefListID))
+                                {
+                                    string getBankAccountNumberQuery = @"SELECT AccountNumber FROM Account WHERE ListID = ?";
+                                    using (OleDbCommand bankAccCmd = new OleDbCommand(getBankAccountNumberQuery, accessConnection))
+                                    {
+                                        bankAccCmd.Parameters.AddWithValue("ListID", OleDbType.VarChar).Value = bankAccountRefListID;
+                                        using (OleDbDataReader bankReader = bankAccCmd.ExecuteReader())
+                                        {
+                                            while (bankReader.Read())
+                                            {
+                                                newCheckExpense.BankAccountNumber = bankReader["AccountNumber"] != DBNull.Value ? bankReader["AccountNumber"].ToString() : string.Empty;
+                                            }
+                                        }
+                                    }
+                                }
                                 string getExpenseAccountNumberQuery = @"SELECT AccountNumber, Name FROM Account WHERE ListID = ?";
                                 using (OleDbConnection accountConn = new OleDbConnection(accessConnectionString))
                                 {
