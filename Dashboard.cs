@@ -562,10 +562,6 @@ namespace VoucherPro
                                     TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
                                     debitTotalAmount -= creditTotalAmount;
 
-                                    //textObject_Payable.Text = apvData[0].AccountNumber.ToString() + " - " + apvData[0].AccountName.ToString();
-                                    //textObject_PayableAmount.Text = debitTotalAmount.ToString("N2");
-                                    //textObject_Remarks.Text = "Remarks: " + apvData[0].Memo.ToString();
-                                    // Create a DataTable with 4 columns
                                     DataTable dataTable = new DataTable();
                                     dataTable.Columns.Add("Particulars", typeof(string)); // First column
                                     dataTable.Columns.Add("Memo", typeof(string)); // First column
@@ -735,9 +731,18 @@ namespace VoucherPro
 
                                 cRCV_Kayak.SetParameterValue("ReferenceNumber", refNumber);
 
+                                panel_Printing.Visible = false;
+                                panel_Signatory.Visible = true;
+                                panel_Main.Visible = false;
+                                panel_Main_CR.Visible = true;
+
                                 reportViewer.ReportSource = cRCV_Kayak;
                                 reportViewer.RefreshReport();
 
+                            }
+                            else
+                            {
+                                SearchBillsByReference(refNumberCR);
                             }
                         }
 
@@ -988,6 +993,40 @@ namespace VoucherPro
             Console.WriteLine($"Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
         }
 
+
+        private void SearchBillsByReference(string refNumber)
+        {
+            AccessQueries queries = new AccessQueries();
+            bills = queries.GetBillData_KAYAK(refNumber);
+            object data = bills;
+
+            if (bills.Count > 0)
+            {
+                Layouts_KAYAK layouts_KAYAK = new Layouts_KAYAK();
+
+                printDocument = new PrintDocument();
+                printDocument.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
+                printPreviewControl.StartPage = 0;
+
+                printDocument.PrintPage += (s, ev) =>
+                {
+                    layouts_KAYAK.PrintPage_KAYAK(s, ev, 1, textBox_SeriesNumber.Text, data);
+                };
+
+                // 👇 Update panel visibility here
+                panel_Main.Visible = true;
+                panel_Signatory.Visible = true;
+                panel_Main_CR.Visible = false;
+
+                printPreviewControl.Document = printDocument;
+                printPreviewControl.Visible = true;
+                panel_Printing.Visible = true;
+            }
+            else
+            {
+                MessageBox.Show("No data found in bills either.", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
 
 
         private FlowLayoutPanel Panel_SBRefNumber()

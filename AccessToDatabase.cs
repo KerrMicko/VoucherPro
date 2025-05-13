@@ -237,6 +237,29 @@ namespace VoucherPro
                                     break;
                             }
                         }
+                        else if (client == "KAYAK")
+                        {
+                            switch (choice)
+                            {
+                                case 1:
+                                    signatoryQuery = "UPDATE Signatory SET PreparedByName = ?, PreparedByPosition = ?";
+                                    break;
+                                case 2:
+                                    signatoryQuery = "UPDATE Signatory SET ReviewedByName = ?, ReviewedByPosition = ?";
+                                    break;
+                                /*case 3:
+                                    signatoryQuery = "UPDATE Signatory SET RecommendingApprovalName = ?, RecommendingApprovalPosition = ?";
+                                    break;*/
+                                case 3:
+                                    signatoryQuery = "UPDATE Signatory SET ApprovedByName = ?, ApprovedByPosition = ?";
+                                    break;
+                                case 4:
+                                    signatoryQuery = "UPDATE Signatory SET ReceivedByName = ?, ReceivedByPosition = ?";
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
                         else
                         {
                             switch (choice)
@@ -324,6 +347,39 @@ namespace VoucherPro
                     using (OleDbCommand signatoryCommand = new OleDbCommand(signatoryQuery, connection))
                     {
                         if (client == "LEADS")
+                        {
+                            switch (choice)
+                            {
+                                case 1:
+                                    signatoryCommand.Parameters.AddWithValue("@PreparedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@PreparedByPosition", position);
+                                    break;
+
+                                case 2:
+                                    signatoryCommand.Parameters.AddWithValue("@ReviewedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ReviewedByPosition", position);
+                                    break;
+
+                                /*case 3:
+                                    signatoryCommand.Parameters.AddWithValue("@RecommendingApprovalName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@RecommendingApprovalPosition", position);
+                                    break;*/
+
+                                case 3:
+                                    signatoryCommand.Parameters.AddWithValue("@ApprovedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ApprovedByPosition", position);
+                                    break;
+
+                                case 4:
+                                    signatoryCommand.Parameters.AddWithValue("@ReceivedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ReceivedByPosition", position);
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
+                        else if (client == "KAYAK")
                         {
                             switch (choice)
                             {
@@ -601,6 +657,16 @@ namespace VoucherPro
                         "ReceivedByName, ReceivedByPosition " +
                         "FROM Signatory";
                     }
+                    else if (GlobalVariables.client == "KAYAK")
+                    {
+                        query = "SELECT TOP 1 " +
+                        "PreparedByName, PreparedByPosition, " +
+                        "ReviewedByName, ReviewedByPosition, " +
+                        //"RecommendingApprovalName, RecommendingApprovalPosition, " +
+                        "ApprovedByName, ApprovedByPosition, " +
+                        "ReceivedByName, ReceivedByPosition " +
+                        "FROM Signatory";
+                    }
                     else
                     {
                        query = "SELECT TOP 1 " +
@@ -619,6 +685,23 @@ namespace VoucherPro
                             if (reader.Read())
                             {
                                 if (client == "LEADS")
+                                {
+                                    preparedByName = reader["PreparedByName"].ToString();
+                                    preparedByPosition = reader["PreparedByPosition"].ToString();
+
+                                    reviewedByName = reader["ReviewedByName"].ToString();
+                                    reviewedByPosition = reader["ReviewedByPosition"].ToString();
+
+                                    //recommendingApprovalName = reader["RecommendingApprovalName"].ToString();
+                                    //recommendingApprovalPosition = reader["RecommendingApprovalPosition"].ToString();
+
+                                    approvedByName = reader["ApprovedByName"].ToString();
+                                    approvedByPosition = reader["ApprovedByPosition"].ToString();
+
+                                    receivedByName = reader["ReceivedByName"].ToString();
+                                    receivedByPosition = reader["ReceivedByPosition"].ToString();
+                                }
+                                if (client == "KAYAK")
                                 {
                                     preparedByName = reader["PreparedByName"].ToString();
                                     preparedByPosition = reader["PreparedByPosition"].ToString();
@@ -664,6 +747,11 @@ namespace VoucherPro
             }
 
             if (GlobalVariables.client == "LEADS")
+            {
+                recommendingApprovalName = "";
+                recommendingApprovalPosition = "";
+            }
+            else if (GlobalVariables.client == "KAYAK")
             {
                 recommendingApprovalName = "";
                 recommendingApprovalPosition = "";
