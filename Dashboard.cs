@@ -24,7 +24,7 @@ namespace VoucherPro
 {
     public class GlobalVariables
     {
-        public static string client = "KAYAK";
+        public static string client = "LEADS";
         public static bool includeImage = true;
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
@@ -439,6 +439,8 @@ namespace VoucherPro
                             apvData = new List<BillTable>();
                             apvData = accessQueries.GetAccountsPayableData_LEADS(refNumberCR);
 
+
+
                             if (apvData.Count > 0)
                             {
                                 TextObject textObject_RefNumber = cRAPV_LEADS.ReportDefinition.ReportObjects["TextRefNo"] as TextObject;
@@ -601,6 +603,7 @@ namespace VoucherPro
 
                             cvData = new List<CheckTableExpensesAndItems>();
                             cvData = accessQueries.GetCheckExpensesAndItemsData_KAYAK(refNumberCR);
+
 
 
                             if (cvData.Count > 0)

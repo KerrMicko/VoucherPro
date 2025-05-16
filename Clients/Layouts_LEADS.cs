@@ -663,7 +663,7 @@ namespace VoucherPro.Clients
 
             if (image != null)
             {
-                int imageWidth = 140; // 90
+                int imageWidth = 140;
                 int imageHeight = (int)((double)image.Height / image.Width * imageWidth);
                 resizedBitmap = new Bitmap(image, new Size(imageWidth, imageHeight));
             }
