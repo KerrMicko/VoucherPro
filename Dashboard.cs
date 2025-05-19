@@ -564,6 +564,10 @@ namespace VoucherPro
                                     TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
                                     debitTotalAmount -= creditTotalAmount;
 
+                                    textObject_PayableAmount.Text = debitTotalAmount.ToString("N2");
+                                    textObject_Payable.Text = apvData[0].APAccountRefFullName.ToString();
+                                    textObject_Remarks.Text = "Remarks: " + apvData[0].Memo.ToString();
+
                                     DataTable dataTable = new DataTable();
                                     dataTable.Columns.Add("Particulars", typeof(string)); // First column
                                     dataTable.Columns.Add("Memo", typeof(string)); // First column
