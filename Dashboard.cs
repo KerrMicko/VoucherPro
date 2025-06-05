@@ -24,7 +24,7 @@ namespace VoucherPro
 {
     public class GlobalVariables
     {
-        public static string client = "LEADS";
+        public static string client = "KAYAK";
         public static bool includeImage = true;
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
@@ -724,7 +724,7 @@ namespace VoucherPro
 
                                     textObject_AccountPayable.Text = cvData[0].BankAccountNumber + " - " + cvData[0].BankAccount.ToString();
                                     textObject_TextAmountPayable.Text = debitTotalAmount.ToString("N2");
-                                    textObject_Remarks.Text = "Remarks: " + cvData[0].Memo.ToString();
+                                    textObject_Remarks.Text = cvData[0].Memo.ToString();
                                     // Create a DataTable with 4 columns
 
                                     DataTable dataTable = new DataTable();
