@@ -391,10 +391,24 @@ namespace VoucherPro.Clients
 
             e.Graphics.DrawString(cvText, font_TwelveBold, Brushes.Black, new PointF(500 - 15, 110 + 5));
 
-            // 1st Table - Details
+            // Particulars memo
             int tableWidth = 750;
+            int memoTableHeight = 65;
+
+            string particularMemo = billData[0].Memo;
+
+            Rectangle rectMemoHeader = new Rectangle(50, 230, tableWidth, 20);
+            Rectangle rectMemoBody = new Rectangle(50, 230 + 20, tableWidth, 32);
+
+            e.Graphics.DrawRectangle(Pens.Black, rectMemoHeader);
+            e.Graphics.DrawRectangle(Pens.Black, rectMemoBody);
+
+            e.Graphics.DrawString("PARTICULARS", font_Header, Brushes.Black, rectMemoHeader, sfAlignCenter);
+            e.Graphics.DrawString(particularMemo, font_Data, Brushes.Black, rectMemoBody, sfAlignCenter);
+
+            // 1st Table - Details
             int tableHeight = 40;
-            int firstTableYPos = 180 + tableHeight + 7;
+            int firstTableYPos = 180 + tableHeight + 7 + memoTableHeight;
 
             int payeeWidth = tableWidth - 475; // 450
             //e.Graphics.DrawRectangle(Pens.Black, 50 + tableWidth - 150, 50, 150, tableHeight + 10); // CV Ref. No.
@@ -444,7 +458,7 @@ namespace VoucherPro.Clients
 
             // 2nd Table - Particulars
             int secondTableHeight = 60; // 75
-            int secondTableYPos = firstTableYPos + 40 + secondTableHeight;
+            int secondTableYPos = firstTableYPos + 40 + secondTableHeight; // 40
 
             double debitTotalAmount = billData[0].Amount;
             double creditTotalAmount = billData[0].Amount;
@@ -492,7 +506,7 @@ namespace VoucherPro.Clients
 
 
             string particularBank = billData[0].BankAccount;
-            string particularMemo = billData[0].Memo; // Remark or Memo
+            //string particularMemo = billData[0].Memo; // Remark or Memo
 
             //e.Graphics.DrawRectangle(Pens.Red, 50, firstTableYPos + 20, tableWidth - (300 + 100), perItemHeight); // Particular 
             //e.Graphics.DrawRectangle(Pens.Blue, 50 + 70, firstTableYPos + 50, tableWidth - (300 + 170), perItemHeight - 30); // Remark 
@@ -502,8 +516,8 @@ namespace VoucherPro.Clients
 
             e.Graphics.DrawString(particularAccount, font_Data, Brushes.Black, new RectangleF(50 + 5, firstTableYPos + 20 + 4, tableWidth - (300 + 100), perItemHeight)); // Item1
             e.Graphics.DrawString(particularBank, font_Data, Brushes.Black, new RectangleF(50 + 15, firstTableYPos + 20 + 12 + 4, tableWidth - (300 + 110), perItemHeight)); // Item1 Bank
-            e.Graphics.DrawString("*Remarks: ", font_Data, Brushes.Black, new RectangleF(50 + 10, firstTableYPos + 20 + 30 + 4, tableWidth - (300 + 100), perItemHeight - 30)); // Item1 Remark / Memo
-            e.Graphics.DrawString(particularMemo, font_Seven, Brushes.Black, new RectangleF(50 + 75, firstTableYPos + 50 + 4, tableWidth - (300 + 170), perItemHeight)); // Item1 Remark / Memo
+            //e.Graphics.DrawString("*Remarks: ", font_Data, Brushes.Black, new RectangleF(50 + 10, firstTableYPos + 20 + 30 + 4, tableWidth - (300 + 100), perItemHeight - 30)); // Item1 Remark / Memo
+            //e.Graphics.DrawString(particularMemo, font_Seven, Brushes.Black, new RectangleF(50 + 75, firstTableYPos + 50 + 4, tableWidth - (300 + 170), perItemHeight)); // Item1 Remark / Memo
 
             e.Graphics.DrawString(amount.ToString("N2"), font_Data, Brushes.Black, new RectangleF(50 + 450 - 5, firstTableYPos + 20 + 4, 150, perItemHeight), sfAlignRight); // Debit
             e.Graphics.DrawString(amount.ToString("N2"), font_Data, Brushes.Black, new RectangleF(50 + 600 - 5, firstTableYPos + 20 + 12 + 4, 150, perItemHeight), sfAlignRight); // Credit - bank
