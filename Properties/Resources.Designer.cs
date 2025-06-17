@@ -63,6 +63,16 @@ namespace VoucherPro.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap CPI_LOGO {
+            get {
+                object obj = ResourceManager.GetObject("CPI_LOGO", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap leads_logo {
             get {
                 object obj = ResourceManager.GetObject("leads-logo", resourceCulture);

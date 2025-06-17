@@ -24,7 +24,7 @@ namespace VoucherPro
 {
     public class GlobalVariables
     {
-        public static string client = "KAYAK";
+        public static string client = "CPI";
         public static bool includeImage = true;
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
@@ -284,6 +284,16 @@ namespace VoucherPro
                 comboBox_Forms.SelectedIndex = 0;
                 comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
             }
+            else if (GlobalVariables.client == "CPI")
+            {
+                comboBox_Forms.Items.AddRange(new string[]
+            {
+                "",
+                "Check Voucher",
+            });
+                comboBox_Forms.SelectedIndex = 0;
+                comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
+            }
             return panel_Forms;
         }
 
@@ -347,6 +357,14 @@ namespace VoucherPro
                         UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
                     }
                 }
+                else if (GlobalVariables.client == "CPI")
+                {
+                    if (seriesNumber != 0)
+                    {
+                        seriesNumber--;
+                        UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
+                    }
+                }
 
             };
 
@@ -368,6 +386,11 @@ namespace VoucherPro
                     UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
                 }
                 else if (GlobalVariables.client == "KAYAK")
+                {
+                    seriesNumber++;
+                    UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
+                }
+                else if (GlobalVariables.client == "CPI")
                 {
                     seriesNumber++;
                     UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
@@ -594,7 +617,7 @@ namespace VoucherPro
                             MessageBox.Show($"An error occurred while loading the report:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
                     }
-                    else if (GlobalVariables.client == "KAYAK")
+                    else if (GlobalVariables.client == "KAYAK" || GlobalVariables.client == "CPI")
                     {
                         try
                         {
@@ -1003,31 +1026,63 @@ namespace VoucherPro
 
         private void SearchBillsByReference(string refNumber)
         {
-            AccessQueries queries = new AccessQueries();
-            bills = queries.GetBillData_KAYAK(refNumber);
-            object data = bills;
-
-            if (bills.Count > 0)
+            if (GlobalVariables.client == "KAYAK")
             {
-                Layouts_KAYAK layouts_KAYAK = new Layouts_KAYAK();
+                AccessQueries queries = new AccessQueries();
+                bills = queries.GetBillData_KAYAK(refNumber);
+                object data = bills;
 
-                printDocument = new PrintDocument();
-                printDocument.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
-                printPreviewControl.StartPage = 0;
-
-                printDocument.PrintPage += (s, ev) =>
+                if (bills.Count > 0)
                 {
-                    layouts_KAYAK.PrintPage_KAYAK(s, ev, 1, textBox_SeriesNumber.Text, data);
-                };
+                    Layouts_KAYAK layouts_KAYAK = new Layouts_KAYAK();
 
-                // 👇 Update panel visibility here
-                panel_Main.Visible = true;
-                panel_Signatory.Visible = true;
-                panel_Main_CR.Visible = false;
+                    printDocument = new PrintDocument();
+                    printDocument.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
+                    printPreviewControl.StartPage = 0;
 
-                printPreviewControl.Document = printDocument;
-                printPreviewControl.Visible = true;
-                panel_Printing.Visible = true;
+                    printDocument.PrintPage += (s, ev) =>
+                    {
+                        layouts_KAYAK.PrintPage_KAYAK(s, ev, 1, textBox_SeriesNumber.Text, data);
+                    };
+
+                    // 👇 Update panel visibility here
+                    panel_Main.Visible = true;
+                    panel_Signatory.Visible = true;
+                    panel_Main_CR.Visible = false;
+
+                    printPreviewControl.Document = printDocument;
+                    printPreviewControl.Visible = true;
+                    panel_Printing.Visible = true;
+                }
+            }
+            else if (GlobalVariables.client == "CPI")
+            {
+                AccessQueries queries = new AccessQueries();
+                bills = queries.GetBillData_CPI(refNumber);
+                object data = bills;
+
+                if (bills.Count > 0)
+                {
+                    Layouts_CPI layouts_CPI = new Layouts_CPI();
+
+                    printDocument = new PrintDocument();
+                    printDocument.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
+                    printPreviewControl.StartPage = 0;
+
+                    printDocument.PrintPage += (s, ev) =>
+                    {
+                        layouts_CPI.PrintPage_CPI(s, ev, 1, textBox_SeriesNumber.Text, data);
+                    };
+
+                    // 👇 Update panel visibility here
+                    panel_Main.Visible = true;
+                    panel_Signatory.Visible = true;
+                    panel_Main_CR.Visible = false;
+
+                    printPreviewControl.Document = printDocument;
+                    printPreviewControl.Visible = true;
+                    panel_Printing.Visible = true;
+                }
             }
             else
             {
@@ -1140,6 +1195,22 @@ namespace VoucherPro
                             }
                         }
                     }
+                    else if (GlobalVariables.client == "CPI")
+                    {
+                        if (comboBox_Forms.SelectedIndex == 1) // CV
+                        {
+                            checks = queries.GetCheckExpensesAndItemsData_CPI(refNumber);
+                            if (checks.Count == 0)
+                            {
+                                bills = queries.GetBillData_CPI(refNumber);
+                                data = bills;
+                            }
+                            else
+                            {
+                                data = checks;
+                            }
+                        }
+                    }
 
                     //if (checks.Count > 0 || bills.Count > 0 || receipts.Count > 0)
                     if (data is System.Collections.ICollection colletion && colletion.Count > 0)
@@ -1230,6 +1301,49 @@ namespace VoucherPro
                                 //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
                             };
                         }
+                        else if (GlobalVariables.client == "CPI")
+                        {
+                            Layouts_CPI layouts_KAYAK = new Layouts_CPI();
+                            //Layouts layouts = new Layouts();
+
+                            System.Drawing.Printing.PaperSize paperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
+
+                            printDocument = new PrintDocument();
+                            printDocument.DefaultPageSettings.PaperSize = paperSize;
+                            printDocument.PrinterSettings.DefaultPageSettings.PaperSize = paperSize;
+
+                            int selectedIndex = comboBox_Forms.SelectedIndex;
+                            string seriesNumber = textBox_SeriesNumber.Text;
+
+                            // Reset counters for new print job
+                            itemCounter = 0;
+                            pageCounter = 1;
+
+                            int totalItemDetails = 0;
+                            if (comboBox_Forms.SelectedIndex == 1) // APV
+                            {
+                                // Calculate the total number of pages
+                                totalItemDetails = apvData.Sum(apvData => apvData.ItemDetails.Count);
+
+                                int totalPages = (int)Math.Ceiling((double)totalItemDetails / GlobalVariables.itemsPerPageAPV);
+                                Console.WriteLine($"Generate: APV Data Count: {totalItemDetails}, Total Pages: {totalPages}");
+                                printDocument.PrinterSettings.MaximumPage = totalPages;
+                            }
+
+                            // Update preview control to start at the first page
+                            printPreviewControl.StartPage = 0;
+
+                            printDocument.PrintPage += (s, ev) =>
+                            {
+                                layouts_KAYAK.PrintPage_CPI(s, ev, selectedIndex, seriesNumber, data);
+                                /*if (pageCounter < totalItemDetails)
+                                {
+                                    pageCounter++;
+                                    ev.HasMorePages = pageCounter != totalItemDetails;
+                                }*/
+                                //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
+                            };
+                        }
                         else
                         {
                             Layouts layouts = new Layouts();
@@ -1309,6 +1423,17 @@ namespace VoucherPro
                 });
             }
             else if (GlobalVariables.client == "KAYAK")
+            {
+                comboBox_Signatory.Items.AddRange(new string[]
+                {
+                    "Select Signatory Option",
+                    "Prepared By:",
+                    "Checked By:",
+                    "Approved By:",
+                    "Received By:",
+                });
+            }
+            else if (GlobalVariables.client == "CPI")
             {
                 comboBox_Signatory.Items.AddRange(new string[]
                 {
@@ -1666,7 +1791,15 @@ namespace VoucherPro
                             seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
                             UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
                         }
-                        
+                        else if (GlobalVariables.client == "CPI")
+                        {
+                            string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
+                            accessToDatabase.IncrementSeriesNumberInDatabase(columnName); // Increment for next print
+
+                            seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
+                            UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
+                        }
+
                     }
                 }
                 catch (Exception ex)
@@ -1800,6 +1933,39 @@ namespace VoucherPro
 
                 UpdateSeriesNumber(prefix);
             }
+            else if (GlobalVariables.client == "CPI")
+            {
+                string prefix = "";
+                //panel_SeriesNumber.Visible = false;
+
+                switch (comboBox_Forms.SelectedIndex)
+                {
+                    case 1: // CV
+                        prefix = "CV";
+                        panel_SeriesNumber.Visible = true;
+                        panel_RefNumber.Visible = false;
+                        panel_RefNumberCrystalReport.Visible = true;
+                        panel_Signatory.Visible = true;
+                        label_SeriesNumberText.Text = "Current Series Number: CV";
+                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");
+
+                        panel_Main.Visible = false;
+                        panel_Main_CR.Visible = true;
+                        break;
+
+                    default:
+                        panel_RefNumber.Visible = false;
+                        panel_RefNumberCrystalReport.Visible = false;
+                        panel_Signatory.Visible = false;
+                        panel_SeriesNumber.Visible = false;
+
+                        panel_Main.Visible = false;
+                        panel_Main_CR.Visible = false;
+                        return;
+                }
+
+                UpdateSeriesNumber(prefix);
+            }
             else
             {
                 if (comboBox_Forms.SelectedIndex == 1) // CV
@@ -1881,7 +2047,25 @@ namespace VoucherPro
                     }
                 }
             }
-            
+            else if (GlobalVariables.client == "CPI")
+            {
+                if (!string.IsNullOrEmpty(textBox_SeriesNumber.Text))
+                {
+                    string prefix = comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV";
+                    string input = textBox_SeriesNumber.Text.Replace(prefix, "").Trim();
+
+                    if (int.TryParse(input, out int adjustedSeries))
+                    {
+                        seriesNumber = adjustedSeries;
+                    }
+                    else
+                    {
+                        MessageBox.Show("Invalid series number format. Please enter a numeric value.");
+                        textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}"; // Revert to the current value
+                    }
+                }
+            }
+
         }
         private void TextBox_SeriesNumber_Leave(object sender, EventArgs e)
         {
@@ -1891,6 +2075,11 @@ namespace VoucherPro
                 accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment
             }
             else if (GlobalVariables.client == "KAYAK")
+            {
+                string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
+                accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment
+            }
+            else if (GlobalVariables.client == "CPI")
             {
                 string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
                 accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment

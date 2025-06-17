@@ -74,6 +74,7 @@
     </Compile>
     <Compile Include="Clients\Layouts_KAYAK.cs" />
     <Compile Include="Clients\Layouts_LEADS.cs" />
+    <Compile Include="Clients\Layout_CPI.cs" />
     <Compile Include="Dashboard.cs" />
     <Compile Include="Dashboard.Designer.cs">
       <DependentUpon>Dashboard.cs</DependentUpon>
@@ -147,6 +148,9 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{C0C07587-41A7-46C8-8FBD-3F9C8EBE2DDC}" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\CPI_LOGO.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
