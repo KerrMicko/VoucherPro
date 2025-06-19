@@ -60,6 +60,12 @@
   <ItemGroup>
     <Compile Include="AccessQueries.cs" />
     <Compile Include="AccessToDatabase.cs" />
+    <Compile Include="Clients\CRAPV_CPI.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CRAPV_CPI.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Clients\CRAPV_LEADS.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -89,6 +95,10 @@
     <Compile Include="Layouts.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Clients\CRAPV_CPI.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>CRAPV_CPI.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="Clients\CRAPV_LEADS.rpt">
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
       <LastGenOutput>CRAPV_LEADS.cs</LastGenOutput>

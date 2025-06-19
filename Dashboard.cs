@@ -290,6 +290,7 @@ namespace VoucherPro
             {
                 "",
                 "Check Voucher",
+                "Accounts Payable Voucher",
             });
                 comboBox_Forms.SelectedIndex = 0;
                 comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
@@ -605,6 +606,175 @@ namespace VoucherPro
                                 cRAPV_LEADS.SetParameterValue("ReferenceNumber", refNumber);
 
                                 reportViewer.ReportSource = cRAPV_LEADS;
+                                reportViewer.RefreshReport();
+                            }
+                            else
+                            {
+                                MessageBox.Show("No data found for the provided reference number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"An error occurred while loading the report:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                    else if (GlobalVariables.client == "CPI")
+                    {
+                        try
+                        {
+                            CRAPV_CPI cRAPV_CPI = new CRAPV_CPI();
+                            string databasePath = Path.Combine(Application.StartupPath, "CheckDatabase.accdb");
+                            SetDatabaseLocation(cRAPV_CPI, databasePath);
+
+                            AccessQueries accessQueries = new AccessQueries();
+                            string refNumberCR = textBox_ReferenceNumber_CR.Text;
+
+                            apvData = new List<BillTable>();
+                            apvData = accessQueries.GetAccountsPayableData_CPI(refNumberCR);
+
+
+
+                            if (apvData.Count > 0)
+                            {
+                                TextObject textObject_RefNumber = cRAPV_CPI.ReportDefinition.ReportObjects["TextRefNo"] as TextObject;
+                                TextObject textObject_Paid = cRAPV_CPI.ReportDefinition.ReportObjects["TextPaid"] as TextObject;
+                                TextObject textObject_Payee = cRAPV_CPI.ReportDefinition.ReportObjects["TextPayee"] as TextObject;
+                                TextObject textObject_APVSeries = cRAPV_CPI.ReportDefinition.ReportObjects["TextSeriesNumber"] as TextObject;
+                                TextObject textObject_BillDate = cRAPV_CPI.ReportDefinition.ReportObjects["TextBillDate"] as TextObject;
+                                TextObject textObject_DueDate = cRAPV_CPI.ReportDefinition.ReportObjects["TextDueDate"] as TextObject;
+                                TextObject textObject_Terms = cRAPV_CPI.ReportDefinition.ReportObjects["TextTerms"] as TextObject;
+                                TextObject textObject_Amount = cRAPV_CPI.ReportDefinition.ReportObjects["TextAmount"] as TextObject;
+                                TextObject textObject_AmountInWords = cRAPV_CPI.ReportDefinition.ReportObjects["TextAmountInWords"] as TextObject;
+                                TextObject textObject_TotalDebit = cRAPV_CPI.ReportDefinition.ReportObjects["TextTotalDebit"] as TextObject;
+                                TextObject textObject_TotalCredit = cRAPV_CPI.ReportDefinition.ReportObjects["TextTotalCredit"] as TextObject;
+
+                                TextObject textObject_PreparedBy = cRAPV_CPI.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
+                                TextObject textObject_PreparedByPos = cRAPV_CPI.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
+                                TextObject textObject_CheckedBy = cRAPV_CPI.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
+                                TextObject textObject_CheckedByPos = cRAPV_CPI.ReportDefinition.ReportObjects["TextCheckedByPosition"] as TextObject;
+                                TextObject textObject_ApprovedBy = cRAPV_CPI.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
+                                TextObject textObject_ApprovedByPos = cRAPV_CPI.ReportDefinition.ReportObjects["TextApprovedByPosition"] as TextObject;
+                                TextObject textObject_ReceivedBy = cRAPV_CPI.ReportDefinition.ReportObjects["TextReceivedBy"] as TextObject;
+                                TextObject textObject_ReceivedByPos = cRAPV_CPI.ReportDefinition.ReportObjects["TextReceivedByPosition"] as TextObject;
+
+                                AccessToDatabase accessToDatabase = new AccessToDatabase();
+
+                                var (PreparedByName, PreparedByPosition,
+                                    ReviewedByName, ReviewedByPosition,
+                                    RecommendingApprovalName, RecommendingApprovalPosition,
+                                    ApprovedByName, ApprovedByPosition,
+                                    ReceivedByName, ReceivedByPosition) = accessToDatabase.RetrieveAllSignatoryData();
+
+                                string refNumber = textBox_ReferenceNumber_CR.Text;
+                                double amount = apvData[0].AmountDue;
+                                string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
+
+                                if (apvData[0].IsPaid)
+                                {
+                                    textObject_Paid.Text = "PAID";
+                                }
+                                else
+                                {
+                                    textObject_Paid.Text = "";
+                                }
+
+                                textObject_RefNumber.Text = refNumber;
+                                textObject_Payee.Text = apvData[0].Vendor.ToString();
+                                textObject_APVSeries.Text = textBox_SeriesNumber.Text;
+                                textObject_BillDate.Text = apvData[0].DateCreated.ToString("dd-MMM-yyyy");
+                                textObject_DueDate.Text = apvData[0].DueDate.ToString("MM/dd/yyyy");
+                                textObject_Terms.Text = apvData[0].TermsRefFullName;
+                                textObject_Amount.Text = amount.ToString("N2");
+                                textObject_AmountInWords.Text = amountInWords;
+                                textObject_PreparedBy.Text = PreparedByName;
+                                textObject_PreparedByPos.Text = PreparedByPosition;
+                                textObject_CheckedBy.Text = ReviewedByName;
+                                textObject_CheckedByPos.Text = ReviewedByPosition;
+                                textObject_ApprovedBy.Text = ApprovedByName;
+                                textObject_ApprovedByPos.Text = ApprovedByPosition;
+                                textObject_ReceivedBy.Text = ReceivedByName;
+                                textObject_ReceivedByPos.Text = ReceivedByPosition;
+
+                                double debitTotalAmount = 0;
+                                double creditTotalAmount = 0;
+
+                                foreach (var bill in apvData)
+                                {
+                                    try
+                                    {
+                                        for (int i = 0; i < bill.AccountNameParticularsList.Count; i++)
+                                        {
+                                            double itemAmount = bill.ItemDetails[i].ItemLineAmount;
+
+                                            if (itemAmount > 0)
+                                            {
+                                                debitTotalAmount += itemAmount;
+                                            }
+                                            else if (itemAmount < 0)
+                                            {
+                                                creditTotalAmount += Math.Abs(itemAmount);
+                                            }
+                                        }
+
+                                        foreach (var item in bill.ItemDetails)
+                                        {
+                                            if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                                            {
+                                                double expenseAmount = item.ExpenseLineAmount;
+
+                                                if (expenseAmount > 0)
+                                                {
+                                                    debitTotalAmount += expenseAmount;
+                                                }
+                                                else if (expenseAmount < 0)
+                                                {
+                                                    creditTotalAmount += Math.Abs(expenseAmount);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        MessageBox.Show($"An error occurred while computing for total debit and credit: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    }
+                                }
+
+                                textObject_TotalDebit.Text = debitTotalAmount.ToString("N2");
+                                textObject_TotalCredit.Text = debitTotalAmount.ToString("N2");
+
+                                // Locate the subreport object in the main report
+                                SubreportObject subreportObject = cRAPV_CPI.ReportDefinition.ReportObjects["Subreport1"] as SubreportObject;
+
+                                if (subreportObject != null)
+                                {
+                                    // Get the ReportDocument of the subreport
+                                    ReportDocument subReportDocument = cRAPV_CPI.OpenSubreport(subreportObject.SubreportName);
+
+                                    // Access the desired TextObject in the subreport
+
+                                    TextObject textObject_Payable = subReportDocument.ReportDefinition.ReportObjects["TextPayable"] as TextObject;
+                                    TextObject textObject_PayableAmount = subReportDocument.ReportDefinition.ReportObjects["TextPayableAmount"] as TextObject;
+                                    TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
+                                    debitTotalAmount -= creditTotalAmount;
+
+                                    textObject_PayableAmount.Text = debitTotalAmount.ToString("N2");
+                                    textObject_Payable.Text = apvData[0].APAccountRefFullName.ToString();
+                                    textObject_Remarks.Text = "Remarks: " + apvData[0].Memo.ToString();
+
+                                    DataTable dataTable = new DataTable();
+                                    dataTable.Columns.Add("Particulars", typeof(string)); // First column
+                                    dataTable.Columns.Add("Memo", typeof(string)); // First column
+                                    dataTable.Columns.Add("Class", typeof(string)); // Second column
+                                    dataTable.Columns.Add("Debit", typeof(string)); // Third column
+                                    dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
+
+                                    InsertDataToCVCompiled(refNumber, apvData);
+                                }
+
+
+                                cRAPV_CPI.SetParameterValue("ReferenceNumber", refNumber);
+
+                                reportViewer.ReportSource = cRAPV_CPI;
                                 reportViewer.RefreshReport();
                             }
                             else
@@ -1209,6 +1379,11 @@ namespace VoucherPro
                             {
                                 data = checks;
                             }
+                        }
+                        else if (comboBox_Forms.SelectedIndex == 2) // APV
+                        {
+                            apvData = queries.GetAccountsPayableData_CPI(refNumber);
+                            data = apvData;
                         }
                     }
 
@@ -1951,6 +2126,29 @@ namespace VoucherPro
 
                         panel_Main.Visible = false;
                         panel_Main_CR.Visible = true;
+                        break;
+                    case 2: // APV
+                        prefix = "APV";
+                        panel_SeriesNumber.Visible = true;
+                        label_SeriesNumberText.Text = "Current Series Number: APV";
+                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("APVSeries");
+
+                        if (GlobalVariables.useCrystalReports_LEADS)
+                        {
+                            panel_RefNumber.Visible = false;
+                            panel_RefNumberCrystalReport.Visible = true;
+                            panel_Main.Visible = false;
+                            panel_Main_CR.Visible = true;
+                        }
+                        else
+                        {
+                            panel_RefNumber.Visible = true;
+                            panel_RefNumberCrystalReport.Visible = false;
+                            panel_Main.Visible = true;
+                            panel_Main_CR.Visible = false;
+                        }
+
+                        panel_Signatory.Visible = true;
                         break;
 
                     default:
