@@ -72,6 +72,12 @@
       <DependentUpon>CRAPV_LEADS.rpt</DependentUpon>
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Clients\CRCV_CPIBILL.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CRCV_CPIBILL.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Clients\CRCV_KAYAK.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -102,6 +108,10 @@
     <EmbeddedResource Include="Clients\CRAPV_LEADS.rpt">
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
       <LastGenOutput>CRAPV_LEADS.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Clients\CRCV_CPIBILL.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>CRCV_CPIBILL.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="Clients\CRCV_KAYAK.rpt">
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>

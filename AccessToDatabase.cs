@@ -31,13 +31,10 @@ namespace VoucherPro
         }
 
         //List<string> tableNamesWithItemReceipt = new List<string> { "Account", "Bill", "BillExpenseLine", "BillItemLine", "BillPaymentCheck", "BillPaymentCheckLine", "Check", "CheckExpenseLine", "CheckItemLine", "Company", "Item", "ItemReceipt", "ItemReceiptExpenseLine", "ItemReceiptItemLine",  "Transaction", "Vendor" };
-        List<string> tableNamesWithItemReceipt = new List<string> { "Account", 
-            "Bill", "BillExpenseLine", "BillItemLine", "BillPaymentCheck", "BillPaymentCheckLine", 
-            "Check", "CheckExpenseLine", "CheckItemLine", "Company", 
-            "Item", "ItemReceipt", "ItemReceiptExpenseLine", "ItemReceiptItemLine", 
+        List<string> tableNamesWithItemReceipt = new List<string> { "Account","Bill", "BillExpenseLine", "BillItemLine", "BillPaymentCheck", "BillPaymentCheckLine","Check", "CheckExpenseLine", "CheckItemLine", "Company", "Item", "ItemReceipt", "ItemReceiptExpenseLine", "ItemReceiptItemLine", 
             "Vendor" };
 
-        List<string> tableNamesWithoutItemReceipt = new List<string> { "Account", 
+        List<string> tableNamesWithoutItemReceipt = new List<string> { "Account",
             "Bill", "BillExpenseLine", "BillItemLine", "BillPaymentCheck", "BillPaymentCheckLine", 
             "Check", "CheckExpenseLine", "CheckItemLine", "Company", "Item", "Vendor" };
 

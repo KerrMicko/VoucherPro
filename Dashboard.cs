@@ -290,7 +290,6 @@ namespace VoucherPro
             {
                 "",
                 "Check Voucher",
-                "Accounts Payable Voucher",
             });
                 comboBox_Forms.SelectedIndex = 0;
                 comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
