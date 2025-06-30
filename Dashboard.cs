@@ -820,7 +820,7 @@ namespace VoucherPro
 
                                         //textObject_Paid.Text = "";
 
-                                        textObject_CVRefNumber.Text = textBox_SeriesNumber.Text;
+                                        textObject_CVCheckNumber.Text = textBox_SeriesNumber.Text;
                                         textObject_CVAmountInWords.Text = amountInWords;
                                         textObject_CVBank.Text = bills[0].BankAccount;
                                         textObject_CVCheckDate.Text = bills[0].DateCreated.ToString("dd-MMM-yyyy");
@@ -829,7 +829,7 @@ namespace VoucherPro
 
 
                                         string refNumber = textBox_ReferenceNumber_CR.Text;
-                                        textObject_CVCheckNumber.Text = refNumber;
+                                        textObject_CVRefNumber.Text = refNumber;
 
                                         textObject_PreparedBy.Text = PreparedByName;
                                         textObject_PreparedByPos.Text = PreparedByPosition;
