@@ -280,29 +280,6 @@ namespace VoucherPro
                                     break;
                             }
                         }
-                        else
-                        {
-                            switch (choice)
-                            {
-                                case 1:
-                                    signatoryQuery = "UPDATE Signatory SET PreparedByName = ?, PreparedByPosition = ?";
-                                    break;
-                                case 2:
-                                    signatoryQuery = "UPDATE Signatory SET ReviewedByName = ?, ReviewedByPosition = ?";
-                                    break;
-                                case 3:
-                                    signatoryQuery = "UPDATE Signatory SET RecommendingApprovalName = ?, RecommendingApprovalPosition = ?";
-                                    break;
-                                case 4:
-                                    signatoryQuery = "UPDATE Signatory SET ApprovedByName = ?, ApprovedByPosition = ?";
-                                    break;
-                                case 5:
-                                    signatoryQuery = "UPDATE Signatory SET ReceivedByName = ?, ReceivedByPosition = ?";
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
                     }
                     else
                     {
@@ -562,6 +539,34 @@ namespace VoucherPro
                                 break;
                         }
                     }
+                    else if (client == "CPI")
+                    {
+                        switch (choice)
+                        {
+                            case 1:
+                                query = "SELECT TOP 1 PreparedByName, PreparedByPosition FROM Signatory";
+                                break;
+
+                            case 2:
+                                query = "SELECT TOP 1 ReviewedByName, ReviewedByPosition FROM Signatory";
+                                break;
+
+                            /*case 3:
+                                query = "SELECT TOP 1 RecommendingApprovalName, RecommendingApprovalPosition FROM Signatory";
+                                break;*/
+
+                            case 3:
+                                query = "SELECT TOP 1 ApprovedByName, ApprovedByPosition FROM Signatory";
+                                break;
+
+                            case 4:
+                                query = "SELECT TOP 1 ReceivedByName, ReceivedByPosition FROM Signatory";
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
                     else
                     {
                         switch (choice)
@@ -598,6 +603,39 @@ namespace VoucherPro
                             if (reader.Read())
                             {
                                 if (client == "LEADS")
+                                {
+                                    switch (choice)
+                                    {
+                                        case 1:
+                                            name = reader["PreparedByName"].ToString();
+                                            position = reader["PreparedByPosition"].ToString();
+                                            break;
+
+                                        case 2:
+                                            name = reader["ReviewedByName"].ToString();
+                                            position = reader["ReviewedByPosition"].ToString();
+                                            break;
+
+                                        /*case 3:
+                                            name = reader["RecommendingApprovalName"].ToString();
+                                            position = reader["RecommendingApprovalPosition"].ToString();
+                                            break;*/
+
+                                        case 3:
+                                            name = reader["ApprovedByName"].ToString();
+                                            position = reader["ApprovedByPosition"].ToString();
+                                            break;
+
+                                        case 4:
+                                            name = reader["ReceivedByName"].ToString();
+                                            position = reader["ReceivedByPosition"].ToString();
+                                            break;
+
+                                        default:
+                                            break;
+                                    }
+                                }
+                                else if (client == "CPI")
                                 {
                                     switch (choice)
                                     {

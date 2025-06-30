@@ -621,70 +621,64 @@ namespace VoucherPro
                     {
                         try
                         {
-                            CRAPV_CPI cRAPV_CPI = new CRAPV_CPI();
+                            CRCV_KAYAK cRCV_Kayak = new CRCV_KAYAK();
                             string databasePath = Path.Combine(Application.StartupPath, "CheckDatabase.accdb");
-                            SetDatabaseLocation(cRAPV_CPI, databasePath);
+                            SetDatabaseLocation(cRCV_Kayak, databasePath);
 
                             AccessQueries accessQueries = new AccessQueries();
                             string refNumberCR = textBox_ReferenceNumber_CR.Text;
 
-                            apvData = new List<BillTable>();
-                            apvData = accessQueries.GetAccountsPayableData_CPI(refNumberCR);
+                            cvData = new List<CheckTableExpensesAndItems>();
+                            cvData = accessQueries.GetCheckExpensesAndItemsData_KAYAK(refNumberCR);
 
 
-
-                            if (apvData.Count > 0)
+                            if (cvData.Count > 0)
                             {
-                                TextObject textObject_RefNumber = cRAPV_CPI.ReportDefinition.ReportObjects["TextRefNo"] as TextObject;
-                                TextObject textObject_Paid = cRAPV_CPI.ReportDefinition.ReportObjects["TextPaid"] as TextObject;
-                                TextObject textObject_Payee = cRAPV_CPI.ReportDefinition.ReportObjects["TextPayee"] as TextObject;
-                                TextObject textObject_APVSeries = cRAPV_CPI.ReportDefinition.ReportObjects["TextSeriesNumber"] as TextObject;
-                                TextObject textObject_BillDate = cRAPV_CPI.ReportDefinition.ReportObjects["TextBillDate"] as TextObject;
-                                TextObject textObject_DueDate = cRAPV_CPI.ReportDefinition.ReportObjects["TextDueDate"] as TextObject;
-                                TextObject textObject_Terms = cRAPV_CPI.ReportDefinition.ReportObjects["TextTerms"] as TextObject;
-                                TextObject textObject_Amount = cRAPV_CPI.ReportDefinition.ReportObjects["TextAmount"] as TextObject;
-                                TextObject textObject_AmountInWords = cRAPV_CPI.ReportDefinition.ReportObjects["TextAmountInWords"] as TextObject;
-                                TextObject textObject_TotalDebit = cRAPV_CPI.ReportDefinition.ReportObjects["TextTotalDebit"] as TextObject;
-                                TextObject textObject_TotalCredit = cRAPV_CPI.ReportDefinition.ReportObjects["TextTotalCredit"] as TextObject;
+                                TextObject textObject_CVCheckNumber = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVCheckNumber"] as TextObject;
+                                TextObject textObject_CVRefNumber = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVRefNumber"] as TextObject;
+                                TextObject textObject_CVAmountInWords = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVAmountInWords"] as TextObject;
+                                TextObject textObject_CVBank = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVBank"] as TextObject;
+                                TextObject textObject_CVCheckDate = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVCheckDate"] as TextObject;
+                                TextObject textObject_CVPayee = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVPayee"] as TextObject;
+                                TextObject textObject_CVTotalAmount = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVTotalAmount"] as TextObject;
+                                TextObject textObject_CVTotalDebitAmount = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVTotalDebitAmount"] as TextObject;
+                                TextObject textObject_CVTotalCreditAmount = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVTotalCreditAmount"] as TextObject;
+                                TextObject textObject_Paid = cRCV_Kayak.ReportDefinition.ReportObjects["TextPaid"] as TextObject;
 
-                                TextObject textObject_PreparedBy = cRAPV_CPI.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
-                                TextObject textObject_PreparedByPos = cRAPV_CPI.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
-                                TextObject textObject_CheckedBy = cRAPV_CPI.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
-                                TextObject textObject_CheckedByPos = cRAPV_CPI.ReportDefinition.ReportObjects["TextCheckedByPosition"] as TextObject;
-                                TextObject textObject_ApprovedBy = cRAPV_CPI.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
-                                TextObject textObject_ApprovedByPos = cRAPV_CPI.ReportDefinition.ReportObjects["TextApprovedByPosition"] as TextObject;
-                                TextObject textObject_ReceivedBy = cRAPV_CPI.ReportDefinition.ReportObjects["TextReceivedBy"] as TextObject;
-                                TextObject textObject_ReceivedByPos = cRAPV_CPI.ReportDefinition.ReportObjects["TextReceivedByPosition"] as TextObject;
+
+                                TextObject textObject_PreparedBy = cRCV_Kayak.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
+                                TextObject textObject_PreparedByPos = cRCV_Kayak.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
+                                TextObject textObject_CheckedBy = cRCV_Kayak.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
+                                TextObject textObject_CheckedByPos = cRCV_Kayak.ReportDefinition.ReportObjects["TextCheckedByPosition"] as TextObject;
+                                TextObject textObject_ApprovedBy = cRCV_Kayak.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
+                                TextObject textObject_ApprovedByPos = cRCV_Kayak.ReportDefinition.ReportObjects["TextApprovedByPosition"] as TextObject;
+                                TextObject textObject_ReceivedBy = cRCV_Kayak.ReportDefinition.ReportObjects["TextReceivedBy"] as TextObject;
+                                TextObject textObject_ReceivedByPos = cRCV_Kayak.ReportDefinition.ReportObjects["TextReceivedByPosition"] as TextObject;
 
                                 AccessToDatabase accessToDatabase = new AccessToDatabase();
 
                                 var (PreparedByName, PreparedByPosition,
-                                    ReviewedByName, ReviewedByPosition,
-                                    RecommendingApprovalName, RecommendingApprovalPosition,
-                                    ApprovedByName, ApprovedByPosition,
-                                    ReceivedByName, ReceivedByPosition) = accessToDatabase.RetrieveAllSignatoryData();
+                                   ReviewedByName, ReviewedByPosition,
+                                   RecommendingApprovalName, RecommendingApprovalPosition,
+                                   ApprovedByName, ApprovedByPosition,
+                                   ReceivedByName, ReceivedByPosition) = accessToDatabase.RetrieveAllSignatoryData();
 
-                                string refNumber = textBox_ReferenceNumber_CR.Text;
-                                double amount = apvData[0].AmountDue;
+                                double amount = cvData[0].TotalAmount;
                                 string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
 
-                                if (apvData[0].IsPaid)
-                                {
-                                    textObject_Paid.Text = "PAID";
-                                }
-                                else
-                                {
-                                    textObject_Paid.Text = "";
-                                }
+                                textObject_Paid.Text = "";
 
-                                textObject_RefNumber.Text = refNumber;
-                                textObject_Payee.Text = apvData[0].Vendor.ToString();
-                                textObject_APVSeries.Text = textBox_SeriesNumber.Text;
-                                textObject_BillDate.Text = apvData[0].DateCreated.ToString("dd-MMM-yyyy");
-                                textObject_DueDate.Text = apvData[0].DueDate.ToString("MM/dd/yyyy");
-                                textObject_Terms.Text = apvData[0].TermsRefFullName;
-                                textObject_Amount.Text = amount.ToString("N2");
-                                textObject_AmountInWords.Text = amountInWords;
+                                textObject_CVRefNumber.Text = textBox_SeriesNumber.Text;
+                                textObject_CVAmountInWords.Text = amountInWords;
+                                textObject_CVBank.Text = cvData[0].BankAccount;
+                                textObject_CVCheckDate.Text = cvData[0].DateCreated.ToString("dd-MMM-yyyy");
+                                textObject_CVPayee.Text = cvData[0].PayeeFullName.ToString();
+                                textObject_CVTotalAmount.Text = cvData[0].TotalAmount.ToString("N2");
+
+
+                                string refNumber = textBox_ReferenceNumber_CR.Text;
+                                textObject_CVCheckNumber.Text = refNumber;
+
                                 textObject_PreparedBy.Text = PreparedByName;
                                 textObject_PreparedByPos.Text = PreparedByPosition;
                                 textObject_CheckedBy.Text = ReviewedByName;
@@ -697,38 +691,32 @@ namespace VoucherPro
                                 double debitTotalAmount = 0;
                                 double creditTotalAmount = 0;
 
-                                foreach (var bill in apvData)
+                                foreach (var data in cvData)
                                 {
                                     try
                                     {
-                                        for (int i = 0; i < bill.AccountNameParticularsList.Count; i++)
+                                        // Handling Item Amounts
+                                        double itemAmount = data.ItemAmount;
+                                        if (itemAmount > 0)
                                         {
-                                            double itemAmount = bill.ItemDetails[i].ItemLineAmount;
-
-                                            if (itemAmount > 0)
-                                            {
-                                                debitTotalAmount += itemAmount;
-                                            }
-                                            else if (itemAmount < 0)
-                                            {
-                                                creditTotalAmount += Math.Abs(itemAmount);
-                                            }
+                                            debitTotalAmount += itemAmount;
+                                        }
+                                        else if (itemAmount < 0)
+                                        {
+                                            creditTotalAmount += Math.Abs(itemAmount);
                                         }
 
-                                        foreach (var item in bill.ItemDetails)
+                                        // Handling Expenses Amounts
+                                        if (!string.IsNullOrEmpty(data.AccountNameCheck))
                                         {
-                                            if (!string.IsNullOrEmpty(item.ExpenseLineItemRefFullName))
+                                            double expenseAmount = data.ExpensesAmount;
+                                            if (expenseAmount > 0)
                                             {
-                                                double expenseAmount = item.ExpenseLineAmount;
-
-                                                if (expenseAmount > 0)
-                                                {
-                                                    debitTotalAmount += expenseAmount;
-                                                }
-                                                else if (expenseAmount < 0)
-                                                {
-                                                    creditTotalAmount += Math.Abs(expenseAmount);
-                                                }
+                                                debitTotalAmount += expenseAmount;
+                                            }
+                                            else if (expenseAmount < 0)
+                                            {
+                                                creditTotalAmount += Math.Abs(expenseAmount);
                                             }
                                         }
                                     }
@@ -738,81 +726,86 @@ namespace VoucherPro
                                     }
                                 }
 
-                                textObject_TotalDebit.Text = debitTotalAmount.ToString("N2");
-                                textObject_TotalCredit.Text = debitTotalAmount.ToString("N2");
+
+                                textObject_CVTotalDebitAmount.Text = debitTotalAmount.ToString("N2");
+                                textObject_CVTotalCreditAmount.Text = debitTotalAmount.ToString("N2");
 
                                 // Locate the subreport object in the main report
-                                SubreportObject subreportObject = cRAPV_CPI.ReportDefinition.ReportObjects["Subreport1"] as SubreportObject;
+                                SubreportObject subreportObject = cRCV_Kayak.ReportDefinition.ReportObjects["SubreportCVDetails"] as SubreportObject;
 
                                 if (subreportObject != null)
                                 {
                                     // Get the ReportDocument of the subreport
-                                    ReportDocument subReportDocument = cRAPV_CPI.OpenSubreport(subreportObject.SubreportName);
+                                    ReportDocument subReportDocument = cRCV_Kayak.OpenSubreport(subreportObject.SubreportName);
 
                                     // Access the desired TextObject in the subreport
 
-                                    TextObject textObject_Payable = subReportDocument.ReportDefinition.ReportObjects["TextPayable"] as TextObject;
-                                    TextObject textObject_PayableAmount = subReportDocument.ReportDefinition.ReportObjects["TextPayableAmount"] as TextObject;
+                                    TextObject textObject_AccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextAccountPayable"] as TextObject;
+                                    TextObject textObject_TextAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextAmountPayable"] as TextObject;
                                     TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
-                                    debitTotalAmount -= creditTotalAmount;
 
-                                    textObject_PayableAmount.Text = debitTotalAmount.ToString("N2");
-                                    textObject_Payable.Text = apvData[0].APAccountRefFullName.ToString();
-                                    textObject_Remarks.Text = "Remarks: " + apvData[0].Memo.ToString();
+                                    textObject_AccountPayable.Text = cvData[0].BankAccountNumber + " - " + cvData[0].BankAccount.ToString();
+                                    textObject_TextAmountPayable.Text = debitTotalAmount.ToString("N2");
+                                    textObject_Remarks.Text = cvData[0].Memo.ToString();
+                                    // Create a DataTable with 4 columns
 
                                     DataTable dataTable = new DataTable();
                                     dataTable.Columns.Add("Particulars", typeof(string)); // First column
-                                    dataTable.Columns.Add("Memo", typeof(string)); // First column
                                     dataTable.Columns.Add("Class", typeof(string)); // Second column
                                     dataTable.Columns.Add("Debit", typeof(string)); // Third column
                                     dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
 
-                                    InsertDataToCVCompiled(refNumber, apvData);
+                                    InsertDataToCheckVoucherCompiled(refNumber, cvData);
                                 }
 
+                                cRCV_Kayak.SetParameterValue("ReferenceNumber", refNumber);
 
-                                cRAPV_CPI.SetParameterValue("ReferenceNumber", refNumber);
+                                panel_Printing.Visible = false;
+                                panel_Signatory.Visible = true;
+                                panel_Main.Visible = false;
+                                panel_Main_CR.Visible = true;
 
-                                reportViewer.ReportSource = cRAPV_CPI;
+                                reportViewer.ReportSource = cRCV_Kayak;
                                 reportViewer.RefreshReport();
+
                             }
                             else
                             {
+                                //SearchBillsByReference(refNumberCR);
                                 try
                                 {
-                                    CRCV_KAYAK cRCV_Kayak = new CRCV_KAYAK();
+                                    CRCV_CPIBILL cRCVCPIBILL = new CRCV_CPIBILL();
                                     string databasePath2 = Path.Combine(Application.StartupPath, "CheckDatabase.accdb");
-                                    SetDatabaseLocation(cRCV_Kayak, databasePath2);
+                                    SetDatabaseLocation(cRCVCPIBILL, databasePath2);
 
                                     AccessQueries accessQueries2 = new AccessQueries();
                                     string refNumberCR2 = textBox_ReferenceNumber_CR.Text;
 
-                                    cvData = new List<CheckTableExpensesAndItems>();
-                                    cvData = accessQueries.GetCheckExpensesAndItemsData_KAYAK(refNumberCR);
+                                    bills = new List<BillTable>();
+                                    bills = accessQueries.GetBillData_CPI(refNumberCR);
 
-
-                                    if (cvData.Count > 0)
+                                    if (bills.Count > 0)
                                     {
-                                        TextObject textObject_CVCheckNumber = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVCheckNumber"] as TextObject;
-                                        TextObject textObject_CVRefNumber = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVRefNumber"] as TextObject;
-                                        TextObject textObject_CVAmountInWords = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVAmountInWords"] as TextObject;
-                                        TextObject textObject_CVBank = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVBank"] as TextObject;
-                                        TextObject textObject_CVCheckDate = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVCheckDate"] as TextObject;
-                                        TextObject textObject_CVPayee = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVPayee"] as TextObject;
-                                        TextObject textObject_CVTotalAmount = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVTotalAmount"] as TextObject;
-                                        TextObject textObject_CVTotalDebitAmount = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVTotalDebitAmount"] as TextObject;
-                                        TextObject textObject_CVTotalCreditAmount = cRCV_Kayak.ReportDefinition.ReportObjects["TextCVTotalCreditAmount"] as TextObject;
-                                        TextObject textObject_Paid = cRCV_Kayak.ReportDefinition.ReportObjects["TextPaid"] as TextObject;
+                                        TextObject textObject_CVCheckNumber = cRCVCPIBILL.ReportDefinition.ReportObjects["TextCVSeriesnumber"] as TextObject;
+                                        TextObject textObject_CVRefNumber = cRCVCPIBILL.ReportDefinition.ReportObjects["TextRefNumber"] as TextObject;
+                                        TextObject textObject_CVAmountInWords = cRCVCPIBILL.ReportDefinition.ReportObjects["TextAmountInWords"] as TextObject;
+                                        TextObject textObject_CVBank = cRCVCPIBILL.ReportDefinition.ReportObjects["TextBankAccount"] as TextObject;
+                                        TextObject textObject_CVCheckDate = cRCVCPIBILL.ReportDefinition.ReportObjects["TextCheckDate"] as TextObject;
+                                        TextObject textObject_CVPayee = cRCVCPIBILL.ReportDefinition.ReportObjects["TextPayeeAccount"] as TextObject;
+                                        TextObject textObject_CVTotalAmount = cRCVCPIBILL.ReportDefinition.ReportObjects["TextTotalAmount"] as TextObject;
+                                        TextObject textObject_CVTotalDebitAmount = cRCVCPIBILL.ReportDefinition.ReportObjects["TextDebitTotalAmount"] as TextObject;
+                                        TextObject textObject_CVTotalCreditAmount = cRCVCPIBILL.ReportDefinition.ReportObjects["TextCreditTotalAmount"] as TextObject;
+                                        //TextObject textObject_Paid = cRCVCPIBILL.ReportDefinition.ReportObjects["TextPaid"] as TextObject;
 
 
-                                        TextObject textObject_PreparedBy = cRCV_Kayak.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
-                                        TextObject textObject_PreparedByPos = cRCV_Kayak.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
-                                        TextObject textObject_CheckedBy = cRCV_Kayak.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
-                                        TextObject textObject_CheckedByPos = cRCV_Kayak.ReportDefinition.ReportObjects["TextCheckedByPosition"] as TextObject;
-                                        TextObject textObject_ApprovedBy = cRCV_Kayak.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
-                                        TextObject textObject_ApprovedByPos = cRCV_Kayak.ReportDefinition.ReportObjects["TextApprovedByPosition"] as TextObject;
-                                        TextObject textObject_ReceivedBy = cRCV_Kayak.ReportDefinition.ReportObjects["TextReceivedBy"] as TextObject;
-                                        TextObject textObject_ReceivedByPos = cRCV_Kayak.ReportDefinition.ReportObjects["TextReceivedByPosition"] as TextObject;
+                                        TextObject textObject_PreparedBy = cRCVCPIBILL.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
+                                        TextObject textObject_PreparedByPos = cRCVCPIBILL.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
+                                        TextObject textObject_CheckedBy = cRCVCPIBILL.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
+                                        TextObject textObject_CheckedByPos = cRCVCPIBILL.ReportDefinition.ReportObjects["TextCheckedByPosition"] as TextObject;
+                                        TextObject textObject_ApprovedBy = cRCVCPIBILL.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
+                                        TextObject textObject_ApprovedByPos = cRCVCPIBILL.ReportDefinition.ReportObjects["TextApprovedByPosition"] as TextObject;
+                                        TextObject textObject_ReceivedBy = cRCVCPIBILL.ReportDefinition.ReportObjects["TextReceivedBy"] as TextObject;
+                                        TextObject textObject_ReceivedByPos = cRCVCPIBILL.ReportDefinition.ReportObjects["TextReceivedByPosition"] as TextObject;
 
                                         AccessToDatabase accessToDatabase = new AccessToDatabase();
 
@@ -822,17 +815,17 @@ namespace VoucherPro
                                            ApprovedByName, ApprovedByPosition,
                                            ReceivedByName, ReceivedByPosition) = accessToDatabase.RetrieveAllSignatoryData();
 
-                                        double amount = cvData[0].TotalAmount;
+                                        double amount = bills[0].AmountDue;
                                         string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
 
-                                        textObject_Paid.Text = "";
+                                        //textObject_Paid.Text = "";
 
                                         textObject_CVRefNumber.Text = textBox_SeriesNumber.Text;
                                         textObject_CVAmountInWords.Text = amountInWords;
-                                        textObject_CVBank.Text = cvData[0].BankAccount;
-                                        textObject_CVCheckDate.Text = cvData[0].DateCreated.ToString("dd-MMM-yyyy");
-                                        textObject_CVPayee.Text = cvData[0].PayeeFullName.ToString();
-                                        textObject_CVTotalAmount.Text = cvData[0].TotalAmount.ToString("N2");
+                                        textObject_CVBank.Text = bills[0].BankAccount;
+                                        textObject_CVCheckDate.Text = bills[0].DateCreated.ToString("dd-MMM-yyyy");
+                                        textObject_CVPayee.Text = bills[0].PayeeFullName.ToString();
+                                        textObject_CVTotalAmount.Text = bills[0].AmountDue.ToString("N2");
 
 
                                         string refNumber = textBox_ReferenceNumber_CR.Text;
@@ -847,72 +840,32 @@ namespace VoucherPro
                                         textObject_ReceivedBy.Text = ReceivedByName;
                                         textObject_ReceivedByPos.Text = ReceivedByPosition;
 
-                                        double debitTotalAmount = 0;
-                                        double creditTotalAmount = 0;
 
-                                        foreach (var data in cvData)
-                                        {
-                                            try
-                                            {
-                                                // Handling Item Amounts
-                                                double itemAmount = data.ItemAmount;
-                                                if (itemAmount > 0)
-                                                {
-                                                    debitTotalAmount += itemAmount;
-                                                }
-                                                else if (itemAmount < 0)
-                                                {
-                                                    creditTotalAmount += Math.Abs(itemAmount);
-                                                }
-
-                                                // Handling Expenses Amounts
-                                                if (!string.IsNullOrEmpty(data.AccountNameCheck))
-                                                {
-                                                    double expenseAmount = data.ExpensesAmount;
-                                                    if (expenseAmount > 0)
-                                                    {
-                                                        debitTotalAmount += expenseAmount;
-                                                    }
-                                                    else if (expenseAmount < 0)
-                                                    {
-                                                        creditTotalAmount += Math.Abs(expenseAmount);
-                                                    }
-                                                }
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                MessageBox.Show($"An error occurred while computing for total debit and credit: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                            }
-                                        }
-
-
-                                        textObject_CVTotalDebitAmount.Text = debitTotalAmount.ToString("N2");
-                                        textObject_CVTotalCreditAmount.Text = debitTotalAmount.ToString("N2");
 
                                         // Locate the subreport object in the main report
-                                        SubreportObject subreportObject = cRCV_Kayak.ReportDefinition.ReportObjects["SubreportCVDetails"] as SubreportObject;
+                                        SubreportObject subreportObject = cRCVCPIBILL.ReportDefinition.ReportObjects["SubreportBill1"] as SubreportObject;
 
                                         if (subreportObject != null)
                                         {
                                             // Get the ReportDocument of the subreport
-                                            ReportDocument subReportDocument = cRCV_Kayak.OpenSubreport(subreportObject.SubreportName);
+                                            ReportDocument subReportDocument = cRCVCPIBILL.OpenSubreport(subreportObject.SubreportName);
 
                                             // Access the desired TextObject in the subreport
 
-                                            TextObject textObject_AccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextAccountPayable"] as TextObject;
-                                            TextObject textObject_TextAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextAmountPayable"] as TextObject;
+                                            //TextObject textObject_AccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextAccountPayable"] as TextObject;
+                                            //TextObject textObject_TextAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextAmountPayable"] as TextObject;
                                             TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
 
-                                            textObject_AccountPayable.Text = cvData[0].BankAccountNumber + " - " + cvData[0].BankAccount.ToString();
-                                            textObject_TextAmountPayable.Text = debitTotalAmount.ToString("N2");
-                                            textObject_Remarks.Text = cvData[0].Memo.ToString();
+                                            //textObject_AccountPayable.Text = cvData[0].BankAccountNumber + " - " + cvData[0].BankAccount.ToString();
+                                            //textObject_TextAmountPayable.Text = debitTotalAmount.ToString("N2");
+                                            textObject_Remarks.Text = bills[0].Memo.ToString();
                                             // Create a DataTable with 4 columns
 
-                                            DataTable dataTable = new DataTable();
+                                            /*DataTable dataTable = new DataTable();
                                             dataTable.Columns.Add("Particulars", typeof(string)); // First column
                                             dataTable.Columns.Add("Class", typeof(string)); // Second column
                                             dataTable.Columns.Add("Debit", typeof(string)); // Third column
-                                            dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
+                                            dataTable.Columns.Add("Credit", typeof(string)); // Fourth column*/
 
                                             InsertDataToCheckVoucherCompiled(refNumber, cvData);
                                         }
@@ -924,16 +877,10 @@ namespace VoucherPro
                                         panel_Main.Visible = false;
                                         panel_Main_CR.Visible = true;
 
-                                        reportViewer.ReportSource = cRCV_Kayak;
+                                        reportViewer.ReportSource = cRCVCPIBILL;
                                         reportViewer.RefreshReport();
-
-                                    }
-                                    else
-                                    {
-                                        SearchBillsByReference(refNumberCR);
                                     }
                                 }
-
                                 catch (Exception ex)
                                 {
                                     MessageBox.Show($"KAYAK ERROR HEHEHE:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -942,7 +889,7 @@ namespace VoucherPro
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show($"An error occurred while loading the report:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show($"KAYAK ERROR HEHEHE:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
                     }
                     else if (GlobalVariables.client == "KAYAK")
