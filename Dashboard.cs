@@ -840,7 +840,42 @@ namespace VoucherPro
                                         textObject_ReceivedBy.Text = ReceivedByName;
                                         textObject_ReceivedByPos.Text = ReceivedByPosition;
 
+                                        double debitTotalAmount = 0;
+                                        double creditTotalAmount = 0;
 
+                                        foreach (var bill in bills) // 'bills' is List<BillTable>
+                                        {
+                                            foreach (var item in bill.ItemDetails)
+                                            {
+                                                try
+                                                {
+                                                    // Handle ItemLineAmount
+                                                    if (item.ItemLineAmount != 0)
+                                                    {
+                                                        if (item.ItemLineAmount > 0)
+                                                            debitTotalAmount += item.ItemLineAmount;
+                                                        else
+                                                            creditTotalAmount += Math.Abs(item.ItemLineAmount);
+                                                    }
+
+                                                    // Handle ExpenseLineAmount
+                                                    if (item.ExpenseLineAmount != 0)
+                                                    {
+                                                        if (item.ExpenseLineAmount > 0)
+                                                            debitTotalAmount += item.ExpenseLineAmount;
+                                                        else
+                                                            creditTotalAmount += Math.Abs(item.ExpenseLineAmount);
+                                                    }
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    MessageBox.Show($"Error processing item detail: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                }
+                                            }
+                                        }
+
+                                        textObject_CVTotalDebitAmount.Text = debitTotalAmount.ToString("N2");
+                                        textObject_CVTotalCreditAmount.Text = debitTotalAmount.ToString("N2");
 
                                         // Locate the subreport object in the main report
                                         SubreportObject subreportObject = cRCVCPIBILL.ReportDefinition.ReportObjects["SubreportBill1"] as SubreportObject;
