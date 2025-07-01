@@ -887,22 +887,22 @@ namespace VoucherPro
 
                                             // Access the desired TextObject in the subreport
 
-                                            //TextObject textObject_AccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextAccountPayable"] as TextObject;
-                                            //TextObject textObject_TextAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextAmountPayable"] as TextObject;
+                                            TextObject textObject_AccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextPayable"] as TextObject;
+                                            TextObject textObject_TextAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextPayableAmount"] as TextObject;
                                             TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
 
-                                            //textObject_AccountPayable.Text = cvData[0].BankAccountNumber + " - " + cvData[0].BankAccount.ToString();
-                                            //textObject_TextAmountPayable.Text = debitTotalAmount.ToString("N2");
+                                            textObject_AccountPayable.Text = bills[0].BankAccount.ToString();
+                                            textObject_TextAmountPayable.Text = (debitTotalAmount - creditTotalAmount).ToString("N2");
                                             textObject_Remarks.Text = bills[0].Memo.ToString();
                                             // Create a DataTable with 4 columns
 
-                                            /*DataTable dataTable = new DataTable();
+                                            DataTable dataTable = new DataTable();
                                             dataTable.Columns.Add("Particulars", typeof(string)); // First column
                                             dataTable.Columns.Add("Class", typeof(string)); // Second column
                                             dataTable.Columns.Add("Debit", typeof(string)); // Third column
-                                            dataTable.Columns.Add("Credit", typeof(string)); // Fourth column*/
+                                            dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
 
-                                            InsertDataToCheckVoucherCompiled(refNumber, cvData);
+                                            InsertDataToBillCompiled(refNumber, bills);
                                         }
 
                                         cRCV_Kayak.SetParameterValue("ReferenceNumber", refNumber);
@@ -1332,6 +1332,111 @@ namespace VoucherPro
 
             Console.WriteLine($"Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
         }
+
+
+        public static void InsertDataToBillCompiled(string refNumber, List<BillTable> bills)
+        {
+            string connectionString = AccessToDatabase.GetAccessConnectionString();
+            double debitTotalAmount = 0;
+            double creditTotalAmount = 0;
+
+            using (OleDbConnection connection = new OleDbConnection(connectionString))
+            {
+                connection.Open();
+
+                // Clear old data
+                string deleteQuery = "DELETE FROM Bill_Compiled";
+                using (OleDbCommand deleteCommand = new OleDbCommand(deleteQuery, connection))
+                {
+                    try
+                    {
+                        deleteCommand.ExecuteNonQuery();
+                        Console.WriteLine("Old data has been deleted from Bill_Compiled.");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error deleting data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
+
+                string insertQuery = "INSERT INTO Bill_Compiled (RefNumber, Particulars, [Class], Debit, Credit) VALUES (@RefNumber, @Particulars, @Class, @Debit, @Credit)";
+
+                foreach (var bill in bills)
+                {
+                    foreach (var detail in bill.ItemDetails)
+                    {
+                        try
+                        {
+                            // Insert ItemLine (from BillItemLine)
+                            if (!string.IsNullOrEmpty(detail.ItemLineItemRefFullName))
+                            {
+                                string particulars = detail.ItemLineItemRefFullName;
+                                string itemClass = detail.ItemLineClassRefFullName;
+                                double amount = detail.ItemLineAmount;
+
+                                string debit = amount > 0 ? amount.ToString("N2") : "";
+                                string credit = amount < 0 ? Math.Abs(amount).ToString("N2") : "";
+
+                                if (amount > 0)
+                                    debitTotalAmount += amount;
+                                else if (amount < 0)
+                                    creditTotalAmount += Math.Abs(amount);
+
+                                using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                                {
+                                    command.Parameters.AddWithValue("@RefNumber", refNumber);
+                                    command.Parameters.AddWithValue("@Particulars", particulars);
+                                    command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(itemClass) ? (object)DBNull.Value : itemClass);
+                                    command.Parameters.AddWithValue("@Debit", debit);
+                                    command.Parameters.AddWithValue("@Credit", credit);
+                                    command.ExecuteNonQuery();
+                                }
+
+                                Console.WriteLine($"Inserted Item: {particulars}, Debit: {debit}, Credit: {credit}");
+                            }
+
+                            // Insert ExpenseLine (from BillExpenseLine)
+                            if (!string.IsNullOrEmpty(detail.ExpenseLineItemRefFullName))
+                            {
+                                string particulars = (bill.AccountNumber != null ? bill.AccountNumber + " - " : "") + detail.ExpenseLineItemRefFullName;
+                                string expClass = detail.ExpenseLineClassRefFullName;
+                                double amount = detail.ExpenseLineAmount;
+
+                                string debit = amount > 0 ? amount.ToString("N2") : "";
+                                string credit = amount < 0 ? Math.Abs(amount).ToString("N2") : "";
+
+                                if (amount > 0)
+                                    debitTotalAmount += amount;
+                                else if (amount < 0)
+                                    creditTotalAmount += Math.Abs(amount);
+
+                                using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                                {
+                                    command.Parameters.AddWithValue("@RefNumber", refNumber);
+                                    command.Parameters.AddWithValue("@Particulars", particulars);
+                                    command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(expClass) ? (object)DBNull.Value : expClass);
+                                    command.Parameters.AddWithValue("@Debit", debit);
+                                    command.Parameters.AddWithValue("@Credit", credit);
+                                    command.ExecuteNonQuery();
+                                }
+
+                                Console.WriteLine($"Inserted Expense: {particulars}, Debit: {debit}, Credit: {credit}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Error processing bill data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+
+                connection.Close();
+            }
+
+            Console.WriteLine($"Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
+        }
+
 
 
         private void SearchBillsByReference(string refNumber)
