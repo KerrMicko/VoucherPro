@@ -2430,7 +2430,7 @@ namespace VoucherPro
 
                 // Update the connection information
                 tableLogOnInfo.ConnectionInfo.ServerName = databasePath;
-                tableLogOnInfo.ConnectionInfo.DatabaseName = "";
+                tableLogOnInfo.ConnectionInfo.DatabaseName = ""; //or databasePath
                 tableLogOnInfo.ConnectionInfo.UserID = ""; // Leave blank for Access
                 tableLogOnInfo.ConnectionInfo.Password = ""; // Leave blank for Access
 
