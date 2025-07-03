@@ -290,6 +290,7 @@ namespace VoucherPro
             {
                 "",
                 "Check Voucher",
+                "Check",
             });
                 comboBox_Forms.SelectedIndex = 0;
                 comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
@@ -1625,10 +1626,10 @@ namespace VoucherPro
                                 data = checks;
                             }
                         }
-                        else if (comboBox_Forms.SelectedIndex == 2) // APV
+                        if (comboBox_Forms.SelectedIndex == 2) // Check
                         {
-                            apvData = queries.GetAccountsPayableData_CPI(refNumber);
-                            data = apvData;
+                            cheque = queries.GetCheckData(refNumber);
+                            data = cheque;
                         }
                     }
 
@@ -2372,29 +2373,14 @@ namespace VoucherPro
                         panel_Main.Visible = false;
                         panel_Main_CR.Visible = true;
                         break;
-                    case 2: // APV
-                        prefix = "APV";
-                        panel_SeriesNumber.Visible = true;
-                        label_SeriesNumberText.Text = "Current Series Number: APV";
-                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("APVSeries");
+                    case 2: // Check
+                        panel_SeriesNumber.Visible = false;
+                        panel_RefNumber.Visible = true;
+                        panel_RefNumberCrystalReport.Visible = false;
+                        panel_Signatory.Visible = false;
 
-                        if (GlobalVariables.useCrystalReports_LEADS)
-                        {
-                            panel_RefNumber.Visible = false;
-                            panel_RefNumberCrystalReport.Visible = true;
-                            panel_Main.Visible = false;
-                            panel_Main_CR.Visible = true;
-                        }
-                        else
-                        {
-                            panel_RefNumber.Visible = true;
-                            panel_RefNumberCrystalReport.Visible = false;
-                            panel_Main.Visible = true;
-                            panel_Main_CR.Visible = false;
-                        }
-
-                        panel_Signatory.Visible = true;
-                        panel_Printing.Visible = false;
+                        panel_Main.Visible = true;
+                        panel_Main_CR.Visible = false;
                         break;
 
                     default:

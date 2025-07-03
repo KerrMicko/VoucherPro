@@ -47,11 +47,77 @@ namespace VoucherPro.Clients
                         Layout_CheckVoucher_Bill(e, data as List<BillTable>, seriesNumber, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter, sfAlignRight);
                     }
                     break;
+                case 2:
+                    Layout_Check(e, data as List<CheckTable>, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter);
+                    break;
                 default:
                     throw new ArgumentException("Invalid layout index");
             }
         }
 
+        private void Layout_Check(PrintPageEventArgs e, List<CheckTable> checkTableData, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter)
+        {
+            DateTime dateCreated = Convert.ToDateTime(checkTableData[0].DateCreated).Date;
+
+            string month = dateCreated.ToString("MM");
+            string day = dateCreated.ToString("dd");
+            string year = dateCreated.ToString("yyyy");
+
+            // Insert spaces between characters
+            string formattedMonth = string.Join("   ", month.ToCharArray());
+            string formattedDay = string.Join("   ", day.ToCharArray());
+            string formattedYear = string.Join("   ", year.ToCharArray());
+
+            // Combine the parts with additional spaces between sections
+            string formattedDate = $"{formattedMonth}     {formattedDay}     {formattedYear}";
+
+            /*string formattedDate = dateCreated.ToString("MM    dd     yyyy");
+            formattedDate = string.Join(" ", formattedDate.Select(c => c.ToString()));*/
+
+            string payee = checkTableData[0].PayeeFullName.ToString();
+            double amount = checkTableData[0].Amount;
+            string amountInWords = AmountToWordsConverter.Convert(amount);
+
+            Font amountinWordsFont = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
+            Font dateFont = new Font("Microsoft Sans Serif", 9, FontStyle.Regular);
+            Font payeeFont = new Font("Microsoft Sans Serif", 11, FontStyle.Regular);
+            /*
+                e.Graphics.DrawString(amount.ToString("N2"), dateFont, Brushes.Black, new PointF(550 + 50, 60 + 10)); // amount x 600 y 93
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(90 - 30 + 50, 60 + 10)); // payee x 110 y 90
+                e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(520 + 60, 30 + 10)); // date x 570 y 60
+                e.Graphics.DrawString(amountInWords, dateFont, Brushes.Black, new PointF(55 - 30 + 50, 90 + 10)); // amountinwords x 75 y 120
+            */
+            // Rotate the content -90 degrees
+            if (GlobalVariables.isPrinting)
+            {
+                e.Graphics.RotateTransform(-90);
+                e.Graphics.TranslateTransform(-e.MarginBounds.Height + 180, 0 - 70);
+
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(60, 400 + 10));
+                e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(520 + 10, 370 + 10));
+                e.Graphics.DrawString(amount.ToString("N2"), dateFont, Brushes.Black, new PointF(550, 38 + 345 + 30));
+                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(25, 430 + 15));
+            }
+            else
+            {
+                /*e.Graphics.DrawString(amount.ToString("N2"), dateFont, Brushes.Black, new PointF(550 + 50, 38 + 70 - 15));
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(90 - 30 + 50, 20 + 70));
+                e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(520 + 3 + 50, 20 + 70 - 30));
+                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(55 - 30 + 50, 70 + 50));*/
+
+                /*e.Graphics.DrawString(amount.ToString("N2"), dateFont, Brushes.Black, new PointF(550, 38 + 380 - 15));
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(90 - 30, 20 + 380));
+                e.Graphics.DrawString(formattedDate, dateFont, Brushes.Black, new PointF(520 + 3, 20 + 380 - 30));
+                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(55 - 30, 50 + 380));*/
+                int minusX = 30;
+                int minusY = 35 + 15;
+
+                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(155 - minusX, 110 - minusY));
+                e.Graphics.DrawString(formattedDate, payeeFont, Brushes.Black, new PointF(625 + 3 - minusX, 75 + 4 - minusY));
+                e.Graphics.DrawString(amount.ToString("N2"), payeeFont, Brushes.Black, new PointF(520 + 115 - minusX, 110 + 4 - minusY));
+                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(125 - minusX, 145 - minusY));
+            }
+        }
         private void Layout_CheckVoucher_Check(PrintPageEventArgs e, List<CheckTableExpensesAndItems> checkData, string seriesNumber, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter, StringFormat sfAlignRight)
         {
             Font font_Header = font_EightBold;
