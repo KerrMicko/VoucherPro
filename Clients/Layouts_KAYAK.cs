@@ -58,7 +58,7 @@ namespace VoucherPro.Clients
             Font font_Data = font_Eight;
             Font font_Data2 = font_Seven;
 
-            string companyName = "Kayak Constuction Corp.";
+            string companyName = "Kayak Construction Corp.";
             //string companyTIN = "VAT Reg. TIN: 243-354-422-00000";
             string companyAddress = "Unit 811 GTP Tower 1 Pioneer Corporate Center, Madison St., Corner Pioneer St., Mandaluyong City";
             string companyTelNo = "Tel. No.: 6256282, Website Address: www.kayakcorp.com.ph";
@@ -377,7 +377,7 @@ namespace VoucherPro.Clients
             Font font_Header = font_EightBold;
             Font font_Data = font_Eight;
 
-            string companyName = "Kayak Constuction Corp.";
+            string companyName = "Kayak Construction Corp.";
             //string companyTIN = "VAT Reg. TIN: 243-354-422-00000";
             string companyAddress = "Unit 811 GTP Tower 1 Pioneer Corporate Center, Madison St., Corner Pioneer St., Mandaluyong City";
             string companyTelNo = "Tel. No.: 6256282, Website Address: www.kayakcorp.com.ph";
