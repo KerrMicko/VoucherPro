@@ -969,14 +969,14 @@ namespace VoucherPro
                         try
                         {
                             CRCV_IVP cRCV_IVP = new CRCV_IVP();
-                            
                             string databasePath = Path.Combine(Application.StartupPath, "CheckDatabase.accdb");
+                            SetDatabaseLocation(cRCV_IVP, databasePath);
 
                             AccessQueries accessQueries = new AccessQueries();
                             string refNumberCR = textBox_ReferenceNumber_CR.Text;
 
                             cvData = new List<CheckTableExpensesAndItems>();
-                            cvData = accessQueries.GetCheckExpensesAndItemsData_KAYAK(refNumberCR);
+                            cvData = accessQueries.GetCheckExpensesAndItemsData_IVP(refNumberCR);
 
 
                             if (cvData.Count > 0)
@@ -987,12 +987,10 @@ namespace VoucherPro
                                 TextObject textObject_CVPayee = cRCV_IVP.ReportDefinition.ReportObjects["TextCVPayee"] as TextObject;
                                 TextObject textObject_CVTotalAmount = cRCV_IVP.ReportDefinition.ReportObjects["TextCVTotalAmount"] as TextObject;
 
-
-                                AccessToDatabase accessToDatabase = new AccessToDatabase();
-
                                 double amount = cvData[0].TotalAmount;
                                 string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
 
+                                //textObject_Paid.Text = "";
 
                                 textObject_CVRefNumber.Text = textBox_SeriesNumber.Text;
                                 textObject_CVAmountInWords.Text = amountInWords;
@@ -1001,10 +999,19 @@ namespace VoucherPro
                                 textObject_CVTotalAmount.Text = cvData[0].TotalAmount.ToString("N2");
 
 
-                                string refNumber = textBox_ReferenceNumber_CR.Text;
 
-                                cRCV_IVP.SetParameterValue("ReferenceNumber", refNumber);
+                                SubreportObject subreportObject = cRCV_IVP.ReportDefinition.ReportObjects["SubreportCVDetailsIVP"] as SubreportObject;
 
+                                if (subreportObject != null)
+                                {
+                                    ReportDocument subReportDocument = cRCV_IVP.OpenSubreport(subreportObject.SubreportName);
+
+                                    TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
+
+                                    textObject_Remarks.Text = cvData[0].Memo.ToString();
+                                }
+
+                                cRCV_IVP.SetParameterValue("ReferenceNumber", refNumberCR);
 
                                 panel_Printing.Visible = false;
                                 panel_Signatory.Visible = true;
@@ -1012,11 +1019,12 @@ namespace VoucherPro
                                 panel_Main_CR.Visible = true;
 
                                 reportViewer.ReportSource = cRCV_IVP;
-
-                                reportViewer.ParameterFieldInfo.Clear();
-
                                 reportViewer.RefreshReport();
 
+                            }
+                            else
+                            {
+                               
                             }
                         }
                         catch (Exception ex)
@@ -2711,6 +2719,37 @@ namespace VoucherPro
                     }
                 }
             }
+        }
+
+        private void SetDatabaseLocationIVP(ReportDocument reportDocument, string databasePath)
+        {
+
+            ConnectionInfo connectionInfo = new ConnectionInfo();
+            connectionInfo.ServerName = databasePath;
+            connectionInfo.DatabaseName = "";
+            connectionInfo.UserID = "";
+            connectionInfo.Password = "";
+            connectionInfo.Type = ConnectionInfoType.CRQE;
+            connectionInfo.IntegratedSecurity = false;
+
+            foreach (Table table in reportDocument.Database.Tables)
+            {
+                TableLogOnInfo tableLogOnInfo = table.LogOnInfo;
+                tableLogOnInfo.ConnectionInfo = connectionInfo;
+                table.ApplyLogOnInfo(tableLogOnInfo);
+            }
+
+            foreach (ReportDocument subreport in reportDocument.Subreports)
+            {
+                foreach (Table table in subreport.Database.Tables)
+                {
+                    TableLogOnInfo tableLogOnInfo = table.LogOnInfo;
+                    tableLogOnInfo.ConnectionInfo = connectionInfo;
+                    table.ApplyLogOnInfo(tableLogOnInfo);
+                }
+            }
+
+            reportDocument.VerifyDatabase();
         }
 
 
