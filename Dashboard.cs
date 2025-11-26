@@ -962,8 +962,6 @@ namespace VoucherPro
                         }
                     }
 
-
-
                     else if (GlobalVariables.client == "IVP")
                     {
                         try
@@ -990,8 +988,6 @@ namespace VoucherPro
                                 double amount = cvData[0].TotalAmount;
                                 string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
 
-                                //textObject_Paid.Text = "";
-
                                 textObject_CVRefNumber.Text = textBox_SeriesNumber.Text;
                                 textObject_CVAmountInWords.Text = amountInWords;
                                 textObject_CVCheckDate.Text = cvData[0].DateCreated.ToString("dd-MMM-yyyy");
@@ -1007,8 +1003,15 @@ namespace VoucherPro
                                     ReportDocument subReportDocument = cRCV_IVP.OpenSubreport(subreportObject.SubreportName);
 
                                     TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
+                                    TextObject textObject_CVSubTotal = subReportDocument.ReportDefinition.ReportObjects["TextCVSubTotalAmount"] as TextObject;
+                                    TextObject textObject_CVSubCheckNumber = subReportDocument.ReportDefinition.ReportObjects["TextCVSubCheckNumber"] as TextObject;
+                                    TextObject textObject_CVSubCheckDate = subReportDocument.ReportDefinition.ReportObjects["TextCVSubCheckDate"] as TextObject;
 
                                     textObject_Remarks.Text = cvData[0].Memo.ToString();
+                                    textObject_CVSubTotal.Text = cvData[0].TotalAmount.ToString("N2");
+                                    textObject_CVSubCheckNumber.Text = cvData[0].RefNumber.ToString();
+                                    textObject_CVSubCheckDate.Text = cvData[0].DateCreated.ToString("MMM - dd - yyyy");
+
                                 }
 
                                 cRCV_IVP.SetParameterValue("ReferenceNumber", refNumberCR);
