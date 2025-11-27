@@ -56,51 +56,57 @@ namespace VoucherPro
 
         private static async Task FirstRunFunction()
         {
-            try
+            if (GlobalVariables.client == "IVP")
             {
-                //MessageBox.Show("Welcome to the application!");
-                DialogResult result = MessageBox.Show("Welcome! Do you want to sync data from QuickBooks?",
-                                     "Sync Confirmation",
-                                     MessageBoxButtons.YesNo,
-                                     MessageBoxIcon.Question);
-
-                if (result == DialogResult.Yes)
+                return;
+            }
+            else
+            {
+                try
                 {
-                    AccessToDatabase accessToDatabase = new AccessToDatabase();
-                    accessToDatabase.DeleteSpecifiedTablesData();
+                    //MessageBox.Show("Welcome to the application!");
+                    DialogResult result = MessageBox.Show("Welcome! Do you want to sync data from QuickBooks?",
+                                         "Sync Confirmation",
+                                         MessageBoxButtons.YesNo,
+                                         MessageBoxIcon.Question);
 
-                    using (var progressForm = new Form())
+                    if (result == DialogResult.Yes)
                     {
-                        progressForm.StartPosition = FormStartPosition.CenterScreen;
-                        progressForm.Size = new System.Drawing.Size(300, 100);
-                        progressForm.FormBorderStyle = FormBorderStyle.FixedDialog;
-                        progressForm.MaximizeBox = false;
-                        progressForm.MinimizeBox = false;
-                        progressForm.ControlBox = false;
-                        progressForm.Text = "Syncing";
+                        AccessToDatabase accessToDatabase = new AccessToDatabase();
+                        accessToDatabase.DeleteSpecifiedTablesData();
 
-                        var label = new Label
+                        using (var progressForm = new Form())
                         {
-                            Text = "Syncing data from QuickBooks. Please wait...",
-                            Dock = DockStyle.Fill,
-                            TextAlign = System.Drawing.ContentAlignment.MiddleCenter
-                        };
+                            progressForm.StartPosition = FormStartPosition.CenterScreen;
+                            progressForm.Size = new System.Drawing.Size(300, 100);
+                            progressForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                            progressForm.MaximizeBox = false;
+                            progressForm.MinimizeBox = false;
+                            progressForm.ControlBox = false;
+                            progressForm.Text = "Syncing";
 
-                        progressForm.Controls.Add(label);
-                        progressForm.Show();
-                        progressForm.BringToFront();
+                            var label = new Label
+                            {
+                                Text = "Syncing data from QuickBooks. Please wait...",
+                                Dock = DockStyle.Fill,
+                                TextAlign = System.Drawing.ContentAlignment.MiddleCenter
+                            };
 
-                        await accessToDatabase.FetchAndSaveData();
+                            progressForm.Controls.Add(label);
+                            progressForm.Show();
+                            progressForm.BringToFront();
 
-                        progressForm.Close();
+                            await accessToDatabase.FetchAndSaveData();
+
+                            progressForm.Close();
+                        }
                     }
                 }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("An error occurred while syncing data: " + ex.Message);
+                }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("An error occurred while syncing data: " + ex.Message);
-            }
-
         }
     }
 }

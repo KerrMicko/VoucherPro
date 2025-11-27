@@ -280,6 +280,29 @@ namespace VoucherPro
                                     break;
                             }
                         }
+                        else if (client == "IVP")
+                        {
+                            switch (choice)
+                            {
+                                case 1:
+                                    signatoryQuery = "UPDATE Signatory SET PreparedByName = ?, PreparedByPosition = ?";
+                                    break;
+                                case 2:
+                                    signatoryQuery = "UPDATE Signatory SET ReviewedByName = ?, ReviewedByPosition = ?";
+                                    break;
+                                /*case 3:
+                                    signatoryQuery = "UPDATE Signatory SET RecommendingApprovalName = ?, RecommendingApprovalPosition = ?";
+                                    break;*/
+                                case 3:
+                                    signatoryQuery = "UPDATE Signatory SET ApprovedByName = ?, ApprovedByPosition = ?";
+                                    break;
+                                case 4:
+                                    signatoryQuery = "UPDATE Signatory SET ReceivedByName = ?, ReceivedByPosition = ?";
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
                     }
                     else
                     {
@@ -442,6 +465,39 @@ namespace VoucherPro
                                     break;
                             }
                         }
+                        else if (client == "IVP")
+                        {
+                            switch (choice)
+                            {
+                                case 1:
+                                    signatoryCommand.Parameters.AddWithValue("@PreparedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@PreparedByPosition", position);
+                                    break;
+
+                                case 2:
+                                    signatoryCommand.Parameters.AddWithValue("@ReviewedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ReviewedByPosition", position);
+                                    break;
+
+                                /*case 3:
+                                    signatoryCommand.Parameters.AddWithValue("@RecommendingApprovalName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@RecommendingApprovalPosition", position);
+                                    break;*/
+
+                                case 3:
+                                    signatoryCommand.Parameters.AddWithValue("@ApprovedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ApprovedByPosition", position);
+                                    break;
+
+                                case 4:
+                                    signatoryCommand.Parameters.AddWithValue("@ReceivedByName", name);
+                                    signatoryCommand.Parameters.AddWithValue("@ReceivedByPosition", position);
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
                         else
                         {
                             switch (choice)
@@ -567,6 +623,34 @@ namespace VoucherPro
                                 break;
                         }
                     }
+                    else if (client == "IVP")
+                    {
+                        switch (choice)
+                        {
+                            case 1:
+                                query = "SELECT TOP 1 PreparedByName, PreparedByPosition FROM Signatory";
+                                break;
+
+                            case 2:
+                                query = "SELECT TOP 1 ReviewedByName, ReviewedByPosition FROM Signatory";
+                                break;
+
+                            /*case 3:
+                                query = "SELECT TOP 1 RecommendingApprovalName, RecommendingApprovalPosition FROM Signatory";
+                                break;*/
+
+                            case 3:
+                                query = "SELECT TOP 1 ApprovedByName, ApprovedByPosition FROM Signatory";
+                                break;
+
+                            case 4:
+                                query = "SELECT TOP 1 ReceivedByName, ReceivedByPosition FROM Signatory";
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
                     else
                     {
                         switch (choice)
@@ -636,6 +720,39 @@ namespace VoucherPro
                                     }
                                 }
                                 else if (client == "CPI")
+                                {
+                                    switch (choice)
+                                    {
+                                        case 1:
+                                            name = reader["PreparedByName"].ToString();
+                                            position = reader["PreparedByPosition"].ToString();
+                                            break;
+
+                                        case 2:
+                                            name = reader["ReviewedByName"].ToString();
+                                            position = reader["ReviewedByPosition"].ToString();
+                                            break;
+
+                                        /*case 3:
+                                            name = reader["RecommendingApprovalName"].ToString();
+                                            position = reader["RecommendingApprovalPosition"].ToString();
+                                            break;*/
+
+                                        case 3:
+                                            name = reader["ApprovedByName"].ToString();
+                                            position = reader["ApprovedByPosition"].ToString();
+                                            break;
+
+                                        case 4:
+                                            name = reader["ReceivedByName"].ToString();
+                                            position = reader["ReceivedByPosition"].ToString();
+                                            break;
+
+                                        default:
+                                            break;
+                                    }
+                                }
+                                else if (client == "IVP")
                                 {
                                     switch (choice)
                                     {
@@ -768,6 +885,16 @@ namespace VoucherPro
                         "ReceivedByName, ReceivedByPosition " +
                         "FROM Signatory";
                     }
+                    else if (GlobalVariables.client == "IVP")
+                    {
+                        query = "SELECT TOP 1 " +
+                        "PreparedByName, PreparedByPosition, " +
+                        "ReviewedByName, ReviewedByPosition, " +
+                        //"RecommendingApprovalName, RecommendingApprovalPosition, " +
+                        "ApprovedByName, ApprovedByPosition, " +
+                        "ReceivedByName, ReceivedByPosition " +
+                        "FROM Signatory";
+                    }
                     else
                     {
                        query = "SELECT TOP 1 " +
@@ -836,6 +963,23 @@ namespace VoucherPro
                                     receivedByName = reader["ReceivedByName"].ToString();
                                     receivedByPosition = reader["ReceivedByPosition"].ToString();
                                 }
+                                if (client == "IVP")
+                                {
+                                    preparedByName = reader["PreparedByName"].ToString();
+                                    preparedByPosition = reader["PreparedByPosition"].ToString();
+
+                                    reviewedByName = reader["ReviewedByName"].ToString();
+                                    reviewedByPosition = reader["ReviewedByPosition"].ToString();
+
+                                    //recommendingApprovalName = reader["RecommendingApprovalName"].ToString();
+                                    //recommendingApprovalPosition = reader["RecommendingApprovalPosition"].ToString();
+
+                                    approvedByName = reader["ApprovedByName"].ToString();
+                                    approvedByPosition = reader["ApprovedByPosition"].ToString();
+
+                                    receivedByName = reader["ReceivedByName"].ToString();
+                                    receivedByPosition = reader["ReceivedByPosition"].ToString();
+                                }
                                 else
                                 {
                                     preparedByName = reader["PreparedByName"].ToString();
@@ -875,6 +1019,11 @@ namespace VoucherPro
                 recommendingApprovalPosition = "";
             }
             else if (GlobalVariables.client == "CPI")
+            {
+                recommendingApprovalName = "";
+                recommendingApprovalPosition = "";
+            }
+            else if (GlobalVariables.client == "IVP")
             {
                 recommendingApprovalName = "";
                 recommendingApprovalPosition = "";

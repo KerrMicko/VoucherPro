@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using static VoucherPro.DataClass;
 using static VoucherPro.AccessToDatabase;
 using static VoucherPro.DataClass.CheckTableExpensesAndItems;
+using QBFC16Lib;
 
 namespace VoucherPro
 {
@@ -1166,7 +1167,7 @@ namespace VoucherPro
             return checks;
         } // CV Check Expense Item
 
-        public List<CheckTableExpensesAndItems> GetCheckExpensesAndItemsData_IVP(string refNumber)
+        /*public List<CheckTableExpensesAndItems> GetCheckExpensesAndItemsData_IVP(string refNumber)
         {
             List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
 
@@ -1377,7 +1378,161 @@ namespace VoucherPro
                 MessageBox.Show($"Error retrieving data to Access database: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return checks;
-        } // CV Check Expense Item
+        }*/
+
+        public List<CheckTableExpensesAndItems> GetCheckExpensesAndItemsData_IVP(string refNumber)
+        {
+            QBSessionManager sessionManager = new QBSessionManager();
+            List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
+
+            try
+            {
+                Console.WriteLine("--- Starting QuickBooks Session ---");
+                string AppName = "QuickBooks Check Retrieval";
+                sessionManager.OpenConnection2("", AppName, ENConnectionType.ctLocalQBD);
+                sessionManager.BeginSession("", ENOpenMode.omDontCare);
+
+                // Build request
+                IMsgSetRequest request = sessionManager.CreateMsgSetRequest("US", 13, 0);
+                request.Attributes.OnError = ENRqOnError.roeContinue;
+
+                ICheckQuery checkQuery = request.AppendCheckQueryRq();
+
+                // Filter by RefNumber
+                checkQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.MatchCriterion
+                    .SetValue(ENMatchCriterion.mcStartsWith);
+
+                checkQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.RefNumber
+                    .SetValue(refNumber);
+
+                // Include line items
+                checkQuery.IncludeLineItems.SetValue(true);
+
+                Console.WriteLine($"Querying for RefNumber starting with: {refNumber}");
+                IMsgSetResponse response = sessionManager.DoRequests(request);
+                IResponse qbResponse = response.ResponseList.GetAt(0);
+
+                ICheckRetList list = qbResponse.Detail as ICheckRetList;
+
+                if (list == null || list.Count == 0)
+                {
+                    Console.WriteLine("No checks found.");
+                    return checks;
+                }
+
+                Console.WriteLine($"Found {list.Count} check(s).");
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    ICheckRet check = list.GetAt(i);
+
+                    // HEADER DATA
+                    DateTime txnDate = check.TxnDate?.GetValue() ?? DateTime.MinValue;
+                    string bankAccount = check.AccountRef?.FullName?.GetValue() ?? "";
+                    string payee = check.PayeeEntityRef?.FullName?.GetValue() ?? "";
+                    string memo = check.Memo?.GetValue() ?? "";
+                    string address1 = check.Address?.Addr1?.GetValue() ?? "";
+                    string address2 = check.Address?.Addr2?.GetValue() ?? "";
+                    double totalAmount = check.Amount?.GetValue() ?? 0;
+                    string currentRef = check.RefNumber?.GetValue() ?? "";
+
+                    Console.WriteLine($"\n[Check #{i + 1}] Ref: {currentRef} | Payee: {payee} | Total: {totalAmount}");
+
+                    // EXPENSE LINES
+                    if (check.ExpenseLineRetList != null)
+                    {
+                        for (int e = 0; e < check.ExpenseLineRetList.Count; e++)
+                        {
+                            IExpenseLineRet exp = check.ExpenseLineRetList.GetAt(e);
+
+                            string expAccount = exp.AccountRef?.FullName?.GetValue() ?? "";
+                            double expAmount = exp.Amount?.GetValue() ?? 0;
+
+                            Console.WriteLine($"   -> [Expense Line] Account: {expAccount} | Amount: {expAmount}");
+
+                            checks.Add(new CheckTableExpensesAndItems
+                            {
+                                DateCreated = txnDate,
+                                BankAccount = bankAccount,
+                                PayeeFullName = payee,
+                                RefNumber = refNumber,
+                                TotalAmount = totalAmount,
+                                Memo = memo,
+                                Address = address1,
+                                Address2 = address2,
+
+                                Account = expAccount,
+                                ExpenseClass = exp.ClassRef?.FullName?.GetValue() ?? "",
+                                ExpensesAmount = expAmount,
+                                ExpensesMemo = exp.Memo?.GetValue() ?? "",
+                                ExpensesCustomerJob = exp.CustomerRef?.FullName?.GetValue() ?? "",
+
+                                ItemType = ItemType.Expense
+                            });
+                        }
+                    }
+
+                    // ITEM LINES
+                    if (check.ORItemLineRetList != null)
+                    {
+                        for (int iLine = 0; iLine < check.ORItemLineRetList.Count; iLine++)
+                        {
+                            // 1. Cast to the "OR" wrapper first
+                            IORItemLineRet orItemLine = (IORItemLineRet)check.ORItemLineRetList.GetAt(iLine);
+
+                            // 2. Check if the wrapper contains a standard ItemLineRet
+                            if (orItemLine.ItemLineRet != null)
+                            {
+                                IItemLineRet item = orItemLine.ItemLineRet;
+
+                                string itemName = item.ItemRef?.FullName?.GetValue() ?? "";
+                                double itemAmount = item.Amount?.GetValue() ?? 0;
+
+                                Console.WriteLine($"   -> [Item Line] Item: {itemName} | Amount: {itemAmount}");
+
+                                checks.Add(new CheckTableExpensesAndItems
+                                {
+                                    DateCreated = txnDate,
+                                    BankAccount = bankAccount,
+                                    PayeeFullName = payee,
+                                    RefNumber = refNumber,
+                                    TotalAmount = totalAmount,
+                                    Memo = memo,
+                                    Address = address1,
+                                    Address2 = address2,
+
+                                    Item = itemName,
+                                    ItemDescription = item.Desc?.GetValue() ?? "",
+                                    ItemClass = item.ClassRef?.FullName?.GetValue() ?? "",
+                                    ItemAmount = itemAmount,
+
+                                    ItemType = ItemType.Item
+                                });
+                            }
+                            else if (orItemLine.ItemGroupLineRet != null)
+                            {
+                                Console.WriteLine("   -> [Item Group] Found a Group/Bundle (Skipping logic not implemented)");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"CRITICAL ERROR: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+                MessageBox.Show($"Error: {ex.Message}");
+            }
+            finally
+            {
+                Console.WriteLine("--- Closing Session ---");
+                try { sessionManager.EndSession(); sessionManager.CloseConnection(); }
+                catch { }
+            }
+
+            return checks;
+        }
+
 
         public List<CheckTableExpensesAndItems> GetCheckExpensesAndItemsData_CPI(string refNumber)
         {
