@@ -616,6 +616,245 @@ namespace VoucherPro
             return bills;
         }
 
+        public List<BillTable> GetBillData_IVP(string refNumber)
+        {
+            QBSessionManager sessionManager = new QBSessionManager();
+            List<BillTable> bills = new List<BillTable>();
+
+            Console.WriteLine("--------------------------------------------------");
+            Console.WriteLine($"[DEBUG] START: GetBillData_IVP for RefNumber: {refNumber}");
+
+            try
+            {
+                sessionManager.OpenConnection2("", "Bill Retrieval", ENConnectionType.ctLocalQBD);
+                sessionManager.BeginSession("", ENOpenMode.omDontCare);
+                Console.WriteLine("[DEBUG] Session Opened Successfully.");
+
+                // ====================================================
+                // 1. QUERY BILL PAYMENT CHECK USING RefNumber
+                // ====================================================
+                IMsgSetRequest req1 = sessionManager.CreateMsgSetRequest("US", 13, 0);
+                req1.Attributes.OnError = ENRqOnError.roeContinue;
+
+                IBillPaymentCheckQuery bpcQuery = req1.AppendBillPaymentCheckQueryRq();
+                bpcQuery.IncludeLineItems.SetValue(true);
+
+                // exact match
+                bpcQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.MatchCriterion.SetValue(ENMatchCriterion.mcStartsWith);
+                bpcQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.RefNumber.SetValue(refNumber);
+
+                Console.WriteLine("[DEBUG] Sending BillPaymentCheck Query...");
+                IMsgSetResponse resp1 = sessionManager.DoRequests(req1);
+                IResponse r1 = resp1.ResponseList.GetAt(0);
+
+                Console.WriteLine($"[DEBUG] Query 1 Response Code: {r1.StatusCode} ({r1.StatusMessage})");
+
+                IBillPaymentCheckRetList bpList = r1.Detail as IBillPaymentCheckRetList;
+
+                if (bpList == null || bpList.Count == 0)
+                {
+                    Console.WriteLine("[DEBUG] ERROR: Bill Payment Check list is empty or null.");
+                    MessageBox.Show("Bill Payment Check not found: " + refNumber);
+                    return bills;
+                }
+
+                IBillPaymentCheckRet bp = bpList.GetAt(0);
+                Console.WriteLine($"[DEBUG] Bill Payment Check Found. TxnID: {bp.TxnID?.GetValue()}");
+
+                // HEADER FROM BILL PAYMENT CHECK
+                DateTime payDate = bp.TxnDate?.GetValue() ?? DateTime.MinValue;
+                string payee = bp.PayeeEntityRef?.FullName?.GetValue() ?? "";
+                string address1 = bp.Address?.Addr1?.GetValue() ?? "";
+                string address2 = bp.Address?.Addr2?.GetValue() ?? "";
+                string bankAccount = bp.BankAccountRef?.FullName?.GetValue() ?? "";
+                string memo = bp.Memo?.GetValue() ?? "";
+                double amountPaid = bp.Amount?.GetValue() ?? 0;
+
+                Console.WriteLine($"[DEBUG] Header Info -- Payee: {payee}, Date: {payDate}, Amount: {amountPaid}, Bank: {bankAccount}");
+
+                // GET THE APPLIED BILL TxnID
+                string appliedTxnID = "";
+                if (bp.AppliedToTxnRetList != null && bp.AppliedToTxnRetList.Count > 0)
+                {
+                    // Debugging the list of applied transactions
+                    Console.WriteLine($"[DEBUG] AppliedToTxn List Count: {bp.AppliedToTxnRetList.Count}");
+                    for (int k = 0; k < bp.AppliedToTxnRetList.Count; k++)
+                    {
+                        var applied = bp.AppliedToTxnRetList.GetAt(k);
+                        Console.WriteLine($"[DEBUG] Applied Item [{k}]: TxnID: {applied.TxnID?.GetValue()}, Amount: {applied.Amount?.GetValue()}");
+                    }
+
+                    // Logic retrieves the first one
+                    appliedTxnID = bp.AppliedToTxnRetList.GetAt(0).TxnID?.GetValue() ?? "";
+                }
+                else
+                {
+                    Console.WriteLine("[DEBUG] AppliedToTxnRetList is NULL or Empty.");
+                }
+
+                if (appliedTxnID == "")
+                {
+                    Console.WriteLine("[DEBUG] ERROR: Could not extract Applied TxnID.");
+                    MessageBox.Show("No Applied Bill found from Bill Payment Check.");
+                    return bills;
+                }
+
+                Console.WriteLine($"[DEBUG] Target Bill TxnID: {appliedTxnID}");
+
+                // ====================================================
+                // 2. QUERY BILL USING THE APPLIED TxnID
+                // ====================================================
+                IMsgSetRequest req2 = sessionManager.CreateMsgSetRequest("US", 13, 0);
+                req2.Attributes.OnError = ENRqOnError.roeContinue;
+
+                IBillQuery billQuery = req2.AppendBillQueryRq();
+                billQuery.IncludeLineItems.SetValue(true);
+                billQuery.ORBillQuery.TxnIDList.Add(appliedTxnID);
+
+                Console.WriteLine("[DEBUG] Sending Bill Query...");
+                IMsgSetResponse resp2 = sessionManager.DoRequests(req2);
+                IResponse r2 = resp2.ResponseList.GetAt(0);
+                Console.WriteLine($"[DEBUG] Query 2 Response Code: {r2.StatusCode} ({r2.StatusMessage})");
+
+                IBillRetList billList = r2.Detail as IBillRetList;
+
+                if (billList == null || billList.Count == 0)
+                {
+                    Console.WriteLine("[DEBUG] ERROR: Bill list not found for that TxnID.");
+                    MessageBox.Show("Bill not found using TxnID: " + appliedTxnID);
+                    return bills;
+                }
+
+                IBillRet bill = billList.GetAt(0);
+
+                // BILL HEADER FIELDS
+                DateTime billDate = bill.TxnDate?.GetValue() ?? DateTime.MinValue;
+                DateTime dueDate = bill.DueDate?.GetValue() ?? DateTime.MinValue;
+                double amountDue = bill.AmountDue?.GetValue() ?? 0;
+                string billMemo = bill.Memo?.GetValue() ?? "";
+                string billAPAccount = bill.APAccountRef?.FullName?.GetValue() ?? "";
+                string billRefNumber = bill.RefNumber?.GetValue() ?? "";
+
+                Console.WriteLine($"[DEBUG] Bill Found. Ref: {billRefNumber}, Due: {dueDate}, AP Account: {billAPAccount}");
+
+                // Create BillTable object
+                BillTable bt = new BillTable
+                {
+                    DateCreated = payDate,
+                    DueDate = billDate,
+                    PayeeFullName = payee,
+                    Address = address1,
+                    Address2 = address2,
+                    BankAccount = bankAccount,
+                    APAccountRefFullName = billAPAccount,
+                    Amount = amountPaid,
+                    RefNumber = refNumber,
+                    AppliedRefNumber = billRefNumber,
+                    AppliedToTxnTxnID = appliedTxnID,
+                    Memo = memo,
+                    BillMemo = billMemo,
+                    AmountDue = amountDue,
+                };
+
+                // ====================================================
+                // 3. BILL EXPENSE LINE ITEMS
+                // ====================================================
+                if (bill.ExpenseLineRetList != null)
+                {
+                    Console.WriteLine($"[DEBUG] Processing {bill.ExpenseLineRetList.Count} Expense Lines...");
+                    for (int i = 0; i < bill.ExpenseLineRetList.Count; i++)
+                    {
+                        var exp = bill.ExpenseLineRetList.GetAt(i);
+                        string expAcc = exp.AccountRef?.FullName?.GetValue() ?? "NULL";
+                        double expAmt = exp.Amount?.GetValue() ?? 0;
+
+                        Console.WriteLine($"[DEBUG] Expense [{i}]: Account={expAcc}, Amount={expAmt}");
+
+                        bt.ItemDetails.Add(new ItemDetail
+                        {
+                            ItemLineItemRefFullName = expAcc,
+                            ItemLineAmount = expAmt,
+                            ItemLineCustomerJob = exp.CustomerRef?.FullName?.GetValue() ?? "",
+                            ItemLineMemo = exp.Memo?.GetValue() ?? "",
+                        });
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[DEBUG] No Expense Lines found.");
+                }
+
+                // ====================================================
+                // 4. BILL ITEM LINE ITEMS
+                // ====================================================
+                if (bill.ORItemLineRetList != null)
+                {
+                    Console.WriteLine($"[DEBUG] Processing {bill.ORItemLineRetList.Count} Item Lines...");
+                    for (int i = 0; i < bill.ORItemLineRetList.Count; i++)
+                    {
+                        var orItem = bill.ORItemLineRetList.GetAt(i);
+
+                        // Check specifically if it is an ItemLineRet (could be ItemGroupLineRet)
+                        if (orItem.ItemLineRet != null)
+                        {
+                            var item = orItem.ItemLineRet;
+                            string itemName = item.ItemRef?.FullName?.GetValue() ?? "NULL";
+                            double itemAmt = item.Amount?.GetValue() ?? 0;
+
+                            Console.WriteLine($"[DEBUG] Item [{i}]: Name={itemName}, Amount={itemAmt}");
+
+                            bt.ItemDetails.Add(new ItemDetail
+                            {
+                                ItemLineItemRefFullName = itemName,
+                                ItemLineAmount = itemAmt,
+                                ItemLineCustomerJob = item.CustomerRef?.FullName?.GetValue() ?? "",
+                                ItemLineMemo = item.Desc?.GetValue() ?? "",
+                            });
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DEBUG] Item [{i}] is not a standard ItemLineRet (possibly Group/Inventory Group).");
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[DEBUG] No Item Lines found.");
+                }
+
+                // ADD TO LIST
+                bills.Add(bt);
+                Console.WriteLine("[DEBUG] BillTable added to list successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("--------------------------------------------------");
+                Console.WriteLine($"[DEBUG] EXCEPTION CAUGHT: {ex.Message}");
+                Console.WriteLine($"[DEBUG] Stack Trace: {ex.StackTrace}");
+                Console.WriteLine("--------------------------------------------------");
+                MessageBox.Show("Error retrieving Bill data: " + ex.Message);
+            }
+            finally
+            {
+                try
+                {
+                    sessionManager.EndSession();
+                    sessionManager.CloseConnection();
+                    Console.WriteLine("[DEBUG] Session Closed.");
+                }
+                catch (Exception closeEx)
+                {
+                    Console.WriteLine($"[DEBUG] Error closing session: {closeEx.Message}");
+                }
+            }
+
+            return bills;
+        }
+
+
+
+
+
         public List<ItemReciept> GetItemRecieptData_LEADS(string refNumber)
         {
             List<ItemReciept> ItemReceipt = new List<ItemReciept>();

@@ -64,10 +64,13 @@ namespace VoucherPro
             public double ItemLineAmount { get; set; }
             public string ItemLineClassRefFullName { get; set; }
             public string ItemLineMemo { get; set; }
+            public string ItemLineCustomerJob { get; set; }
+
 
             public string ExpenseLineItemRefFullName { get; set; }
             public double ExpenseLineAmount { get; set; }
             public string ExpenseLineClassRefFullName { get; set; }
+            public string ExpenseLineCustomerJob { get; set; }
             public string ExpenseLineMemo { get; set; }
         }
 
