@@ -1011,7 +1011,7 @@ namespace VoucherPro
 
                                 textObject_CVRefNumber.Text = textBox_SeriesNumber.Text;
                                 textObject_CVAmountInWords.Text = amountInWords;
-                                textObject_CVCheckDate.Text = cvData[0].DateCreated.ToString("dd-MMM-yyyy");
+                                textObject_CVCheckDate.Text = cvData[0].DateCreated.ToString("MMMM dd, yyyy");
                                 textObject_CVPayee.Text = cvData[0].PayeeFullName;
                                 textObject_CVTotalAmount.Text = cvData[0].TotalAmount.ToString("N2");
 
@@ -1050,7 +1050,7 @@ namespace VoucherPro
                                 }
 
                                 textObject_CVTotalDebitAmount.Text = debitTotalAmount.ToString("N2");
-                                textObject_CVTotalCreditAmount.Text = creditTotalAmount.ToString("N2");
+                                textObject_CVTotalCreditAmount.Text = debitTotalAmount.ToString("N2");
 
                                 // Subreport
                                 SubreportObject subreportObject = cRCV_IVP.ReportDefinition.ReportObjects["SubreportCVDetailsIVP"] as SubreportObject;
@@ -1068,8 +1068,8 @@ namespace VoucherPro
                                     textObject_Remarks.Text = cvData[0].Memo;
                                     textObject_CVSubTotal.Text = cvData[0].TotalAmount.ToString("N2");
                                     textObject_CVSubCheckNumber.Text = cvData[0].RefNumber;
-                                    textObject_CVSubCheckDate.Text = cvData[0].DateCreated.ToString("MMM - dd - yyyy");
-                                    textObject_SubAccountPayable.Text = cvData[0].BankAccountNumber + " - " + cvData[0].BankAccount;
+                                    textObject_CVSubCheckDate.Text = cvData[0].DateCreated.ToString("MMMM dd, yyyy");
+                                    textObject_SubAccountPayable.Text = cvData[0].BankAccount;
                                     textObject_SubAmountPayable.Text = debitTotalAmount.ToString("N2");
 
                                     DataTable dataTable = new DataTable();
@@ -1289,72 +1289,130 @@ namespace VoucherPro
         {
             try
             {
-                Console.WriteLine("Step 1: Initializing report");
                 CRCV_IVPBILL cRCV_IVPBILL = new CRCV_IVPBILL();
                 string databasePathBILL = Path.Combine(Application.StartupPath, "CheckDatabase.accdb");
                 SetDatabaseLocation(cRCV_IVPBILL, databasePathBILL);
 
-                Console.WriteLine("Step 2: Fetching bill data");
                 AccessQueries accessQueries = new AccessQueries();
                 List<BillTable> bills = accessQueries.GetBillData_IVP(refNumberCR);
 
                 if (bills == null || bills.Count == 0)
-                {
-                    Console.WriteLine("No bills found, returning false");
                     return false;
-                }
-
-                Console.WriteLine("Step 3: Accessing main report objects");
 
                 TextObject textObject_CVBILLCheckNumber = null;
                 TextObject textObject_CVBILLAmountInWords = null;
                 TextObject textObject_CVBILLCheckDate = null;
                 TextObject textObject_CVBILLPayee = null;
                 TextObject textObject_CVBILLTotalAmount = null;
+                TextObject textObject_CVBILLTotalDebitAmount = null;
+                TextObject textObject_CVBILLTotalCreditAmount = null;
+                TextObject textObject_PreparedBy = null;
+                TextObject textObject_PreparedByPos = null;
+                TextObject textObject_CheckedBy = null;
+                TextObject textObject_CheckedByPos = null;
+                TextObject textObject_ApprovedBy = null;
+                TextObject textObject_ApprovedByPos = null;
+                TextObject textObject_ReceivedBy = null;
+                TextObject textObject_ReceivedByPos = null;
 
                 try
                 {
                     textObject_CVBILLCheckNumber = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLSeriesnumber"] as TextObject;
-                    Console.WriteLine("Found TextCVBILLSeriesnumber");
                     textObject_CVBILLAmountInWords = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLAmountInWords"] as TextObject;
-                    Console.WriteLine("Found TextCVBILLAmountInWords");
                     textObject_CVBILLCheckDate = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCheckDate"] as TextObject;
-                    Console.WriteLine("Found TextCVBILLCheckDate");
                     textObject_CVBILLPayee = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLPayee"] as TextObject;
-                    Console.WriteLine("Found TextCVBILLPayee");
                     textObject_CVBILLTotalAmount = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTotalAmount"] as TextObject;
-                    Console.WriteLine("Found TextCVBILLTotalAmount");
+                    textObject_CVBILLTotalDebitAmount = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTotalDebitAmount"] as TextObject;
+                    textObject_CVBILLTotalCreditAmount = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTotalCreditAmount"] as TextObject;
+
+
+                    textObject_PreparedBy = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
+                    textObject_PreparedByPos = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
+                    textObject_CheckedBy = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
+                    textObject_CheckedByPos = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCheckedByPosition"] as TextObject;
+                    textObject_ApprovedBy = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
+                    textObject_ApprovedByPos = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextApprovedByPosition"] as TextObject;
+                    textObject_ReceivedBy = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextReceivedBy"] as TextObject;
+                    textObject_ReceivedByPos = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextReceivedByPosition"] as TextObject;
+
+                    AccessToDatabase accessToDatabase = new AccessToDatabase();
+
+                    var (PreparedByName, PreparedByPosition,
+                       ReviewedByName, ReviewedByPosition,
+                       RecommendingApprovalName, RecommendingApprovalPosition,
+                       ApprovedByName, ApprovedByPosition,
+                       ReceivedByName, ReceivedByPosition) = accessToDatabase.RetrieveAllSignatoryData();
+
+
+                    double debitTotalAmount = 0;
+                    double creditTotalAmount = 0;
+
+                    textObject_PreparedBy.Text = PreparedByName;
+                    textObject_PreparedByPos.Text = PreparedByPosition;
+                    textObject_CheckedBy.Text = ReviewedByName;
+                    textObject_CheckedByPos.Text = ReviewedByPosition;
+                    textObject_ApprovedBy.Text = ApprovedByName;
+                    textObject_ApprovedByPos.Text = ApprovedByPosition;
+                    textObject_ReceivedBy.Text = ReceivedByName;
+                    textObject_ReceivedByPos.Text = ReceivedByPosition;
+
+                    foreach (var bill in bills) // 'bills' is List<BillTable>
+                    {
+                        foreach (var item in bill.ItemDetails)
+                        {
+                            try
+                            {
+                                // Handle ItemLineAmount
+                                if (item.ItemLineAmount != 0)
+                                {
+                                    if (item.ItemLineAmount > 0)
+                                        debitTotalAmount += item.ItemLineAmount;
+                                    else
+                                        creditTotalAmount += Math.Abs(item.ItemLineAmount);
+                                }
+
+                                // Handle ExpenseLineAmount
+                                if (item.ExpenseLineAmount != 0)
+                                {
+                                    if (item.ExpenseLineAmount > 0)
+                                        debitTotalAmount += item.ExpenseLineAmount;
+                                    else
+                                        creditTotalAmount += Math.Abs(item.ExpenseLineAmount);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show($"Error processing item detail: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+                    }
+
+                    textObject_CVBILLTotalDebitAmount.Text = debitTotalAmount.ToString("N2");
+                    textObject_CVBILLTotalCreditAmount.Text = debitTotalAmount.ToString("N2");
+
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Console.WriteLine("Error accessing main report objects: " + ex.Message);
                     throw;
                 }
+
 
                 double amount = bills[0].AmountDue;
                 string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
 
-                // Assign main report fields safely
                 if (textObject_CVBILLCheckNumber != null) textObject_CVBILLCheckNumber.Text = textBox_SeriesNumber.Text;
                 if (textObject_CVBILLAmountInWords != null) textObject_CVBILLAmountInWords.Text = amountInWords;
-                if (textObject_CVBILLCheckDate != null) textObject_CVBILLCheckDate.Text = bills[0].DateCreated.ToString("dd-MMM-yyyy");
+                if (textObject_CVBILLCheckDate != null) textObject_CVBILLCheckDate.Text = bills[0].DateCreated.ToString("MMMM dd, yyyy");
                 if (textObject_CVBILLPayee != null) textObject_CVBILLPayee.Text = bills[0].PayeeFullName ?? "";
                 if (textObject_CVBILLTotalAmount != null) textObject_CVBILLTotalAmount.Text = bills[0].AmountDue.ToString("N2");
-
-                Console.WriteLine("Step 4: Accessing subreport");
 
                 SubreportObject subreportObject = null;
                 try
                 {
                     subreportObject = cRCV_IVPBILL.ReportDefinition.ReportObjects["SubreportCVBILLDetailsIVP"] as SubreportObject;
-                    if (subreportObject != null)
-                        Console.WriteLine("Found SubreportCVBILLDetailsIVP");
-                    else
-                        Console.WriteLine("SubreportCVBILLDetailsIVP is null");
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Console.WriteLine("Error accessing subreport: " + ex.Message);
                     throw;
                 }
 
@@ -1364,11 +1422,9 @@ namespace VoucherPro
                     try
                     {
                         subReportDocument = cRCV_IVPBILL.OpenSubreport(subreportObject.SubreportName);
-                        Console.WriteLine("Subreport opened successfully");
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        Console.WriteLine("Error opening subreport: " + ex.Message);
                         throw;
                     }
 
@@ -1378,26 +1434,27 @@ namespace VoucherPro
                         TextObject textObject_BILLCVSubCheckDate = subReportDocument.ReportDefinition.ReportObjects["TextCVBILLSubCheckDate"] as TextObject;
                         TextObject textObject_BILLCVSubTotal = subReportDocument.ReportDefinition.ReportObjects["TextCVBILLSUBTotalAmount"] as TextObject;
                         TextObject textObject_BILLCVSubCheckNumber = subReportDocument.ReportDefinition.ReportObjects["TextCVBILLSubCheckNumber"] as TextObject;
+                        TextObject textObject_BILLSubAccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextBILLSubAccountPayable"] as TextObject;
+                        TextObject textObject_BILLSubAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextBILLSubAmountPayable"] as TextObject;
 
-                        Console.WriteLine("Subreport objects found");
 
                         if (textObject_BILLSubRemarks != null) textObject_BILLSubRemarks.Text = bills[0].BillMemo ?? "";
-                        if (textObject_BILLCVSubCheckDate != null) textObject_BILLCVSubCheckDate.Text = bills[0].DateCreated.ToString("MMM - dd - yyyy");
+                        if (textObject_BILLCVSubCheckDate != null) textObject_BILLCVSubCheckDate.Text = bills[0].DateCreated.ToString("MMMM dd, yyyy");
                         if (textObject_BILLCVSubTotal != null) textObject_BILLCVSubTotal.Text = bills[0].AmountDue.ToString("N2");
                         if (textObject_BILLCVSubCheckNumber != null) textObject_BILLCVSubCheckNumber.Text = bills[0].RefNumber ?? "";
+                        if (textObject_BILLCVSubCheckNumber != null) textObject_BILLSubAccountPayable.Text = bills[0].BankAccount ?? "";
+                        if (textObject_BILLCVSubCheckNumber != null) textObject_BILLSubAmountPayable.Text = bills[0].AmountDue.ToString("N2") ?? "";
 
                         InsertDataToBillCompiled(refNumberCR, bills);
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        Console.WriteLine("Error accessing subreport objects: " + ex.Message);
                         throw;
                     }
                 }
 
                 cRCV_IVPBILL.SetParameterValue("ReferenceNumber", refNumberCR);
 
-                Console.WriteLine("Step 5: Displaying report");
                 panel_Printing.Visible = false;
                 panel_Signatory.Visible = true;
                 panel_Main.Visible = false;
@@ -1406,16 +1463,15 @@ namespace VoucherPro
                 reportViewer.ReportSource = cRCV_IVPBILL;
                 reportViewer.RefreshReport();
 
-                Console.WriteLine("Report generated successfully");
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception caught: " + ex.Message);
                 MessageBox.Show($"KAYAK ERROR HEHEHE:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
         }
+
 
 
 

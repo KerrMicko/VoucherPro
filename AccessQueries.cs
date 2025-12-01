@@ -631,6 +631,7 @@ namespace VoucherPro
                 Console.WriteLine("[DEBUG] Session Opened Successfully.");
 
                 // ====================================================
+
                 // 1. QUERY BILL PAYMENT CHECK USING RefNumber
                 // ====================================================
                 IMsgSetRequest req1 = sessionManager.CreateMsgSetRequest("US", 13, 0);
@@ -756,9 +757,6 @@ namespace VoucherPro
                     AmountDue = amountDue,
                 };
 
-                // ====================================================
-                // 3. BILL EXPENSE LINE ITEMS
-                // ====================================================
                 if (bill.ExpenseLineRetList != null)
                 {
                     Console.WriteLine($"[DEBUG] Processing {bill.ExpenseLineRetList.Count} Expense Lines...");
@@ -774,6 +772,7 @@ namespace VoucherPro
                         {
                             ItemLineItemRefFullName = expAcc,
                             ItemLineAmount = expAmt,
+                            ItemLineClassRefFullName = exp.ClassRef?.FullName?.GetValue() ?? "",
                             ItemLineCustomerJob = exp.CustomerRef?.FullName?.GetValue() ?? "",
                             ItemLineMemo = exp.Memo?.GetValue() ?? "",
                         });
@@ -807,6 +806,7 @@ namespace VoucherPro
                             {
                                 ItemLineItemRefFullName = itemName,
                                 ItemLineAmount = itemAmt,
+                                ItemLineClassRefFullName = item.ClassRef?.FullName?.GetValue() ?? "",
                                 ItemLineCustomerJob = item.CustomerRef?.FullName?.GetValue() ?? "",
                                 ItemLineMemo = item.Desc?.GetValue() ?? "",
                             });
