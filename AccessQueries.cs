@@ -763,7 +763,7 @@ namespace VoucherPro
                     for (int i = 0; i < bill.ExpenseLineRetList.Count; i++)
                     {
                         var exp = bill.ExpenseLineRetList.GetAt(i);
-                        string expAcc = exp.AccountRef?.FullName?.GetValue() ?? "NULL";
+                        string expAcc = exp.AccountRef?.FullName?.GetValue() ?? " ";
                         double expAmt = exp.Amount?.GetValue() ?? 0;
 
                         Console.WriteLine($"[DEBUG] Expense [{i}]: Account={expAcc}, Amount={expAmt}");
@@ -797,7 +797,7 @@ namespace VoucherPro
                         if (orItem.ItemLineRet != null)
                         {
                             var item = orItem.ItemLineRet;
-                            string itemName = item.ItemRef?.FullName?.GetValue() ?? "NULL";
+                            string itemName = item.ItemRef?.FullName?.GetValue() ?? " ";
                             double itemAmt = item.Amount?.GetValue() ?? 0;
 
                             Console.WriteLine($"[DEBUG] Item [{i}]: Name={itemName}, Amount={itemAmt}");

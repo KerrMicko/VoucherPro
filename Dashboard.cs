@@ -1965,10 +1965,10 @@ namespace VoucherPro
                     }
                 }
 
-                // Updated insert query with Memo and CustomerJob
+                // Insert query
                 string insertQuery = @"INSERT INTO Bill_Compiled 
-                               (RefNumber, Particulars, [Class], [Memo], [CustomerJob], Debit, Credit) 
-                               VALUES (@RefNumber, @Particulars, @Class, @Memo, @CustomerJob, @Debit, @Credit)";
+                       (RefNumber, Particulars, [Class], [Memo], [CustomerJob], Debit, Credit) 
+                       VALUES (@RefNumber, @Particulars, @Class, @Memo, @CustomerJob, @Debit, @Credit)";
 
                 foreach (var bill in bills)
                 {
@@ -1976,68 +1976,67 @@ namespace VoucherPro
                     {
                         try
                         {
-                            // Insert ItemLine
                             if (!string.IsNullOrEmpty(detail.ItemLineItemRefFullName))
                             {
-                                string particulars = detail.ItemLineItemRefFullName;
-                                string itemClass = detail.ItemLineClassRefFullName;
-                                string memo = detail.ItemLineMemo; // Memo
-                                string customerJob = detail.ItemLineCustomerJob; // CustomerJob
+                                string particulars = detail.ItemLineItemRefFullName ?? "";
+                                string itemClass = detail.ItemLineClassRefFullName ?? "";
+                                string memo = detail.ItemLineMemo ?? "";
+                                string customerJob = detail.ItemLineCustomerJob ?? "";
+
                                 double amount = detail.ItemLineAmount;
 
                                 string debit = amount > 0 ? amount.ToString("N2") : "";
                                 string credit = amount < 0 ? Math.Abs(amount).ToString("N2") : "";
 
-                                if (amount > 0)
-                                    debitTotalAmount += amount;
-                                else if (amount < 0)
-                                    creditTotalAmount += Math.Abs(amount);
+                                if (amount > 0) debitTotalAmount += amount;
+                                else if (amount < 0) creditTotalAmount += Math.Abs(amount);
 
                                 using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
                                 {
                                     command.Parameters.AddWithValue("@RefNumber", refNumber);
                                     command.Parameters.AddWithValue("@Particulars", particulars);
-                                    command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(itemClass) ? (object)DBNull.Value : itemClass);
-                                    command.Parameters.AddWithValue("@Memo", string.IsNullOrEmpty(memo) ? (object)DBNull.Value : memo);
-                                    command.Parameters.AddWithValue("@CustomerJob", string.IsNullOrEmpty(customerJob) ? (object)DBNull.Value : customerJob);
+                                    command.Parameters.AddWithValue("@Class", itemClass);
+                                    command.Parameters.AddWithValue("@Memo", memo);
+                                    command.Parameters.AddWithValue("@CustomerJob", customerJob);
                                     command.Parameters.AddWithValue("@Debit", debit);
                                     command.Parameters.AddWithValue("@Credit", credit);
                                     command.ExecuteNonQuery();
                                 }
 
-                                Console.WriteLine($"Inserted Item: {particulars}, Debit: {debit}, Credit: {credit}, Memo: {memo}, CustomerJob: {customerJob}");
+                                Console.WriteLine($"Inserted Item: {particulars}, Debit: {debit}, Credit: {credit}");
                             }
 
-                            // Insert ExpenseLine
                             if (!string.IsNullOrEmpty(detail.ExpenseLineItemRefFullName))
                             {
-                                string particulars = (bill.AccountNumber != null ? bill.AccountNumber + " - " : "") + detail.ExpenseLineItemRefFullName;
-                                string expClass = detail.ExpenseLineClassRefFullName;
-                                string memo = detail.ExpenseLineMemo; // Memo
-                                string customerJob = detail.ExpenseLineCustomerJob;
+                                string particulars =
+                                    (bill.AccountNumber != null ? bill.AccountNumber + " - " : "") +
+                                    detail.ExpenseLineItemRefFullName;
+
+                                string expClass = detail.ExpenseLineClassRefFullName ?? "";
+                                string memo = detail.ExpenseLineMemo ?? "";
+                                string customerJob = detail.ExpenseLineCustomerJob ?? "";
+
                                 double amount = detail.ExpenseLineAmount;
 
                                 string debit = amount > 0 ? amount.ToString("N2") : "";
                                 string credit = amount < 0 ? Math.Abs(amount).ToString("N2") : "";
 
-                                if (amount > 0)
-                                    debitTotalAmount += amount;
-                                else if (amount < 0)
-                                    creditTotalAmount += Math.Abs(amount);
+                                if (amount > 0) debitTotalAmount += amount;
+                                else if (amount < 0) creditTotalAmount += Math.Abs(amount);
 
                                 using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
                                 {
                                     command.Parameters.AddWithValue("@RefNumber", refNumber);
                                     command.Parameters.AddWithValue("@Particulars", particulars);
-                                    command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(expClass) ? (object)DBNull.Value : expClass);
-                                    command.Parameters.AddWithValue("@Memo", string.IsNullOrEmpty(memo) ? (object)DBNull.Value : memo);
-                                    command.Parameters.AddWithValue("@CustomerJob", string.IsNullOrEmpty(customerJob) ? (object)DBNull.Value : customerJob);
+                                    command.Parameters.AddWithValue("@Class", expClass);
+                                    command.Parameters.AddWithValue("@Memo", memo);
+                                    command.Parameters.AddWithValue("@CustomerJob", customerJob);
                                     command.Parameters.AddWithValue("@Debit", debit);
                                     command.Parameters.AddWithValue("@Credit", credit);
                                     command.ExecuteNonQuery();
                                 }
 
-                                Console.WriteLine($"Inserted Expense: {particulars}, Debit: {debit}, Credit: {credit}, Memo: {memo}, CustomerJob: {customerJob}");
+                                Console.WriteLine($"Inserted Expense: {particulars}, Debit: {debit}, Credit: {credit}");
                             }
                         }
                         catch (Exception ex)
@@ -2052,6 +2051,7 @@ namespace VoucherPro
 
             Console.WriteLine($"Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
         }
+
 
 
 
