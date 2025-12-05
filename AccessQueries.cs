@@ -851,10 +851,6 @@ namespace VoucherPro
             return bills;
         }
 
-
-
-
-
         public List<ItemReciept> GetItemRecieptData_LEADS(string refNumber)
         {
             List<ItemReciept> ItemReceipt = new List<ItemReciept>();
@@ -1771,6 +1767,116 @@ namespace VoucherPro
 
             return checks;
         }
+
+
+        public List<JournalGridItem> GetJournalEntryForGrid(string refNumber)
+        {
+            QBSessionManager sessionManager = new QBSessionManager();
+            List<JournalGridItem> gridItems = new List<JournalGridItem>();
+
+            try
+            {
+                Console.WriteLine("--- [START] FULL DATA DUMP ---");
+
+                sessionManager.OpenConnection2("", "QB Journal Grid", ENConnectionType.ctLocalQBD);
+                sessionManager.BeginSession("", ENOpenMode.omDontCare);
+
+                IMsgSetRequest request = sessionManager.CreateMsgSetRequest("US", 13, 0);
+                request.Attributes.OnError = ENRqOnError.roeContinue;
+
+                IJournalEntryQuery jeQuery = request.AppendJournalEntryQueryRq();
+
+                // Filter by RefNumber
+                jeQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.MatchCriterion.SetValue(ENMatchCriterion.mcStartsWith);
+                jeQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.RefNumber.SetValue(refNumber);
+
+                // Important: Get the lines
+                jeQuery.IncludeLineItems.SetValue(true);
+
+                IMsgSetResponse response = sessionManager.DoRequests(request);
+                IResponse qbResponse = response.ResponseList.GetAt(0);
+                IJournalEntryRetList list = qbResponse.Detail as IJournalEntryRetList;
+
+                if (list != null)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        IJournalEntryRet je = list.GetAt(i);
+                        DateTime date = je.TxnDate.GetValue();
+                        string num = je.RefNumber.GetValue();
+
+                        if (je.ORJournalLineList != null)
+                        {
+                            for (int j = 0; j < je.ORJournalLineList.Count; j++)
+                            {
+                                IORJournalLine orLine = je.ORJournalLineList.GetAt(j);
+                                JournalGridItem item = new JournalGridItem
+                                {
+                                    Date = date,
+                                    Num = num,
+                                    Type = "General Journal"
+                                };
+
+                                // ------------------------------------------
+                                // EXTRACT ALL DATA
+                                // ------------------------------------------
+                                if (orLine.JournalDebitLine != null)
+                                {
+                                    var line = orLine.JournalDebitLine;
+
+                                    item.AccountName = line.AccountRef?.FullName?.GetValue() ?? "";
+                                    item.Name = line.EntityRef?.FullName?.GetValue() ?? "";
+                                    item.Memo = line.Memo?.GetValue() ?? "";
+                                    item.Class = line.ClassRef?.FullName?.GetValue() ?? "";
+                                    item.Debit = line.Amount?.GetValue() ?? 0;
+                                    item.Credit = 0;
+                                }
+                                else if (orLine.JournalCreditLine != null)
+                                {
+                                    var line = orLine.JournalCreditLine;
+
+                                    item.AccountName = line.AccountRef?.FullName?.GetValue() ?? "";
+                                    item.Name = line.EntityRef?.FullName?.GetValue() ?? "";
+                                    item.Memo = line.Memo?.GetValue() ?? "";
+                                    item.Class = line.ClassRef?.FullName?.GetValue() ?? "";
+                                    item.Debit = 0;
+                                    item.Credit = line.Amount?.GetValue() ?? 0;
+                                }
+
+                                // ------------------------------------------
+                                // LOG EVERYTHING TO CONSOLE
+                                // ------------------------------------------
+                                Console.WriteLine("--------------------------------------------------");
+                                Console.WriteLine($"ROW #{j + 1}");
+                                Console.WriteLine($"   Type:   {item.Type}");
+                                Console.WriteLine($"   Date:   {item.Date.ToShortDateString()}");
+                                Console.WriteLine($"   Num:    {item.Num}");
+                                Console.WriteLine($"   Acct:   {item.AccountName}");
+                                Console.WriteLine($"   Name:   {item.Name}");
+                                Console.WriteLine($"   Memo:   {item.Memo}");
+                                Console.WriteLine($"   Class:  {item.Class}");
+                                Console.WriteLine($"   Debit:  {item.Debit}");
+                                Console.WriteLine($"   Credit: {item.Credit}");
+                                Console.WriteLine("--------------------------------------------------");
+
+                                gridItems.Add(item);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR: {ex.Message}");
+            }
+            finally
+            {
+                try { sessionManager.EndSession(); sessionManager.CloseConnection(); } catch { }
+            }
+
+            return gridItems;
+        }
+
 
 
         public List<CheckTableExpensesAndItems> GetCheckExpensesAndItemsData_CPI(string refNumber)

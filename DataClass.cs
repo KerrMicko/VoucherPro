@@ -183,5 +183,24 @@ namespace VoucherPro
             public string Debit {  get; set; }
             public string Credit {  get; set; }
         }
+
+
+        public class JournalGridItem
+        {
+            // The "Row Header" in your screenshot (e.g., Accounts Receivable, Sales, etc.)
+            public string AccountName { get; set; }
+
+            // The Columns
+            public string Type { get; set; } = "General Journal";
+            public DateTime Date { get; set; }
+            public string Num { get; set; }
+            public string Name { get; set; }      // EntityRef (The Customer/Vendor)
+            public string Memo { get; set; }      // Line Memo
+            public string Class { get; set; }     // ClassRef
+
+            // Amounts
+            public double Debit { get; set; }
+            public double Credit { get; set; }
+        }
     }
 }

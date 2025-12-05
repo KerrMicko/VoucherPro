@@ -64,6 +64,7 @@ namespace VoucherPro
         List<ItemReciept> receipts = new List<ItemReciept>();
         List<BillTable> apvData = new List<BillTable>();
         List<CheckTableExpensesAndItems> cvData = new List<CheckTableExpensesAndItems>();
+        List<JournalGridItem> journal = new List<JournalGridItem>();
 
         static int sideBarWidth = 250;
         int seriesNumber = 1;
@@ -1099,7 +1100,10 @@ namespace VoucherPro
                         // -------------------------------------------------------------
                         else if (comboBox_Forms.SelectedIndex == 2)
                         {
+                            AccessQueries accessQueries = new AccessQueries();
+                            string refNumberCR = textBox_ReferenceNumber_CR.Text;
 
+                            journal = accessQueries.GetJournalEntryForGrid(refNumberCR);
                         }
                     }
 
