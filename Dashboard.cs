@@ -458,7 +458,7 @@ namespace VoucherPro
             {
                 Parent = panel_RefNumber_CR,
                 Width = sideBarWidth - 30,
-                Text = "ENTER REFERENCE NUMBER: CR",
+                Text = "ENTER REFERENCE NUMBER: ",
                 TextAlign = ContentAlignment.MiddleLeft,
                 Font = font_Label,
             };
@@ -1100,10 +1100,85 @@ namespace VoucherPro
                         // -------------------------------------------------------------
                         else if (comboBox_Forms.SelectedIndex == 2)
                         {
+                            CRJV_IVP cRJV_IVP = new CRJV_IVP();
+                            string databasePath = Path.Combine(Application.StartupPath, "CheckDatabase.accdb");
+                            SetDatabaseLocation(cRJV_IVP, databasePath);
+
                             AccessQueries accessQueries = new AccessQueries();
                             string refNumberCR = textBox_ReferenceNumber_CR.Text;
 
+                            // 1. Get the correct data
                             journal = accessQueries.GetJournalEntryForGrid(refNumberCR);
+
+                            if (journal != null && journal.Count > 0)
+                            {
+                                // 2. Set Header Text Objects
+                                TextObject textObject_JVRefNumber = cRJV_IVP.ReportDefinition.ReportObjects["TextJVRefNumber"] as TextObject;
+                                TextObject textObject_JVCheckDate = cRJV_IVP.ReportDefinition.ReportObjects["TextJVCheckDate"] as TextObject;
+                                TextObject textObject_JVTransactDate = cRJV_IVP.ReportDefinition.ReportObjects["TextJVTransactDate"] as TextObject;
+                                TextObject textObject_JVTotalDebitAmount = cRJV_IVP.ReportDefinition.ReportObjects["TextJVTotalDebitAmount"] as TextObject;
+                                TextObject textObject_JVTotalCreditAmount = cRJV_IVP.ReportDefinition.ReportObjects["TextJVTotalCreditAmount"] as TextObject;
+
+
+                                TextObject textObject_PreparedBy = cRJV_IVP.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
+                                TextObject textObject_CheckedBy = cRJV_IVP.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
+                                TextObject textObject_ApprovedBy = cRJV_IVP.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
+
+                                if (textObject_JVRefNumber != null) textObject_JVRefNumber.Text = textBox_SeriesNumber.Text;
+                                if (textObject_JVCheckDate != null) textObject_JVCheckDate.Text = journal[0].Date.ToString("MMMM dd, yyyy");
+                                if (textObject_JVTransactDate != null) textObject_JVTransactDate.Text = journal[0].Date.ToString("MMMM dd, yyyy");
+
+                                double debitTotalAmount = 0;
+                                double creditTotalAmount = 0;
+
+                                foreach (var line in journal)
+                                {
+                                    debitTotalAmount += line.Debit;
+                                    creditTotalAmount += line.Credit;
+                                }
+                                if (textObject_JVTotalDebitAmount != null) textObject_JVTotalDebitAmount.Text = debitTotalAmount.ToString("N2");
+                                if (textObject_JVTotalCreditAmount != null) textObject_JVTotalCreditAmount.Text = creditTotalAmount.ToString("N2");
+
+
+                                AccessToDatabase accessToDatabase = new AccessToDatabase();
+                                var signatories = accessToDatabase.RetrieveAllSignatoryData();
+
+
+                                textObject_PreparedBy.Text = signatories.PreparedByName;
+                                textObject_CheckedBy.Text = signatories.ReviewedByName;
+                                textObject_ApprovedBy.Text = signatories.ApprovedByName;
+
+                                // 4. Handle Subreport
+                                SubreportObject subreportObject = cRJV_IVP.ReportDefinition.ReportObjects["SubreportJVDetailsIVP"] as SubreportObject;
+                                if (subreportObject != null)
+                                {
+                                    ReportDocument subReportDocument = cRJV_IVP.OpenSubreport(subreportObject.SubreportName);
+
+                                    TextObject textObject_SubAccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextJVSUBAccountsPayable"] as TextObject;
+                                    TextObject textObject_SubAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextJVSUBAmountPayable"] as TextObject;
+
+                                    if (textObject_SubAccountPayable != null) textObject_SubAccountPayable.Text = journal[0].AccountName;
+
+                                    if (textObject_SubAmountPayable != null) textObject_SubAmountPayable.Text = debitTotalAmount.ToString("N2");
+                                }
+
+                                InsertDataToJournalCompiled(refNumberCR, journal);
+
+                                // 6. Final Report Settings
+                                cRJV_IVP.SetParameterValue("ReferenceNumber", refNumberCR);
+
+                                panel_Printing.Visible = false;
+                                panel_Signatory.Visible = true;
+                                panel_Main.Visible = false;
+                                panel_Main_CR.Visible = true;
+
+                                reportViewer.ReportSource = cRJV_IVP;
+                                reportViewer.RefreshReport();
+                            }
+                            else
+                            {
+                                MessageBox.Show("No Journal Entry found for this Reference Number.");
+                            }
                         }
                     }
 
@@ -1939,6 +2014,106 @@ namespace VoucherPro
             Console.WriteLine($"Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
         }
 
+
+        public static void InsertDataToJournalCompiled(string refNumber, List<JournalGridItem> journalData)
+        {
+            string connectionString = AccessToDatabase.GetAccessConnectionString();
+
+            // We can still track totals if needed for console logging
+            double debitTotalAmount = 0;
+            double creditTotalAmount = 0;
+
+            using (OleDbConnection connection = new OleDbConnection(connectionString))
+            {
+                connection.Open();
+
+                // 1. Clear old data
+                string deleteQuery = "DELETE FROM JV_Compiled";
+                using (OleDbCommand deleteCommand = new OleDbCommand(deleteQuery, connection))
+                {
+                    try
+                    {
+                        deleteCommand.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error deleting data: {ex.Message}");
+                        return;
+                    }
+                }
+
+                // 2. Prepare Insert Query
+                // Note: We will insert EVERYTHING into the [Debit] column.
+                string insertQuery = @"
+                INSERT INTO JV_Compiled 
+                (RefNumber, [Particulars], [Class], [Debit], [Credit], [Memo]) 
+                VALUES 
+                (@RefNumber, @Particulars, @Class, @Debit, @Credit, @Memo)";
+
+                foreach (var line in journalData)
+                {
+                    try
+                    {
+                        // MAPPING VARIABLES
+                        string particulars = string.IsNullOrEmpty(line.AccountName) ? "" : line.AccountName;
+                        string className = line.Class;
+                        string memoValue = string.IsNullOrEmpty(line.Memo) ? "" : line.Memo;
+
+                        // ---------------------------------------------------------
+                        // NEW LOGIC: 
+                        // 1. Put everything in 'debitStr'.
+                        // 2. If it is a Credit line, make it Negative.
+                        // ---------------------------------------------------------
+                        double netAmount = 0;
+
+                        if (line.Debit != 0)
+                        {
+                            netAmount = line.Debit; // Positive
+                            debitTotalAmount += line.Debit;
+                        }
+                        else if (line.Credit != 0)
+                        {
+                            netAmount = -line.Credit; // Negative (Don't remove sign!)
+                            creditTotalAmount += line.Credit;
+                        }
+
+                        // Assign to DEBIT Column (as requested: "all data... in debit")
+                        string debitStr = netAmount.ToString("N2");
+
+                        // Assign Empty to CREDIT Column (as requested: "only credit is amountpayable")
+                        string creditStr = "";
+
+                        // EXECUTE INSERT
+                        using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                        {
+                            command.Parameters.AddWithValue("@RefNumber", refNumber);
+                            command.Parameters.AddWithValue("@Particulars", particulars);
+
+                            command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(className) ? (object)DBNull.Value : className);
+
+                            // Insert the Net Amount (Positive or Negative) into the Debit Field
+                            command.Parameters.AddWithValue("@Debit", debitStr);
+
+                            // Leave Credit Field Empty
+                            command.Parameters.AddWithValue("@Credit", creditStr);
+
+                            command.Parameters.AddWithValue("@Memo", memoValue);
+
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error processing journal line: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+
+                connection.Close();
+            }
+
+            // Console Log for verification
+            Console.WriteLine($"Processed. Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
+        }
 
         public static void InsertDataToBillCompiled(string refNumber, List<BillTable> bills)
         {

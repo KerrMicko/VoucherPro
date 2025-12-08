@@ -1776,7 +1776,7 @@ namespace VoucherPro
 
             try
             {
-                Console.WriteLine("--- [START] FULL DATA DUMP ---");
+                Console.WriteLine("--- [START] DATA RETRIEVAL ---");
 
                 sessionManager.OpenConnection2("", "QB Journal Grid", ENConnectionType.ctLocalQBD);
                 sessionManager.BeginSession("", ENOpenMode.omDontCare);
@@ -1786,11 +1786,10 @@ namespace VoucherPro
 
                 IJournalEntryQuery jeQuery = request.AppendJournalEntryQueryRq();
 
-                // Filter by RefNumber
+                // 1. QUERY BROADLY
+                // We are forced to use mcStartsWith because your SDK lacks mcValues
                 jeQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.MatchCriterion.SetValue(ENMatchCriterion.mcStartsWith);
                 jeQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.RefNumber.SetValue(refNumber);
-
-                // Important: Get the lines
                 jeQuery.IncludeLineItems.SetValue(true);
 
                 IMsgSetResponse response = sessionManager.DoRequests(request);
@@ -1802,8 +1801,17 @@ namespace VoucherPro
                     for (int i = 0; i < list.Count; i++)
                     {
                         IJournalEntryRet je = list.GetAt(i);
+                        string docNum = je.RefNumber.GetValue();
+
+                        // 2. FILTER STRICTLY (Manual Exact Match)
+                        // If QuickBooks returns "JV0010" but we wanted "JV001", skip it.
+                        if (docNum != refNumber)
+                        {
+                            continue;
+                        }
+
+                        // If we get here, it is the correct RefNumber. Extract lines.
                         DateTime date = je.TxnDate.GetValue();
-                        string num = je.RefNumber.GetValue();
 
                         if (je.ORJournalLineList != null)
                         {
@@ -1813,17 +1821,13 @@ namespace VoucherPro
                                 JournalGridItem item = new JournalGridItem
                                 {
                                     Date = date,
-                                    Num = num,
+                                    Num = docNum,
                                     Type = "General Journal"
                                 };
 
-                                // ------------------------------------------
-                                // EXTRACT ALL DATA
-                                // ------------------------------------------
                                 if (orLine.JournalDebitLine != null)
                                 {
                                     var line = orLine.JournalDebitLine;
-
                                     item.AccountName = line.AccountRef?.FullName?.GetValue() ?? "";
                                     item.Name = line.EntityRef?.FullName?.GetValue() ?? "";
                                     item.Memo = line.Memo?.GetValue() ?? "";
@@ -1834,7 +1838,6 @@ namespace VoucherPro
                                 else if (orLine.JournalCreditLine != null)
                                 {
                                     var line = orLine.JournalCreditLine;
-
                                     item.AccountName = line.AccountRef?.FullName?.GetValue() ?? "";
                                     item.Name = line.EntityRef?.FullName?.GetValue() ?? "";
                                     item.Memo = line.Memo?.GetValue() ?? "";
@@ -1843,25 +1846,14 @@ namespace VoucherPro
                                     item.Credit = line.Amount?.GetValue() ?? 0;
                                 }
 
-                                // ------------------------------------------
-                                // LOG EVERYTHING TO CONSOLE
-                                // ------------------------------------------
-                                Console.WriteLine("--------------------------------------------------");
-                                Console.WriteLine($"ROW #{j + 1}");
-                                Console.WriteLine($"   Type:   {item.Type}");
-                                Console.WriteLine($"   Date:   {item.Date.ToShortDateString()}");
-                                Console.WriteLine($"   Num:    {item.Num}");
-                                Console.WriteLine($"   Acct:   {item.AccountName}");
-                                Console.WriteLine($"   Name:   {item.Name}");
-                                Console.WriteLine($"   Memo:   {item.Memo}");
-                                Console.WriteLine($"   Class:  {item.Class}");
-                                Console.WriteLine($"   Debit:  {item.Debit}");
-                                Console.WriteLine($"   Credit: {item.Credit}");
-                                Console.WriteLine("--------------------------------------------------");
-
                                 gridItems.Add(item);
                             }
                         }
+
+                        // 3. STOP IMMEDIATELY
+                        // We found one "JV001". Even if there is a duplicate "JV001" later in the list, 
+                        // we ignore it to prevent the Double Table issue.
+                        break;
                     }
                 }
             }
