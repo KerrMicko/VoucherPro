@@ -1125,7 +1125,7 @@ namespace VoucherPro
                                 TextObject textObject_ApprovedBy = cRJV_IVP.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
 
                                 if (textObject_JVRefNumber != null) textObject_JVRefNumber.Text = textBox_SeriesNumber.Text;
-                                if (textObject_JVCheckDate != null) textObject_JVCheckDate.Text = journal[0].Date.ToString("MMMM dd, yyyy");
+                                if (textObject_JVCheckDate != null) textObject_JVCheckDate.Text = DateTime.Now.ToString("MMMM dd, yyyy");
                                 if (textObject_JVTransactDate != null) textObject_JVTransactDate.Text = journal[0].Date.ToString("MMMM dd, yyyy");
 
                                 double debitTotalAmount = 0;
