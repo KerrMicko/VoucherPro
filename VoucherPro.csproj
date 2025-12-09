@@ -102,6 +102,7 @@
       <DependentUpon>CRJV_IVP.rpt</DependentUpon>
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Clients\Layouts_IVP.cs" />
     <Compile Include="Clients\Layouts_KAYAK.cs" />
     <Compile Include="Clients\Layouts_LEADS.cs" />
     <Compile Include="Clients\Layout_CPI.cs" />

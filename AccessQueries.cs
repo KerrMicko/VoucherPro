@@ -68,6 +68,110 @@ namespace VoucherPro
             }
             return check;
         }
+
+        public List<CheckTableGrid> GetCheckDataIVP(string refNumber)
+        {
+            List<CheckTableGrid> checkList = new List<CheckTableGrid>();
+            QBSessionManager sessionManager = new QBSessionManager();
+
+            try
+            {
+                sessionManager.OpenConnection2("", "VoucherPro Check Data", ENConnectionType.ctLocalQBD);
+                sessionManager.BeginSession("", ENOpenMode.omDontCare);
+
+                IMsgSetRequest request = sessionManager.CreateMsgSetRequest("US", 13, 0);
+                request.Attributes.OnError = ENRqOnError.roeContinue;
+
+                // ----------------------------------------------------------------
+                // 1. QUERY FOR REGULAR CHECKS
+                // ----------------------------------------------------------------
+                ICheckQuery checkQuery = request.AppendCheckQueryRq();
+                checkQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.MatchCriterion.SetValue(ENMatchCriterion.mcStartsWith);
+                checkQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.RefNumber.SetValue(refNumber);
+
+                // ----------------------------------------------------------------
+                // 2. QUERY FOR BILL PAYMENT CHECKS
+                // ----------------------------------------------------------------
+                IBillPaymentCheckQuery billPayQuery = request.AppendBillPaymentCheckQueryRq();
+                billPayQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.MatchCriterion.SetValue(ENMatchCriterion.mcStartsWith);
+                billPayQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.RefNumber.SetValue(refNumber);
+
+                // Execute Requests
+                IMsgSetResponse response = sessionManager.DoRequests(request);
+
+                // ----------------------------------------------------------------
+                // PROCESS RESPONSE 1: REGULAR CHECKS
+                // ----------------------------------------------------------------
+                IResponse qbResponseCheck = response.ResponseList.GetAt(0);
+                ICheckRetList checkRetList = qbResponseCheck.Detail as ICheckRetList;
+
+                if (checkRetList != null)
+                {
+                    for (int i = 0; i < checkRetList.Count; i++)
+                    {
+                        ICheckRet checkRet = checkRetList.GetAt(i);
+                        string docNum = checkRet.RefNumber.GetValue();
+
+                        if (docNum != refNumber) continue;
+
+                        CheckTableGrid newCheck = new CheckTableGrid
+                        {
+                            DateCreated = checkRet.TxnDate.GetValue().Date,
+                            RefNumber = docNum,
+                            Amount = checkRet.Amount.GetValue(),
+                            PayeeFullName = checkRet.PayeeEntityRef != null ? checkRet.PayeeEntityRef.FullName.GetValue() : "No Payee"
+                        };
+                        checkList.Add(newCheck);
+                    }
+                }
+
+                // ----------------------------------------------------------------
+                // PROCESS RESPONSE 2: BILL PAYMENT CHECKS
+                // ----------------------------------------------------------------
+                IResponse qbResponseBillPay = response.ResponseList.GetAt(1);
+                IBillPaymentCheckRetList billPayRetList = qbResponseBillPay.Detail as IBillPaymentCheckRetList;
+
+                if (billPayRetList != null)
+                {
+                    for (int i = 0; i < billPayRetList.Count; i++)
+                    {
+                        IBillPaymentCheckRet billPayRet = billPayRetList.GetAt(i);
+                        string docNum = billPayRet.RefNumber.GetValue();
+
+                        if (docNum != refNumber) continue;
+
+                        CheckTableGrid newCheck = new CheckTableGrid
+                        {
+                            DateCreated = billPayRet.TxnDate.GetValue().Date,
+                            RefNumber = docNum,
+                            Amount = billPayRet.Amount.GetValue(),
+                            PayeeFullName = billPayRet.PayeeEntityRef != null ? billPayRet.PayeeEntityRef.FullName.GetValue() : "No Payee"
+                        };
+                        checkList.Add(newCheck);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error retrieving data from QuickBooks: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (sessionManager != null)
+                {
+                    try
+                    {
+                        sessionManager.EndSession();
+                        sessionManager.CloseConnection();
+                    }
+                    catch { }
+                }
+            }
+
+            return checkList;
+        }
+
+
         public List<BillTable> GetBillData_LEADS(string refNumber)
         {
             List<BillTable> bills = new List<BillTable>();

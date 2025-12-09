@@ -59,12 +59,14 @@ namespace VoucherPro
         FlowLayoutPanel panel_RefNumberCrystalReport;
 
         List<CheckTable> cheque = new List<CheckTable>();
+        List<CheckTableGrid> checkivp = new List<CheckTableGrid>();
         List<BillTable> bills = new List<BillTable>();
         List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
         List<ItemReciept> receipts = new List<ItemReciept>();
         List<BillTable> apvData = new List<BillTable>();
         List<CheckTableExpensesAndItems> cvData = new List<CheckTableExpensesAndItems>();
         List<JournalGridItem> journal = new List<JournalGridItem>();
+
 
         static int sideBarWidth = 250;
         int seriesNumber = 1;
@@ -302,6 +304,7 @@ namespace VoucherPro
             {
                 "",
                 "Check Voucher",
+                "Check",
                 "Journal Voucher",
             });
                 comboBox_Forms.SelectedIndex = 0;
@@ -1095,10 +1098,7 @@ namespace VoucherPro
                             }
                         }
 
-                        // -------------------------------------------------------------
-                        // OPTION 2: JOURNAL VOUCHER
-                        // -------------------------------------------------------------
-                        else if (comboBox_Forms.SelectedIndex == 2)
+                        else if (comboBox_Forms.SelectedIndex == 3)
                         {
                             CRJV_IVP cRJV_IVP = new CRJV_IVP();
                             string databasePath = Path.Combine(Application.StartupPath, "CheckDatabase.accdb");
@@ -2389,6 +2389,7 @@ namespace VoucherPro
                     checks = new List<CheckTableExpensesAndItems>();
                     receipts = new List<ItemReciept>();
                     apvData = new List<BillTable>();
+                    checkivp = new List<CheckTableGrid>();
 
                     object data = null;
                     if (GlobalVariables.client == "LEADS")
@@ -2463,23 +2464,10 @@ namespace VoucherPro
 
                     else if (GlobalVariables.client == "IVP")
                     {
-                        if (comboBox_Forms.SelectedIndex == 1) // CV
-                        {
-                            checks = queries.GetCheckExpensesAndItemsData_CPI(refNumber);
-                            if (checks.Count == 0)
-                            {
-                                bills = queries.GetBillData_CPI(refNumber);
-                                data = bills;
-                            }
-                            else
-                            {
-                                data = checks;
-                            }
-                        }
                         if (comboBox_Forms.SelectedIndex == 2) // Check
                         {
-                            cheque = queries.GetCheckData(refNumber);
-                            data = cheque;
+                            checkivp = queries.GetCheckDataIVP(refNumber);
+                            data = checkivp;
                         }
                     }
 
@@ -2489,7 +2477,6 @@ namespace VoucherPro
                         if (GlobalVariables.client == "LEADS")
                         {
                             Layouts_LEADS layouts_LEADS = new Layouts_LEADS();
-                            //Layouts layouts = new Layouts();
 
                             System.Drawing.Printing.PaperSize paperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
 
@@ -2521,12 +2508,6 @@ namespace VoucherPro
                             printDocument.PrintPage += (s, ev) =>
                             {
                                 layouts_LEADS.PrintPage_LEADS(s, ev, selectedIndex, seriesNumber, data);
-                                /*if (pageCounter < totalItemDetails)
-                                {
-                                    pageCounter++;
-                                    ev.HasMorePages = pageCounter != totalItemDetails;
-                                }*/
-                                //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
                             };
                         }
                         else if (GlobalVariables.client == "KAYAK")
@@ -2618,8 +2599,8 @@ namespace VoucherPro
 
                         else if (GlobalVariables.client == "IVP")
                         {
-                            Layouts_CPI layouts_KAYAK = new Layouts_CPI();
-                            //Layouts layouts = new Layouts();
+                            // 1. Instantiate the correct Layout class for IVP
+                            Layouts_IVP layouts_IVP = new Layouts_IVP();
 
                             System.Drawing.Printing.PaperSize paperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
 
@@ -2634,29 +2615,13 @@ namespace VoucherPro
                             itemCounter = 0;
                             pageCounter = 1;
 
-                            int totalItemDetails = 0;
-                            if (comboBox_Forms.SelectedIndex == 1) // APV
-                            {
-                                // Calculate the total number of pages
-                                totalItemDetails = apvData.Sum(apvData => apvData.ItemDetails.Count);
-
-                                int totalPages = (int)Math.Ceiling((double)totalItemDetails / GlobalVariables.itemsPerPageAPV);
-                                Console.WriteLine($"Generate: APV Data Count: {totalItemDetails}, Total Pages: {totalPages}");
-                                printDocument.PrinterSettings.MaximumPage = totalPages;
-                            }
-
                             // Update preview control to start at the first page
                             printPreviewControl.StartPage = 0;
 
+                            // 2. Use the new PrintPage_IVP method
                             printDocument.PrintPage += (s, ev) =>
                             {
-                                layouts_KAYAK.PrintPage_CPI(s, ev, selectedIndex, seriesNumber, data);
-                                /*if (pageCounter < totalItemDetails)
-                                {
-                                    pageCounter++;
-                                    ev.HasMorePages = pageCounter != totalItemDetails;
-                                }*/
-                                //layouts.PrintPage(s, ev, comboBox_Forms.SelectedIndex);
+                                layouts_IVP.PrintPage_IVP(s, ev, selectedIndex, seriesNumber, data);
                             };
                         }
 
@@ -3323,7 +3288,7 @@ namespace VoucherPro
 
                 switch (comboBox_Forms.SelectedIndex)
                 {
-                    case 1: // CV
+                    case 1: // Check Voucher
                         prefix = "CV";
                         panel_SeriesNumber.Visible = true;
                         panel_RefNumber.Visible = false;
@@ -3336,10 +3301,22 @@ namespace VoucherPro
                         panel_Main_CR.Visible = true;
                         break;
 
-                    case 2: // Journal Voucher (New Addition)
+                    case 2: // Check (New Addition)
+                            // No prefix update needed usually for checks as they are pre-numbered, 
+                            // or you can set prefix = "CHK" if needed.
+
+                        panel_SeriesNumber.Visible = false;
+                        panel_RefNumber.Visible = true; // Enabled so user can type Ref/Check Number
+                        panel_RefNumberCrystalReport.Visible = false;
+                        panel_Signatory.Visible = false;
+
+                        panel_Main.Visible = true;      // Back to Main Panel
+                        panel_Main_CR.Visible = false;  // Hide Crystal Reports
+                        break;
+
+                    case 3: // Journal Voucher (Moved to Case 3)
                         prefix = "JV";
 
-                        // PANEL SETTINGS AS REQUESTED
                         panel_RefNumber.Visible = false;
                         panel_RefNumberCrystalReport.Visible = true;
                         panel_Signatory.Visible = true;
@@ -3348,9 +3325,7 @@ namespace VoucherPro
                         panel_Main.Visible = false;
                         panel_Main_CR.Visible = true;
 
-                        // Series Number Logic
                         label_SeriesNumberText.Text = "Current Series Number: JV";
-                        // Ensure you have "JVSeries" in your database, or this returns 0/default
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("JVSeries");
                         break;
 
@@ -3365,7 +3340,10 @@ namespace VoucherPro
                         return;
                 }
 
-                UpdateSeriesNumber(prefix);
+                if (comboBox_Forms.SelectedIndex == 1 || comboBox_Forms.SelectedIndex == 3)
+                {
+                    UpdateSeriesNumber(prefix);
+                }
             }
 
 
@@ -3507,19 +3485,32 @@ namespace VoucherPro
                 {
                     // Determine prefix
                     string prefix = "";
-                    if (comboBox_Forms.SelectedIndex == 1) prefix = "CV";
-                    else if (comboBox_Forms.SelectedIndex == 2) prefix = "JV";
 
-                    string input = textBox_SeriesNumber.Text.Replace(prefix, "").Trim();
-
-                    if (int.TryParse(input, out int adjustedSeries))
+                    if (comboBox_Forms.SelectedIndex == 1)
                     {
-                        seriesNumber = adjustedSeries;
+                        prefix = "CV";
                     }
-                    else
+                    else if (comboBox_Forms.SelectedIndex == 3) // UPDATED: JV is now Index 3
                     {
-                        MessageBox.Show("Invalid series number format. Please enter a numeric value.");
-                        textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}";
+                        prefix = "JV";
+                    }
+
+                    // CRITICAL FIX: Only run Replace if we actually have a prefix.
+                    // If prefix is empty (like if Index is 2 or unknown), skipping this prevents the crash.
+                    if (!string.IsNullOrEmpty(prefix))
+                    {
+                        string input = textBox_SeriesNumber.Text.Replace(prefix, "").Trim();
+
+                        if (int.TryParse(input, out int adjustedSeries))
+                        {
+                            seriesNumber = adjustedSeries;
+                        }
+                        else
+                        {
+                            MessageBox.Show("Invalid series number format. Please enter a numeric value.");
+                            // Ensure we format it back with the correct prefix
+                            textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}";
+                        }
                     }
                 }
             }

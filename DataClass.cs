@@ -202,5 +202,13 @@ namespace VoucherPro
             public double Debit { get; set; }
             public double Credit { get; set; }
         }
+
+        public class CheckTableGrid
+        {
+            public DateTime DateCreated { get; set; }
+            public string RefNumber { get; set; }
+            public double Amount { get; set; }
+            public string PayeeFullName { get; set; }
+        }
     }
 }
