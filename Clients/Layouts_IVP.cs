@@ -86,7 +86,7 @@ namespace VoucherPro.Clients
                 e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(155 - minusX, 110 - minusY));
 
                 // Date
-                e.Graphics.DrawString(formattedDate, payeeFont, Brushes.Black, new PointF(628 - minusX, 79 - minusY));
+                e.Graphics.DrawString(formattedDate, payeeFont, Brushes.Black, new PointF(605 - minusX, 79 - minusY));
 
                 // Amount (Number)
                 e.Graphics.DrawString(amount.ToString("N2"), payeeFont, Brushes.Black, new PointF(635 - minusX, 114 - minusY));
