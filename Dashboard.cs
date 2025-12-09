@@ -993,10 +993,10 @@ namespace VoucherPro
                                     cvDataExists = true;
 
                                     TextObject textObject_CVRefNumber = cRCV_IVP.ReportDefinition.ReportObjects["TextCVRefNumber"] as TextObject;
-                                    TextObject textObject_CVAmountInWords = cRCV_IVP.ReportDefinition.ReportObjects["TextCVAmountInWords"] as TextObject;
+                                    //TextObject textObject_CVAmountInWords = cRCV_IVP.ReportDefinition.ReportObjects["TextCVAmountInWords"] as TextObject;
                                     TextObject textObject_CVCheckDate = cRCV_IVP.ReportDefinition.ReportObjects["TextCVCheckDate"] as TextObject;
                                     TextObject textObject_CVPayee = cRCV_IVP.ReportDefinition.ReportObjects["TextCVPayee"] as TextObject;
-                                    TextObject textObject_CVTotalAmount = cRCV_IVP.ReportDefinition.ReportObjects["TextCVTotalAmount"] as TextObject;
+                                    //TextObject textObject_CVTotalAmount = cRCV_IVP.ReportDefinition.ReportObjects["TextCVTotalAmount"] as TextObject;
                                     TextObject textObject_CVTotalDebitAmount = cRCV_IVP.ReportDefinition.ReportObjects["TextCVTotalDebitAmount"] as TextObject;
                                     TextObject textObject_CVTotalCreditAmount = cRCV_IVP.ReportDefinition.ReportObjects["TextCVTotalCreditAmount"] as TextObject;
 
@@ -1016,10 +1016,10 @@ namespace VoucherPro
                                     string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
 
                                     textObject_CVRefNumber.Text = textBox_SeriesNumber.Text;
-                                    textObject_CVAmountInWords.Text = amountInWords;
+                                    //textObject_CVAmountInWords.Text = amountInWords;
                                     textObject_CVCheckDate.Text = cvData[0].DateCreated.ToString("MMMM dd, yyyy");
                                     textObject_CVPayee.Text = cvData[0].PayeeFullName;
-                                    textObject_CVTotalAmount.Text = cvData[0].TotalAmount.ToString("N2");
+                                    //textObject_CVTotalAmount.Text = cvData[0].TotalAmount.ToString("N2");
 
                                     textObject_PreparedBy.Text = signatories.PreparedByName;
                                     textObject_PreparedByPos.Text = signatories.PreparedByPosition;
@@ -1376,10 +1376,10 @@ namespace VoucherPro
                     return false;
 
                 TextObject textObject_CVBILLCheckNumber = null;
-                TextObject textObject_CVBILLAmountInWords = null;
+                //TextObject textObject_CVBILLAmountInWords = null;
                 TextObject textObject_CVBILLCheckDate = null;
                 TextObject textObject_CVBILLPayee = null;
-                TextObject textObject_CVBILLTotalAmount = null;
+                //TextObject textObject_CVBILLTotalAmount = null;
                 TextObject textObject_CVBILLTotalDebitAmount = null;
                 TextObject textObject_CVBILLTotalCreditAmount = null;
                 TextObject textObject_PreparedBy = null;
@@ -1394,10 +1394,10 @@ namespace VoucherPro
                 try
                 {
                     textObject_CVBILLCheckNumber = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLSeriesnumber"] as TextObject;
-                    textObject_CVBILLAmountInWords = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLAmountInWords"] as TextObject;
+                    //textObject_CVBILLAmountInWords = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLAmountInWords"] as TextObject;
                     textObject_CVBILLCheckDate = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCheckDate"] as TextObject;
                     textObject_CVBILLPayee = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLPayee"] as TextObject;
-                    textObject_CVBILLTotalAmount = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTotalAmount"] as TextObject;
+                    //textObject_CVBILLTotalAmount = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTotalAmount"] as TextObject;
                     textObject_CVBILLTotalDebitAmount = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTotalDebitAmount"] as TextObject;
                     textObject_CVBILLTotalCreditAmount = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTotalCreditAmount"] as TextObject;
 
@@ -1477,10 +1477,10 @@ namespace VoucherPro
                 string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
 
                 if (textObject_CVBILLCheckNumber != null) textObject_CVBILLCheckNumber.Text = textBox_SeriesNumber.Text;
-                if (textObject_CVBILLAmountInWords != null) textObject_CVBILLAmountInWords.Text = amountInWords;
+                //if (textObject_CVBILLAmountInWords != null) textObject_CVBILLAmountInWords.Text = amountInWords;
                 if (textObject_CVBILLCheckDate != null) textObject_CVBILLCheckDate.Text = bills[0].DateCreated.ToString("MMMM dd, yyyy");
                 if (textObject_CVBILLPayee != null) textObject_CVBILLPayee.Text = bills[0].PayeeFullName ?? "";
-                if (textObject_CVBILLTotalAmount != null) textObject_CVBILLTotalAmount.Text = bills[0].AmountDue.ToString("N2");
+                //if (textObject_CVBILLTotalAmount != null) textObject_CVBILLTotalAmount.Text = bills[0].AmountDue.ToString("N2");
 
                 SubreportObject subreportObject = null;
                 try
