@@ -39,7 +39,10 @@ namespace VoucherPro
         private CrystalReportViewer reportViewer;
         private AccessToDatabase accessToDatabase;
 
+        FlowLayoutPanel panel_Company;
+
         ComboBox comboBox_Forms;
+        ComboBox comboBox_Company;
 
         Label label_SeriesNumberText;
         Label label_SignatoryRRStatus;
@@ -47,6 +50,9 @@ namespace VoucherPro
         TextBox textBox_SeriesNumber;
         TextBox textBox_ReceivedByRR;
         TextBox textBox_CheckedByRR;
+
+        FlowLayoutPanel panel_PayeeOverride;
+        TextBox textBox_PayeeOverride;
 
         Panel panel_Main;
         Panel panel_Main_CR;
@@ -90,6 +96,90 @@ namespace VoucherPro
 
             Panel panel_Container = ContainerPanel();
             this.Controls.Add(panel_Container);
+        }
+
+        private FlowLayoutPanel Panel_SBPayeeOverride()
+        {
+            panel_PayeeOverride = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 61,
+                Width = sideBarWidth - 10,
+                BackColor = Color.LightGray,
+                Padding = new Padding(5, 2, 5, 5),
+                BorderStyle = BorderStyle.FixedSingle,
+                Visible = false // Default hidden
+            };
+
+            Label label_Text = new Label
+            {
+                Parent = panel_PayeeOverride,
+                Width = sideBarWidth - 10,
+                Text = "PAYEE :",
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = font_Label,
+            };
+
+            textBox_PayeeOverride = new TextBox
+            {
+                Parent = panel_PayeeOverride,
+                Width = sideBarWidth - 28,
+                Font = font_Label,
+            };
+
+            return panel_PayeeOverride;
+        }
+
+
+        private FlowLayoutPanel Panel_SBCompany()
+        {
+            panel_Company = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 61,
+                Width = sideBarWidth - 10,
+                BackColor = Color.LightGray,
+                Padding = new Padding(5, 2, 5, 5),
+                BorderStyle = BorderStyle.FixedSingle,
+                // Only visible if client is IVP
+                Visible = (GlobalVariables.client == "IVP")
+            };
+
+            Label label_CompanyText = new Label
+            {
+                Parent = panel_Company,
+                Width = sideBarWidth - 10,
+                Text = "SELECT COMPANY:",
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = font_Label,
+            };
+
+            comboBox_Company = new ComboBox
+            {
+                Parent = panel_Company,
+                Width = sideBarWidth - 28,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = font_Label,
+            };
+
+            // ADD YOUR COMPANY NAMES HERE
+            comboBox_Company.Items.AddRange(new string[]
+            {
+                "North Luzon",
+                "South Luzon",
+                "Visayas",
+                "Mindanao",
+                "Metro Manila",
+                "Central Luzon",
+            });
+
+            // Set default selection
+            if (comboBox_Company.Items.Count > 0)
+            {
+                comboBox_Company.SelectedIndex = 0;
+            }
+
+            return panel_Company;
         }
 
         private Panel ContainerPanel()
@@ -204,6 +294,17 @@ namespace VoucherPro
             panel_SeriesNumber = Panel_SBSeriesNumber();
             panel_SeriesNumber.Parent = panel_SideBar;
             panel_SeriesNumber.Visible = false;
+
+            if (GlobalVariables.client == "IVP")
+            {
+                FlowLayoutPanel panel_Company = Panel_SBCompany();
+                panel_Company.Parent = panel_SideBar;
+
+                // --- ADD THIS BLOCK ---
+                FlowLayoutPanel panel_Payee = Panel_SBPayeeOverride();
+                panel_Payee.Parent = panel_SideBar;
+                // ----------------------
+            }
 
             // - REF NUMBER ---------------------------------------------
             panel_RefNumber = Panel_SBRefNumber();
@@ -389,8 +490,8 @@ namespace VoucherPro
                     if (seriesNumber != 0)
                     {
                         seriesNumber--;
-                        // Update this logic to check for index 2
-                        string prefix = comboBox_Forms.SelectedIndex == 2 ? "JV" : "CV";
+                        // FIX: Journal Voucher is Index 3, not 2
+                        string prefix = comboBox_Forms.SelectedIndex == 3 ? "JV" : "CV";
                         UpdateSeriesNumber(prefix);
                     }
                 }
@@ -430,8 +531,8 @@ namespace VoucherPro
                 else if (GlobalVariables.client == "IVP")
                 {
                     seriesNumber++;
-                    // Update this logic to check for index 2
-                    string prefix = comboBox_Forms.SelectedIndex == 2 ? "JV" : "CV";
+                    // FIX: Journal Voucher is Index 3, not 2
+                    string prefix = comboBox_Forms.SelectedIndex == 3 ? "JV" : "CV";
                     UpdateSeriesNumber(prefix);
                 }
 
@@ -1000,6 +1101,12 @@ namespace VoucherPro
                                     TextObject textObject_CVTotalDebitAmount = cRCV_IVP.ReportDefinition.ReportObjects["TextCVTotalDebitAmount"] as TextObject;
                                     TextObject textObject_CVTotalCreditAmount = cRCV_IVP.ReportDefinition.ReportObjects["TextCVTotalCreditAmount"] as TextObject;
 
+                                    TextObject textObject_CompanyName = cRCV_IVP.ReportDefinition.ReportObjects["TextCompanyName"] as TextObject;
+                                    if (textObject_CompanyName != null && comboBox_Company != null && comboBox_Company.SelectedItem != null)
+                                    {
+                                        textObject_CompanyName.Text = comboBox_Company.SelectedItem.ToString();
+                                    }
+
                                     TextObject textObject_PreparedBy = cRCV_IVP.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
                                     TextObject textObject_PreparedByPos = cRCV_IVP.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
                                     TextObject textObject_CheckedBy = cRCV_IVP.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
@@ -1118,6 +1225,12 @@ namespace VoucherPro
                                 TextObject textObject_JVTransactDate = cRJV_IVP.ReportDefinition.ReportObjects["TextJVTransactDate"] as TextObject;
                                 TextObject textObject_JVTotalDebitAmount = cRJV_IVP.ReportDefinition.ReportObjects["TextJVTotalDebitAmount"] as TextObject;
                                 TextObject textObject_JVTotalCreditAmount = cRJV_IVP.ReportDefinition.ReportObjects["TextJVTotalCreditAmount"] as TextObject;
+
+                                TextObject textObject_CompanyName = cRJV_IVP.ReportDefinition.ReportObjects["TextCompanyName"] as TextObject;
+                                if (textObject_CompanyName != null && comboBox_Company != null && comboBox_Company.SelectedItem != null)
+                                {
+                                    textObject_CompanyName.Text = comboBox_Company.SelectedItem.ToString();
+                                }
 
 
                                 TextObject textObject_PreparedBy = cRJV_IVP.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
@@ -1400,6 +1513,13 @@ namespace VoucherPro
                     //textObject_CVBILLTotalAmount = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTotalAmount"] as TextObject;
                     textObject_CVBILLTotalDebitAmount = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTotalDebitAmount"] as TextObject;
                     textObject_CVBILLTotalCreditAmount = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTotalCreditAmount"] as TextObject;
+
+                    TextObject textObject_CompanyName = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCompanyName"] as TextObject;
+                    if (textObject_CompanyName != null && comboBox_Company != null && comboBox_Company.SelectedItem != null)
+                    {
+                        textObject_CompanyName.Text = comboBox_Company.SelectedItem.ToString();
+                    }
+
 
 
                     textObject_PreparedBy = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
@@ -2599,11 +2719,8 @@ namespace VoucherPro
 
                         else if (GlobalVariables.client == "IVP")
                         {
-                            // 1. Instantiate the correct Layout class for IVP
                             Layouts_IVP layouts_IVP = new Layouts_IVP();
-
                             System.Drawing.Printing.PaperSize paperSize = new System.Drawing.Printing.PaperSize("Custom", 850, 1100);
-
                             printDocument = new PrintDocument();
                             printDocument.DefaultPageSettings.PaperSize = paperSize;
                             printDocument.PrinterSettings.DefaultPageSettings.PaperSize = paperSize;
@@ -2611,17 +2728,17 @@ namespace VoucherPro
                             int selectedIndex = comboBox_Forms.SelectedIndex;
                             string seriesNumber = textBox_SeriesNumber.Text;
 
-                            // Reset counters for new print job
+                            // Capture the override text
+                            string payeeOverride = textBox_PayeeOverride.Text;
+
                             itemCounter = 0;
                             pageCounter = 1;
-
-                            // Update preview control to start at the first page
                             printPreviewControl.StartPage = 0;
 
-                            // 2. Use the new PrintPage_IVP method
                             printDocument.PrintPage += (s, ev) =>
                             {
-                                layouts_IVP.PrintPage_IVP(s, ev, selectedIndex, seriesNumber, data);
+                                // Pass payeeOverride to the layout function
+                                layouts_IVP.PrintPage_IVP(s, ev, selectedIndex, seriesNumber, data, payeeOverride);
                             };
                         }
 
@@ -3119,6 +3236,12 @@ namespace VoucherPro
 
         private void ComboBox_Forms_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (reportViewer != null)
+            {
+                reportViewer.ReportSource = null;
+                reportViewer.Refresh();
+            }
+
             if (GlobalVariables.client == "LEADS")
             {
                 string prefix = "";
@@ -3286,6 +3409,17 @@ namespace VoucherPro
             {
                 string prefix = "";
 
+                if (comboBox_Forms.SelectedIndex == 1 || comboBox_Forms.SelectedIndex == 3) // CV or JV
+                {
+                    panel_Company.Visible = true;
+                }
+                else
+                {
+                    panel_Company.Visible = false; // Hide for "Check" (Index 2) or empty
+                }
+
+                if (panel_PayeeOverride != null) panel_PayeeOverride.Visible = false;
+
                 switch (comboBox_Forms.SelectedIndex)
                 {
                     case 1: // Check Voucher
@@ -3309,6 +3443,7 @@ namespace VoucherPro
                         panel_RefNumber.Visible = true; // Enabled so user can type Ref/Check Number
                         panel_RefNumberCrystalReport.Visible = false;
                         panel_Signatory.Visible = false;
+                        if (panel_PayeeOverride != null) panel_PayeeOverride.Visible = true;
 
                         panel_Main.Visible = true;      // Back to Main Panel
                         panel_Main_CR.Visible = false;  // Hide Crystal Reports
@@ -3538,7 +3673,7 @@ namespace VoucherPro
                 string columnName = "";
 
                 if (comboBox_Forms.SelectedIndex == 1) columnName = "CVSeries";
-                else if (comboBox_Forms.SelectedIndex == 2) columnName = "JVSeries"; // <--- Added this
+                else if (comboBox_Forms.SelectedIndex == 3) columnName = "JVSeries"; // FIX: Changed 2 to 3
 
                 if (!string.IsNullOrEmpty(columnName))
                 {

@@ -15,8 +15,9 @@ namespace VoucherPro.Clients
         Font font_Ten = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
         Font font_Nine = new Font("Microsoft Sans Serif", 9, FontStyle.Regular);
         Font font_Eleven = new Font("Microsoft Sans Serif", 11, FontStyle.Regular);
+        Font font_Eight = new Font("Microsoft Sans Serif", 8, FontStyle.Regular);
 
-        public void PrintPage_IVP(object sender, PrintPageEventArgs e, int layoutIndex, string seriesNumber, object data)
+        public void PrintPage_IVP(object sender, PrintPageEventArgs e, int layoutIndex, string seriesNumber, object data, string payeeOverride = "")
         {
             StringFormat sfAlignRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Far };
             StringFormat sfAlignCenterRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
@@ -27,7 +28,7 @@ namespace VoucherPro.Clients
             {
                 case 2: // CHECK (Index 2 for IVP)
                     // Use CheckTableGrid here because that is what GetCheckDataIVP returns
-                    Layout_Check(e, data as List<CheckTableGrid>, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter);
+                    Layout_Check(e, data as List<CheckTableGrid>, sfAlignCenterRight, sfAlignCenter, sfAlignLeftCenter, payeeOverride);
                     break;
 
                 default:
@@ -36,7 +37,7 @@ namespace VoucherPro.Clients
             }
         }
 
-        private void Layout_Check(PrintPageEventArgs e, List<CheckTableGrid> checkTableData, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter)
+        private void Layout_Check(PrintPageEventArgs e, List<CheckTableGrid> checkTableData, StringFormat sfAlignCenterRight, StringFormat sfAlignCenter, StringFormat sfAlignLeftCenter, string payeeOverride)
         {
             // Safety Check
             if (checkTableData == null || checkTableData.Count == 0) return;
@@ -54,10 +55,17 @@ namespace VoucherPro.Clients
             string formattedDate = $"{formattedMonth}     {formattedDay}     {formattedYear}";
 
             string payee = checkTableData[0].PayeeFullName.ToString();
+
+            // If the textbox is not empty, use that instead
+            if (!string.IsNullOrEmpty(payeeOverride))
+            {
+                payee = payeeOverride;
+            }
+
             double amount = checkTableData[0].Amount;
             string amountInWords = AmountToWordsConverter.Convert(amount);
 
-            Font amountinWordsFont = font_Ten;
+            Font amountinWordsFont = font_Eight;
             Font dateFont = font_Nine;
             Font payeeFont = font_Eleven;
 
