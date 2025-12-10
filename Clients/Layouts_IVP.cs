@@ -67,7 +67,8 @@ namespace VoucherPro.Clients
 
             Font amountinWordsFont = font_Eight;
             Font dateFont = font_Nine;
-            Font payeeFont = font_Eight;
+            Font payeeFont = font_Eleven;
+            Font payeeFont2 = font_Eight;
 
             // ----------------------------------------------------------------------
             // PRINTING LOGIC (Coordinates)
@@ -91,7 +92,7 @@ namespace VoucherPro.Clients
                 int minusY = 50;
 
                 // Payee Name
-                e.Graphics.DrawString(payee, payeeFont, Brushes.Black, new PointF(135 - minusX, 110 - minusY));
+                e.Graphics.DrawString(payee, payeeFont2, Brushes.Black, new PointF(135 - minusX, 110 - minusY));
 
                 // Date
                 e.Graphics.DrawString(formattedDate, payeeFont, Brushes.Black, new PointF(605 - minusX, 79 - minusY));
@@ -100,7 +101,7 @@ namespace VoucherPro.Clients
                 e.Graphics.DrawString(amount.ToString("N2"), payeeFont, Brushes.Black, new PointF(635 - minusX, 114 - minusY));
 
                 // Amount (Words)
-                e.Graphics.DrawString(amountInWords, amountinWordsFont, Brushes.Black, new PointF(95 - minusX, 145 - minusY));
+                e.Graphics.DrawString(amountInWords, payeeFont2, Brushes.Black, new PointF(95 - minusX, 145 - minusY));
             }
         }
     }
