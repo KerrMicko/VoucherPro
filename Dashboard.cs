@@ -1202,7 +1202,7 @@ namespace VoucherPro
                                         if (textObject_PaidSign != null)
                                         {
                                             // Index 0 is Peso, Index 1 is Dollar
-                                            textObject_PaidSign.Text = comboBox_Currency.SelectedIndex == 1 ? "" : "₱";
+                                            textObject_PaidSign.Text = comboBox_Currency.SelectedIndex == 1 ? "$" : "₱";
                                         }
 
                                         textObject_Remarks.Text = cvData[0].Memo;
@@ -1668,7 +1668,7 @@ namespace VoucherPro
                         TextObject textObject_PaidSign = subReportDocument.ReportDefinition.ReportObjects["TextPaidSign"] as TextObject;
                         if (textObject_PaidSign != null)
                         {
-                            textObject_PaidSign.Text = comboBox_Currency.SelectedIndex == 1 ? "" : "₱";
+                            textObject_PaidSign.Text = comboBox_Currency.SelectedIndex == 1 ? "$" : "₱";
                         }
 
                         if (textObject_BILLSubRemarks != null) textObject_BILLSubRemarks.Text = bills[0].BillMemo ?? "";
@@ -2176,7 +2176,6 @@ namespace VoucherPro
         {
             string connectionString = AccessToDatabase.GetAccessConnectionString();
 
-            // We can still track totals if needed for console logging
             double debitTotalAmount = 0;
             double creditTotalAmount = 0;
 
@@ -2200,12 +2199,12 @@ namespace VoucherPro
                 }
 
                 // 2. Prepare Insert Query
-                // Note: We will insert EVERYTHING into the [Debit] column.
+                // We now insert into both Debit and Credit columns appropriately
                 string insertQuery = @"
-                INSERT INTO JV_Compiled 
-                (RefNumber, [Particulars], [Class], [Debit], [Credit], [Memo]) 
-                VALUES 
-                (@RefNumber, @Particulars, @Class, @Debit, @Credit, @Memo)";
+                                    INSERT INTO JV_Compiled 
+                                    (RefNumber, [Particulars], [Class], [Debit], [Credit], [Memo]) 
+                                    VALUES 
+                                    (@RefNumber, @Particulars, @Class, @Debit, @Credit, @Memo)";
 
                 foreach (var line in journalData)
                 {
@@ -2216,29 +2215,24 @@ namespace VoucherPro
                         string className = line.Class;
                         string memoValue = string.IsNullOrEmpty(line.Memo) ? "" : line.Memo;
 
-                        // ---------------------------------------------------------
-                        // NEW LOGIC: 
-                        // 1. Put everything in 'debitStr'.
-                        // 2. If it is a Credit line, make it Negative.
-                        // ---------------------------------------------------------
-                        double netAmount = 0;
+                        string debitStr = "";
+                        string creditStr = "";
 
+                        // ---------------------------------------------------------
+                        // UPDATED LOGIC: 
+                        // Separate Debit and Credit into their own columns.
+                        // ---------------------------------------------------------
                         if (line.Debit != 0)
                         {
-                            netAmount = line.Debit; // Positive
                             debitTotalAmount += line.Debit;
+                            debitStr = line.Debit.ToString("N2");
                         }
                         else if (line.Credit != 0)
                         {
-                            netAmount = -line.Credit; // Negative (Don't remove sign!)
                             creditTotalAmount += line.Credit;
+                            // Move to Credit column (Absolute value / Positive string)
+                            creditStr = line.Credit.ToString("N2");
                         }
-
-                        // Assign to DEBIT Column (as requested: "all data... in debit")
-                        string debitStr = netAmount.ToString("N2");
-
-                        // Assign Empty to CREDIT Column (as requested: "only credit is amountpayable")
-                        string creditStr = "";
 
                         // EXECUTE INSERT
                         using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
@@ -2246,12 +2240,11 @@ namespace VoucherPro
                             command.Parameters.AddWithValue("@RefNumber", refNumber);
                             command.Parameters.AddWithValue("@Particulars", particulars);
 
+                            // Handle Class nulls
                             command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(className) ? (object)DBNull.Value : className);
 
-                            // Insert the Net Amount (Positive or Negative) into the Debit Field
+                            // Insert separated Debit and Credit strings
                             command.Parameters.AddWithValue("@Debit", debitStr);
-
-                            // Leave Credit Field Empty
                             command.Parameters.AddWithValue("@Credit", creditStr);
 
                             command.Parameters.AddWithValue("@Memo", memoValue);
