@@ -202,7 +202,7 @@ namespace VoucherPro
                 Font = font_Label,
             };
 
-            comboBox_Currency.Items.AddRange(new string[] { "₱", "$" });
+            comboBox_Currency.Items.AddRange(new string[] { "Peso (₱)", "Dollar ($)" });
             comboBox_Currency.SelectedIndex = 0;
 
             return panel_Company;
@@ -1202,7 +1202,7 @@ namespace VoucherPro
                                         if (textObject_PaidSign != null)
                                         {
                                             // Index 0 is Peso, Index 1 is Dollar
-                                            textObject_PaidSign.Text = comboBox_Currency.SelectedIndex == 1 ? "$" : "₱";
+                                            textObject_PaidSign.Text = comboBox_Currency.SelectedIndex == 1 ? "" : "₱";
                                         }
 
                                         textObject_Remarks.Text = cvData[0].Memo;
@@ -1555,7 +1555,6 @@ namespace VoucherPro
                     }
 
 
-
                     textObject_PreparedBy = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
                     textObject_PreparedByPos = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
                     textObject_CheckedBy = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
@@ -1669,7 +1668,7 @@ namespace VoucherPro
                         TextObject textObject_PaidSign = subReportDocument.ReportDefinition.ReportObjects["TextPaidSign"] as TextObject;
                         if (textObject_PaidSign != null)
                         {
-                            textObject_PaidSign.Text = comboBox_Currency.SelectedIndex == 1 ? "$" : "₱";
+                            textObject_PaidSign.Text = comboBox_Currency.SelectedIndex == 1 ? "" : "₱";
                         }
 
                         if (textObject_BILLSubRemarks != null) textObject_BILLSubRemarks.Text = bills[0].BillMemo ?? "";
@@ -3470,7 +3469,7 @@ namespace VoucherPro
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");
                         if (label_CurrencyText != null) label_CurrencyText.Visible = true;
                         if (comboBox_Currency != null) comboBox_Currency.Visible = true;
-                        panel_Company.Height = 110;
+                        panel_Company.Height = 120;
 
                         panel_Main.Visible = false;
                         panel_Main_CR.Visible = true;
