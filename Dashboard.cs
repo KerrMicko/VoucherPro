@@ -50,6 +50,8 @@ namespace VoucherPro
         TextBox textBox_SeriesNumber;
         TextBox textBox_ReceivedByRR;
         TextBox textBox_CheckedByRR;
+        ComboBox comboBox_Currency;
+        Label label_CurrencyText;
 
         FlowLayoutPanel panel_PayeeOverride;
         TextBox textBox_PayeeOverride;
@@ -136,7 +138,7 @@ namespace VoucherPro
             panel_Company = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 61,
+                Height = 120,
                 Width = sideBarWidth - 10,
                 BackColor = Color.LightGray,
                 Padding = new Padding(5, 2, 5, 5),
@@ -170,6 +172,9 @@ namespace VoucherPro
                 "Visayas",
                 "Mindanao",
                 "Metro Manila",
+                "Iberica Verheilen Pharmaceuticals Group.",
+                "Verheilen Iberica HealthCare Company Inc.",
+                "My Health Shield NutriPharm Inc.",
                 "Central Luzon",
             });
 
@@ -178,6 +183,27 @@ namespace VoucherPro
             {
                 comboBox_Company.SelectedIndex = 0;
             }
+
+            label_CurrencyText = new Label
+            {
+                Parent = panel_Company,
+                Width = sideBarWidth - 10,
+                Text = "SELECT CURRENCY:",
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = font_Label,
+                Margin = new Padding(0, 5, 0, 0)
+            };
+
+            comboBox_Currency = new ComboBox
+            {
+                Parent = panel_Company,
+                Width = sideBarWidth - 28,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = font_Label,
+            };
+
+            comboBox_Currency.Items.AddRange(new string[] { "₱", "$" });
+            comboBox_Currency.SelectedIndex = 0;
 
             return panel_Company;
         }
@@ -1172,6 +1198,13 @@ namespace VoucherPro
                                         TextObject textObject_SubAccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextSubAccountPayable"] as TextObject;
                                         TextObject textObject_SubAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextSubAmountPayable"] as TextObject;
 
+                                        TextObject textObject_PaidSign = subReportDocument.ReportDefinition.ReportObjects["TextPaidSign"] as TextObject;
+                                        if (textObject_PaidSign != null)
+                                        {
+                                            // Index 0 is Peso, Index 1 is Dollar
+                                            textObject_PaidSign.Text = comboBox_Currency.SelectedIndex == 1 ? "$" : "₱";
+                                        }
+
                                         textObject_Remarks.Text = cvData[0].Memo;
                                         textObject_CVSubTotal.Text = cvData[0].TotalAmount.ToString("N2");
                                         textObject_CVSubCheckNumber.Text = cvData[0].RefNumber;
@@ -1269,6 +1302,7 @@ namespace VoucherPro
 
                                     TextObject textObject_SubAccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextJVSUBAccountsPayable"] as TextObject;
                                     TextObject textObject_SubAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextJVSUBAmountPayable"] as TextObject;
+
 
                                     if (textObject_SubAccountPayable != null) textObject_SubAccountPayable.Text = journal[0].AccountName;
 
@@ -1632,7 +1666,11 @@ namespace VoucherPro
                         TextObject textObject_BILLCVSubCheckNumber = subReportDocument.ReportDefinition.ReportObjects["TextCVBILLSubCheckNumber"] as TextObject;
                         TextObject textObject_BILLSubAccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextBILLSubAccountPayable"] as TextObject;
                         TextObject textObject_BILLSubAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextBILLSubAmountPayable"] as TextObject;
-
+                        TextObject textObject_PaidSign = subReportDocument.ReportDefinition.ReportObjects["TextPaidSign"] as TextObject;
+                        if (textObject_PaidSign != null)
+                        {
+                            textObject_PaidSign.Text = comboBox_Currency.SelectedIndex == 1 ? "$" : "₱";
+                        }
 
                         if (textObject_BILLSubRemarks != null) textObject_BILLSubRemarks.Text = bills[0].BillMemo ?? "";
                         if (textObject_BILLCVSubCheckDate != null) textObject_BILLCVSubCheckDate.Text = bills[0].DateCreated.ToString("MMMM dd, yyyy");
@@ -3430,6 +3468,9 @@ namespace VoucherPro
                         panel_Signatory.Visible = true;
                         label_SeriesNumberText.Text = "Current Series Number: CV";
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");
+                        if (label_CurrencyText != null) label_CurrencyText.Visible = true;
+                        if (comboBox_Currency != null) comboBox_Currency.Visible = true;
+                        panel_Company.Height = 110;
 
                         panel_Main.Visible = false;
                         panel_Main_CR.Visible = true;
@@ -3462,6 +3503,10 @@ namespace VoucherPro
 
                         label_SeriesNumberText.Text = "Current Series Number: JV";
                         seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("JVSeries");
+
+                        if (label_CurrencyText != null) label_CurrencyText.Visible = false;
+                        if (comboBox_Currency != null) comboBox_Currency.Visible = false;
+                        panel_Company.Height = 61;
                         break;
 
                     default:
@@ -3472,6 +3517,7 @@ namespace VoucherPro
 
                         panel_Main.Visible = false;
                         panel_Main_CR.Visible = false;
+                        panel_Company.Visible = false;
                         return;
                 }
 
