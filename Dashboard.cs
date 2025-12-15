@@ -1215,7 +1215,7 @@ namespace VoucherPro
 
                                     textObject_CVRefNumber.Text = textBox_SeriesNumber.Text;
                                     //textObject_CVAmountInWords.Text = amountInWords;
-                                    textObject_CVCheckDate.Text = cvData[0].DateCreated.ToString("MMMM dd, yyyy");
+                                    textObject_CVCheckDate.Text = DateTime.Now.ToString("MMMM dd, yyyy");
                                     textObject_CVPayee.Text = cvData[0].PayeeFullName;
                                     //textObject_CVTotalAmount.Text = cvData[0].TotalAmount.ToString("N2");
 
@@ -1273,7 +1273,7 @@ namespace VoucherPro
                                         textObject_Remarks.Text = cvData[0].Memo;
                                         textObject_CVSubTotal.Text = cvData[0].TotalAmount.ToString("N2");
                                         textObject_CVSubCheckNumber.Text = cvData[0].RefNumber;
-                                        textObject_CVSubCheckDate.Text = cvData[0].DateCreated.ToString("MMMM dd, yyyy");
+                                        textObject_CVSubCheckDate.Text = cvData[0].DueDate.ToString("MMMM dd, yyyy");
                                         textObject_SubAccountPayable.Text = cvData[0].BankAccount;
                                         textObject_SubAmountPayable.Text = debitTotalAmount.ToString("N2");
 
@@ -1696,7 +1696,7 @@ namespace VoucherPro
 
                 if (textObject_CVBILLCheckNumber != null) textObject_CVBILLCheckNumber.Text = textBox_SeriesNumber.Text;
                 //if (textObject_CVBILLAmountInWords != null) textObject_CVBILLAmountInWords.Text = amountInWords;
-                if (textObject_CVBILLCheckDate != null) textObject_CVBILLCheckDate.Text = bills[0].DateCreated.ToString("MMMM dd, yyyy");
+                if (textObject_CVBILLCheckDate != null) textObject_CVBILLCheckDate.Text = DateTime.Now.ToString("MMMM dd, yyyy");
                 if (textObject_CVBILLPayee != null) textObject_CVBILLPayee.Text = bills[0].PayeeFullName ?? "";
                 //if (textObject_CVBILLTotalAmount != null) textObject_CVBILLTotalAmount.Text = bills[0].AmountDue.ToString("N2");
 
@@ -1737,7 +1737,7 @@ namespace VoucherPro
                         }
 
                         if (textObject_BILLSubRemarks != null) textObject_BILLSubRemarks.Text = bills[0].BillMemo ?? "";
-                        if (textObject_BILLCVSubCheckDate != null) textObject_BILLCVSubCheckDate.Text = bills[0].DateCreated.ToString("MMMM dd, yyyy");
+                        if (textObject_BILLCVSubCheckDate != null) textObject_BILLCVSubCheckDate.Text = bills[0].DueDate.ToString("MMMM dd, yyyy");
                         if (textObject_BILLCVSubTotal != null) textObject_BILLCVSubTotal.Text = bills[0].AmountDue.ToString("N2");
                         if (textObject_BILLCVSubCheckNumber != null) textObject_BILLCVSubCheckNumber.Text = bills[0].RefNumber ?? "";
                         if (textObject_BILLCVSubCheckNumber != null) textObject_BILLSubAccountPayable.Text = bills[0].BankAccount ?? "";

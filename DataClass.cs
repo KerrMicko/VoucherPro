@@ -101,6 +101,8 @@ namespace VoucherPro
             public string Memo { get; set; }
             public string IncrementalID { get; set; }
 
+            public DateTime DueDate { get; set; }
+
             // Properties specific to items
             public string Item { get; set; }
             public string ItemName { get; set; }

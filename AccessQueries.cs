@@ -774,6 +774,7 @@ namespace VoucherPro
                 string bankAccount = bp.BankAccountRef?.FullName?.GetValue() ?? "";
                 string memo = bp.Memo?.GetValue() ?? "";
                 double amountPaid = bp.Amount?.GetValue() ?? 0;
+                string duedate = bp.TxnDate?.GetValue().ToString("yyyy-MM-dd") ?? "";
 
                 Console.WriteLine($"[DEBUG] Header Info -- Payee: {payee}, Date: {payDate}, Amount: {amountPaid}, Bank: {bankAccount}");
 
@@ -1774,6 +1775,7 @@ namespace VoucherPro
                     string address2 = check.Address?.Addr2?.GetValue() ?? "";
                     double totalAmount = check.Amount?.GetValue() ?? 0;
                     string currentRef = check.RefNumber?.GetValue() ?? "";
+                    string duedate = check.TxnDate?.GetValue().ToString("yyyy-MM-dd") ?? "";
 
                     Console.WriteLine($"\n[Check #{i + 1}] Ref: {currentRef} | Payee: {payee} | Total: {totalAmount}");
 
@@ -1796,6 +1798,7 @@ namespace VoucherPro
                                 PayeeFullName = payee,
                                 RefNumber = refNumber,
                                 TotalAmount = totalAmount,
+                                DueDate = txnDate,
                                 Memo = memo,
                                 Address = address1,
                                 Address2 = address2,
@@ -1836,6 +1839,7 @@ namespace VoucherPro
                                     PayeeFullName = payee,
                                     RefNumber = refNumber,
                                     TotalAmount = totalAmount,
+                                    DueDate = txnDate,
                                     Memo = memo,
                                     Address = address1,
                                     Address2 = address2,
