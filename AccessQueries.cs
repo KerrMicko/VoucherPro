@@ -735,7 +735,6 @@ namespace VoucherPro
                 Console.WriteLine("[DEBUG] Session Opened Successfully.");
 
                 // ====================================================
-
                 // 1. QUERY BILL PAYMENT CHECK USING RefNumber
                 // ====================================================
                 IMsgSetRequest req1 = sessionManager.CreateMsgSetRequest("US", 13, 0);
@@ -752,21 +751,17 @@ namespace VoucherPro
                 IMsgSetResponse resp1 = sessionManager.DoRequests(req1);
                 IResponse r1 = resp1.ResponseList.GetAt(0);
 
-                Console.WriteLine($"[DEBUG] Query 1 Response Code: {r1.StatusCode} ({r1.StatusMessage})");
-
                 IBillPaymentCheckRetList bpList = r1.Detail as IBillPaymentCheckRetList;
 
                 if (bpList == null || bpList.Count == 0)
                 {
-                    Console.WriteLine("[DEBUG] ERROR: Bill Payment Check list is empty or null.");
                     MessageBox.Show("Bill Payment Check not found: " + refNumber);
                     return bills;
                 }
 
                 IBillPaymentCheckRet bp = bpList.GetAt(0);
-                Console.WriteLine($"[DEBUG] Bill Payment Check Found. TxnID: {bp.TxnID?.GetValue()}");
 
-                // HEADER FROM BILL PAYMENT CHECK
+                // HEADER FROM BILL PAYMENT CHECK (These stay constant for all bills in this check)
                 DateTime payDate = bp.TxnDate?.GetValue() ?? DateTime.MinValue;
                 string payee = bp.PayeeEntityRef?.FullName?.GetValue() ?? "";
                 string address1 = bp.Address?.Addr1?.GetValue() ?? "";
@@ -774,169 +769,146 @@ namespace VoucherPro
                 string bankAccount = bp.BankAccountRef?.FullName?.GetValue() ?? "";
                 string memo = bp.Memo?.GetValue() ?? "";
                 double amountPaid = bp.Amount?.GetValue() ?? 0;
-                string duedate = bp.TxnDate?.GetValue().ToString("yyyy-MM-dd") ?? "";
 
-                Console.WriteLine($"[DEBUG] Header Info -- Payee: {payee}, Date: {payDate}, Amount: {amountPaid}, Bank: {bankAccount}");
+                // ====================================================
+                // *** CHANGED: GET ALL APPLIED BILL TxnIDs (NOT JUST INDEX 0)
+                // ====================================================
+                List<string> appliedTxnIDs = new List<string>();
 
-                // GET THE APPLIED BILL TxnID
-                string appliedTxnID = "";
                 if (bp.AppliedToTxnRetList != null && bp.AppliedToTxnRetList.Count > 0)
                 {
-                    // Debugging the list of applied transactions
                     Console.WriteLine($"[DEBUG] AppliedToTxn List Count: {bp.AppliedToTxnRetList.Count}");
+                    // Loop through ALL applied transactions
                     for (int k = 0; k < bp.AppliedToTxnRetList.Count; k++)
                     {
                         var applied = bp.AppliedToTxnRetList.GetAt(k);
-                        Console.WriteLine($"[DEBUG] Applied Item [{k}]: TxnID: {applied.TxnID?.GetValue()}, Amount: {applied.Amount?.GetValue()}");
+                        string tId = applied.TxnID?.GetValue();
+                        if (!string.IsNullOrEmpty(tId))
+                        {
+                            appliedTxnIDs.Add(tId);
+                            Console.WriteLine($"[DEBUG] Found Applied Bill TxnID: {tId}");
+                        }
                     }
-
-                    // Logic retrieves the first one
-                    appliedTxnID = bp.AppliedToTxnRetList.GetAt(0).TxnID?.GetValue() ?? "";
                 }
                 else
                 {
-                    Console.WriteLine("[DEBUG] AppliedToTxnRetList is NULL or Empty.");
-                }
-
-                if (appliedTxnID == "")
-                {
-                    Console.WriteLine("[DEBUG] ERROR: Could not extract Applied TxnID.");
                     MessageBox.Show("No Applied Bill found from Bill Payment Check.");
                     return bills;
                 }
 
-                Console.WriteLine($"[DEBUG] Target Bill TxnID: {appliedTxnID}");
-
                 // ====================================================
-                // 2. QUERY BILL USING THE APPLIED TxnID
+                // 2. QUERY BILL(S) USING THE COLLECTED TxnIDs
                 // ====================================================
                 IMsgSetRequest req2 = sessionManager.CreateMsgSetRequest("US", 13, 0);
                 req2.Attributes.OnError = ENRqOnError.roeContinue;
 
                 IBillQuery billQuery = req2.AppendBillQueryRq();
                 billQuery.IncludeLineItems.SetValue(true);
-                billQuery.ORBillQuery.TxnIDList.Add(appliedTxnID);
 
-                Console.WriteLine("[DEBUG] Sending Bill Query...");
+                // *** CHANGED: Add ALL TxnIDs to the query list
+                foreach (string id in appliedTxnIDs)
+                {
+                    billQuery.ORBillQuery.TxnIDList.Add(id);
+                }
+
+                Console.WriteLine($"[DEBUG] Sending Bill Query for {appliedTxnIDs.Count} bills...");
                 IMsgSetResponse resp2 = sessionManager.DoRequests(req2);
                 IResponse r2 = resp2.ResponseList.GetAt(0);
-                Console.WriteLine($"[DEBUG] Query 2 Response Code: {r2.StatusCode} ({r2.StatusMessage})");
 
                 IBillRetList billList = r2.Detail as IBillRetList;
 
                 if (billList == null || billList.Count == 0)
                 {
-                    Console.WriteLine("[DEBUG] ERROR: Bill list not found for that TxnID.");
-                    MessageBox.Show("Bill not found using TxnID: " + appliedTxnID);
+                    MessageBox.Show("Bills not found for the provided TxnIDs.");
                     return bills;
                 }
 
-                IBillRet bill = billList.GetAt(0);
-
-                // BILL HEADER FIELDS
-                DateTime billDate = bill.TxnDate?.GetValue() ?? DateTime.MinValue;
-                DateTime dueDate = bill.DueDate?.GetValue() ?? DateTime.MinValue;
-                double amountDue = bill.AmountDue?.GetValue() ?? 0;
-                string billMemo = bill.Memo?.GetValue() ?? "";
-                string billAPAccount = bill.APAccountRef?.FullName?.GetValue() ?? "";
-                string billRefNumber = bill.RefNumber?.GetValue() ?? "";
-
-                Console.WriteLine($"[DEBUG] Bill Found. Ref: {billRefNumber}, Due: {dueDate}, AP Account: {billAPAccount}");
-
-                // Create BillTable object
-                BillTable bt = new BillTable
-                {
-                    DateCreated = payDate,
-                    DueDate = billDate,
-                    PayeeFullName = payee,
-                    Address = address1,
-                    Address2 = address2,
-                    BankAccount = bankAccount,
-                    APAccountRefFullName = billAPAccount,
-                    Amount = amountPaid,
-                    RefNumber = refNumber,
-                    AppliedRefNumber = billRefNumber,
-                    AppliedToTxnTxnID = appliedTxnID,
-                    Memo = memo,
-                    BillMemo = billMemo,
-                    AmountDue = amountDue,
-                };
-
-                if (bill.ExpenseLineRetList != null)
-                {
-                    Console.WriteLine($"[DEBUG] Processing {bill.ExpenseLineRetList.Count} Expense Lines...");
-                    for (int i = 0; i < bill.ExpenseLineRetList.Count; i++)
-                    {
-                        var exp = bill.ExpenseLineRetList.GetAt(i);
-                        string expAcc = exp.AccountRef?.FullName?.GetValue() ?? " ";
-                        double expAmt = exp.Amount?.GetValue() ?? 0;
-
-                        Console.WriteLine($"[DEBUG] Expense [{i}]: Account={expAcc}, Amount={expAmt}");
-
-                        bt.ItemDetails.Add(new ItemDetail
-                        {
-                            ItemLineItemRefFullName = expAcc,
-                            ItemLineAmount = expAmt,
-                            ItemLineClassRefFullName = exp.ClassRef?.FullName?.GetValue() ?? "",
-                            ItemLineCustomerJob = exp.CustomerRef?.FullName?.GetValue() ?? "",
-                            ItemLineMemo = exp.Memo?.GetValue() ?? "",
-                        });
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("[DEBUG] No Expense Lines found.");
-                }
-
                 // ====================================================
-                // 4. BILL ITEM LINE ITEMS
+                // *** CHANGED: LOOP THROUGH ALL RETRIEVED BILLS
                 // ====================================================
-                if (bill.ORItemLineRetList != null)
+                Console.WriteLine($"[DEBUG] Retrieved {billList.Count} Bill(s). Processing...");
+
+                for (int bIndex = 0; bIndex < billList.Count; bIndex++)
                 {
-                    Console.WriteLine($"[DEBUG] Processing {bill.ORItemLineRetList.Count} Item Lines...");
-                    for (int i = 0; i < bill.ORItemLineRetList.Count; i++)
+                    IBillRet bill = billList.GetAt(bIndex);
+
+                    // BILL HEADER FIELDS
+                    DateTime billDate = bill.TxnDate?.GetValue() ?? DateTime.MinValue;
+                    DateTime dueDate = bill.DueDate?.GetValue() ?? DateTime.MinValue;
+                    double amountDue = bill.AmountDue?.GetValue() ?? 0;
+                    string billMemo = bill.Memo?.GetValue() ?? "";
+                    string billAPAccount = bill.APAccountRef?.FullName?.GetValue() ?? "";
+                    string billRefNumber = bill.RefNumber?.GetValue() ?? "";
+                    string specificTxnID = bill.TxnID?.GetValue() ?? "";
+
+                    Console.WriteLine($"[DEBUG] Processing Bill #{bIndex + 1}: Ref {billRefNumber}");
+
+                    // Create BillTable object for THIS specific bill
+                    BillTable bt = new BillTable
                     {
-                        var orItem = bill.ORItemLineRetList.GetAt(i);
+                        DateCreated = payDate,
+                        DueDate = billDate, // Or dueDate depending on your report requirement
+                        PayeeFullName = payee,
+                        Address = address1,
+                        Address2 = address2,
+                        BankAccount = bankAccount,
+                        APAccountRefFullName = billAPAccount,
+                        Amount = amountPaid, // This is the Check Total
+                        RefNumber = refNumber, // This is the Check Ref Number
+                        AppliedRefNumber = billRefNumber, // This is the specific Bill Ref Number
+                        AppliedToTxnTxnID = specificTxnID,
+                        Memo = memo,
+                        BillMemo = billMemo,
+                        AmountDue = amountDue, // The amount of this specific bill
+                    };
 
-                        // Check specifically if it is an ItemLineRet (could be ItemGroupLineRet)
-                        if (orItem.ItemLineRet != null)
+                    // Process Expense Lines for THIS bill
+                    if (bill.ExpenseLineRetList != null)
+                    {
+                        for (int i = 0; i < bill.ExpenseLineRetList.Count; i++)
                         {
-                            var item = orItem.ItemLineRet;
-                            string itemName = item.ItemRef?.FullName?.GetValue() ?? " ";
-                            double itemAmt = item.Amount?.GetValue() ?? 0;
-
-                            Console.WriteLine($"[DEBUG] Item [{i}]: Name={itemName}, Amount={itemAmt}");
-
+                            var exp = bill.ExpenseLineRetList.GetAt(i);
                             bt.ItemDetails.Add(new ItemDetail
                             {
-                                ItemLineItemRefFullName = itemName,
-                                ItemLineAmount = itemAmt,
-                                ItemLineClassRefFullName = item.ClassRef?.FullName?.GetValue() ?? "",
-                                ItemLineCustomerJob = item.CustomerRef?.FullName?.GetValue() ?? "",
-                                ItemLineMemo = item.Desc?.GetValue() ?? "",
+                                ItemLineItemRefFullName = exp.AccountRef?.FullName?.GetValue() ?? "",
+                                ItemLineAmount = exp.Amount?.GetValue() ?? 0,
+                                ItemLineClassRefFullName = exp.ClassRef?.FullName?.GetValue() ?? "",
+                                ItemLineCustomerJob = exp.CustomerRef?.FullName?.GetValue() ?? "",
+                                ItemLineMemo = exp.Memo?.GetValue() ?? "",
                             });
                         }
-                        else
+                    }
+
+                    // Process Item Lines for THIS bill
+                    if (bill.ORItemLineRetList != null)
+                    {
+                        for (int i = 0; i < bill.ORItemLineRetList.Count; i++)
                         {
-                            Console.WriteLine($"[DEBUG] Item [{i}] is not a standard ItemLineRet (possibly Group/Inventory Group).");
+                            var orItem = bill.ORItemLineRetList.GetAt(i);
+                            if (orItem.ItemLineRet != null)
+                            {
+                                var item = orItem.ItemLineRet;
+                                bt.ItemDetails.Add(new ItemDetail
+                                {
+                                    ItemLineItemRefFullName = item.ItemRef?.FullName?.GetValue() ?? "",
+                                    ItemLineAmount = item.Amount?.GetValue() ?? 0,
+                                    ItemLineClassRefFullName = item.ClassRef?.FullName?.GetValue() ?? "",
+                                    ItemLineCustomerJob = item.CustomerRef?.FullName?.GetValue() ?? "",
+                                    ItemLineMemo = item.Desc?.GetValue() ?? "",
+                                });
+                            }
                         }
                     }
-                }
-                else
-                {
-                    Console.WriteLine("[DEBUG] No Item Lines found.");
+
+                    // Add THIS bill to the main list
+                    bills.Add(bt);
                 }
 
-                // ADD TO LIST
-                bills.Add(bt);
-                Console.WriteLine("[DEBUG] BillTable added to list successfully.");
+                Console.WriteLine($"[DEBUG] Successfully added {bills.Count} bills to the return list.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("--------------------------------------------------");
-                Console.WriteLine($"[DEBUG] EXCEPTION CAUGHT: {ex.Message}");
-                Console.WriteLine($"[DEBUG] Stack Trace: {ex.StackTrace}");
-                Console.WriteLine("--------------------------------------------------");
+                Console.WriteLine($"[DEBUG] EXCEPTION: {ex.Message}");
                 MessageBox.Show("Error retrieving Bill data: " + ex.Message);
             }
             finally
@@ -945,12 +917,8 @@ namespace VoucherPro
                 {
                     sessionManager.EndSession();
                     sessionManager.CloseConnection();
-                    Console.WriteLine("[DEBUG] Session Closed.");
                 }
-                catch (Exception closeEx)
-                {
-                    Console.WriteLine($"[DEBUG] Error closing session: {closeEx.Message}");
-                }
+                catch { }
             }
 
             return bills;

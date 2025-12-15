@@ -1738,7 +1738,7 @@ namespace VoucherPro
 
                         if (textObject_BILLSubRemarks != null) textObject_BILLSubRemarks.Text = bills[0].BillMemo ?? "";
                         if (textObject_BILLCVSubCheckDate != null) textObject_BILLCVSubCheckDate.Text = bills[0].DueDate.ToString("MMMM dd, yyyy");
-                        if (textObject_BILLCVSubTotal != null) textObject_BILLCVSubTotal.Text = bills[0].AmountDue.ToString("N2");
+                        if (textObject_BILLCVSubTotal != null) textObject_BILLCVSubTotal.Text = bills[0].Amount.ToString("N2");
                         if (textObject_BILLCVSubCheckNumber != null) textObject_BILLCVSubCheckNumber.Text = bills[0].RefNumber ?? "";
                         if (textObject_BILLCVSubCheckNumber != null) textObject_BILLSubAccountPayable.Text = bills[0].BankAccount ?? "";
                         if (textObject_BILLCVSubCheckNumber != null) textObject_BILLSubAmountPayable.Text = bills[0].AmountDue.ToString("N2") ?? "";
