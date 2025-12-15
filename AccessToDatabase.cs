@@ -1329,5 +1329,88 @@ namespace VoucherPro
                 return words;
             }
         }
+
+
+        // Helper to map Company Name -> Column Name (e.g. "North Luzon" -> "NL_CV")
+        private string GetIVPColumnName(string formType, string companyName)
+        {
+            string prefix = "";
+            switch (companyName)
+            {
+                case "North Luzon": prefix = "NL"; break;
+                case "South Luzon": prefix = "SL"; break;
+                case "Visayas": prefix = "VIS"; break;
+                case "Mindanao": prefix = "MIN"; break;
+                case "Metro Manila": prefix = "MM"; break;
+
+                // Exact names for the specific companies
+                case "Iberica Verheilen Pharmaceuticals Group.": return $"IVP_{formType}";
+                case "Verheilen Iberica HealthCare Company Inc.": return $"VIHC_{formType}";
+                case "My Health Shield NutriPharm Inc.": return $"MHS_{formType}";
+
+                case "Central Luzon": prefix = "CL"; break;
+                default: return "";
+            }
+            return $"{prefix}_{formType}";
+        }
+
+        public int GetSeriesNumberFromDatabase(string formType, string companyName)
+        {
+            int seriesNumber = 1;
+            string targetColumn = GetIVPColumnName(formType, companyName);
+
+            if (string.IsNullOrEmpty(targetColumn)) return 1;
+
+            // TARGETING TABLE: CVIVPIncrement
+            string query = $"SELECT [{targetColumn}] FROM CVIVPIncrement WHERE ID = 1";
+
+            using (OleDbConnection connection = new OleDbConnection(GetAccessConnectionString()))
+            {
+                try
+                {
+                    connection.Open();
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        object result = command.ExecuteScalar();
+                        if (result != null && result != DBNull.Value)
+                        {
+                            seriesNumber = Convert.ToInt32(result);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error retrieving series: {ex.Message}");
+                }
+            }
+            return seriesNumber;
+        }
+
+        public void UpdateManualSeriesNumber(string formType, int seriesNumber, string companyName)
+        {
+            string targetColumn = GetIVPColumnName(formType, companyName);
+
+            if (string.IsNullOrEmpty(targetColumn)) return;
+
+            // TARGETING TABLE: CVIVPIncrement
+            string query = $"UPDATE CVIVPIncrement SET [{targetColumn}] = @SeriesNumber WHERE ID = 1";
+
+            using (OleDbConnection connection = new OleDbConnection(GetAccessConnectionString()))
+            {
+                try
+                {
+                    connection.Open();
+                    using (OleDbCommand command = new OleDbCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@SeriesNumber", seriesNumber);
+                        command.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error updating series: {ex.Message}");
+                }
+            }
+        }
     }
 }

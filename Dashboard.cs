@@ -184,6 +184,25 @@ namespace VoucherPro
                 comboBox_Company.SelectedIndex = 0;
             }
 
+            comboBox_Company.SelectedIndexChanged += (sender, e) =>
+            {
+                // Only update if we are on CV (Index 1) or JV (Index 3)
+                string formType = "";
+                if (comboBox_Forms.SelectedIndex == 1) formType = "CV";
+                else if (comboBox_Forms.SelectedIndex == 3) formType = "JV";
+
+                if (formType != "")
+                {
+                    string selectedCompany = comboBox_Company.SelectedItem.ToString();
+
+                    // Fetch the correct number for this specific company
+                    seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(formType, selectedCompany);
+
+                    // Update the textbox text
+                    UpdateSeriesNumberIVP(formType);
+                }
+            };
+
             label_CurrencyText = new Label
             {
                 Parent = panel_Company,
@@ -204,6 +223,8 @@ namespace VoucherPro
 
             comboBox_Currency.Items.AddRange(new string[] { "Peso (₱)", "Dollar ($)" });
             comboBox_Currency.SelectedIndex = 0;
+
+
 
             return panel_Company;
         }
@@ -280,16 +301,14 @@ namespace VoucherPro
                 BackColor = Color.LightGray,
                 Dock = DockStyle.Fill,
                 Padding = new Padding(sideBarWidth, 50, 0, 0),
-                //Height = 300,
             };
 
             reportViewer = new CrystalReportViewer
             {
                 Parent = panel_Main_CR,
                 Dock = DockStyle.Fill,
-                //ReportSource = report2,
                 ShowCopyButton = false,
-                //ShowPrintButton = false,
+                ShowPrintButton = true,
                 ShowExportButton = false,
                 ShowRefreshButton = false,
                 ShowGroupTreeButton = false,
@@ -297,6 +316,57 @@ namespace VoucherPro
                 ShowParameterPanelButton = false,
                 ToolPanelView = ToolPanelViewType.None
             };
+
+            foreach (Control control in reportViewer.Controls)
+            {
+                if (control is System.Windows.Forms.ToolStrip toolStrip)
+                {
+                    foreach (ToolStripItem item in toolStrip.Items)
+                    {
+                        // FIX: Check if ToolTipText is not null before checking Contains
+                        if (string.IsNullOrEmpty(item.ToolTipText) || !item.ToolTipText.Contains("Print"))
+                        {
+                            continue;
+                        }
+
+                        // If we get here, we found the Print button
+                        item.Click += (s, e) =>
+                        {
+                            // Check if we are in IVP mode
+                            if (GlobalVariables.client == "IVP")
+                            {
+                                try
+                                {
+                                    string formType = "";
+                                    if (comboBox_Forms.SelectedIndex == 1) formType = "CV";
+                                    else if (comboBox_Forms.SelectedIndex == 3) formType = "JV";
+
+                                    string selectedCompany = comboBox_Company.SelectedItem?.ToString();
+
+                                    if (formType != "" && !string.IsNullOrEmpty(selectedCompany))
+                                    {
+                                        // 1. Increment in memory
+                                        seriesNumber++;
+
+                                        // 2. Update Database
+                                        accessToDatabase.UpdateManualSeriesNumber(formType, seriesNumber, selectedCompany);
+
+                                        // 3. Update Sidebar UI safely
+                                        this.BeginInvoke((MethodInvoker)delegate
+                                        {
+                                            UpdateSeriesNumberIVP(formType);
+                                        });
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show($"Error updating series number: {ex.Message}");
+                                }
+                            }
+                        };
+                    }
+                }
+            }
 
             return panel_Main_CR;
         }
@@ -513,13 +583,9 @@ namespace VoucherPro
                 }
                 else if (GlobalVariables.client == "IVP")
                 {
-                    if (seriesNumber != 0)
-                    {
-                        seriesNumber--;
-                        // FIX: Journal Voucher is Index 3, not 2
-                        string prefix = comboBox_Forms.SelectedIndex == 3 ? "JV" : "CV";
-                        UpdateSeriesNumber(prefix);
-                    }
+                    seriesNumber--;
+                    string prefix = comboBox_Forms.SelectedIndex == 3 ? "JV" : "CV";
+                    UpdateSeriesNumberIVP(prefix); // Use the new 5-digit formatter
                 }
 
 
@@ -557,9 +623,8 @@ namespace VoucherPro
                 else if (GlobalVariables.client == "IVP")
                 {
                     seriesNumber++;
-                    // FIX: Journal Voucher is Index 3, not 2
                     string prefix = comboBox_Forms.SelectedIndex == 3 ? "JV" : "CV";
-                    UpdateSeriesNumber(prefix);
+                    UpdateSeriesNumberIVP(prefix); // Use the new 5-digit formatter
                 }
 
 
@@ -3207,16 +3272,13 @@ namespace VoucherPro
                     if (printDialog.ShowDialog() == DialogResult.OK)
                     {
                         GlobalVariables.includeImage = false;
-
-                        /*if (comboBox_Forms.SelectedIndex == 1)
-                        {
-                            GlobalVariables.isPrinting = true;
-                        }*/
                         printDialog.Document.Print();
+
+                        // Hide preview after printing
                         printPreviewControl.Visible = false;
                         printPreviewControl.Zoom = 1;
                         panel_Printing.Visible = false;
-                        
+
 
                         if (GlobalVariables.client == "LEADS")
                         {
@@ -3245,11 +3307,29 @@ namespace VoucherPro
 
                         else if (GlobalVariables.client == "IVP")
                         {
-                            string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
-                            accessToDatabase.IncrementSeriesNumberInDatabase(columnName); // Increment for next print
+                            // 1. Determine Form Type
+                            string formType = "";
+                            if (comboBox_Forms.SelectedIndex == 1) formType = "CV";
+                            else if (comboBox_Forms.SelectedIndex == 3) formType = "JV";
 
-                            seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
-                            UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
+                            if (formType != "")
+                            {
+                                // 2. Get Selected Company
+                                string selectedCompany = comboBox_Company.SelectedItem?.ToString();
+
+                                if (!string.IsNullOrEmpty(selectedCompany))
+                                {
+                                    // 3. Increment the number in memory
+                                    seriesNumber++;
+
+                                    // 4. Save the new number to the Database using the specific company column
+                                    // Note: accessToDatabase.UpdateManualSeriesNumber handles the column mapping logic you wrote earlier
+                                    accessToDatabase.UpdateManualSeriesNumber(formType, seriesNumber, selectedCompany);
+
+                                    // 5. Update the UI with the new format (e.g., CV00002)
+                                    UpdateSeriesNumberIVP(formType);
+                                }
+                            }
                         }
 
                     }
@@ -3437,18 +3517,19 @@ namespace VoucherPro
 
             else if (GlobalVariables.client == "IVP")
             {
-                string prefix = "";
-
+                // Logic for visibility of company panel
                 if (comboBox_Forms.SelectedIndex == 1 || comboBox_Forms.SelectedIndex == 3) // CV or JV
                 {
                     panel_Company.Visible = true;
                 }
                 else
                 {
-                    panel_Company.Visible = false; // Hide for "Check" (Index 2) or empty
+                    panel_Company.Visible = false;
                 }
 
                 if (panel_PayeeOverride != null) panel_PayeeOverride.Visible = false;
+
+                string prefix = "";
 
                 switch (comboBox_Forms.SelectedIndex)
                 {
@@ -3459,7 +3540,7 @@ namespace VoucherPro
                         panel_RefNumberCrystalReport.Visible = true;
                         panel_Signatory.Visible = true;
                         label_SeriesNumberText.Text = "Current Series Number: CV";
-                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");
+
                         if (label_CurrencyText != null) label_CurrencyText.Visible = true;
                         if (comboBox_Currency != null) comboBox_Currency.Visible = true;
                         panel_Company.Height = 120;
@@ -3468,23 +3549,19 @@ namespace VoucherPro
                         panel_Main_CR.Visible = true;
                         break;
 
-                    case 2: // Check (New Addition)
-                            // No prefix update needed usually for checks as they are pre-numbered, 
-                            // or you can set prefix = "CHK" if needed.
-
+                    case 2: // Check
                         panel_SeriesNumber.Visible = false;
-                        panel_RefNumber.Visible = true; // Enabled so user can type Ref/Check Number
+                        panel_RefNumber.Visible = true;
                         panel_RefNumberCrystalReport.Visible = false;
                         panel_Signatory.Visible = false;
                         if (panel_PayeeOverride != null) panel_PayeeOverride.Visible = true;
 
-                        panel_Main.Visible = true;      // Back to Main Panel
-                        panel_Main_CR.Visible = false;  // Hide Crystal Reports
+                        panel_Main.Visible = true;
+                        panel_Main_CR.Visible = false;
                         break;
 
-                    case 3: // Journal Voucher (Moved to Case 3)
+                    case 3: // Journal Voucher
                         prefix = "JV";
-
                         panel_RefNumber.Visible = false;
                         panel_RefNumberCrystalReport.Visible = true;
                         panel_Signatory.Visible = true;
@@ -3494,7 +3571,6 @@ namespace VoucherPro
                         panel_Main_CR.Visible = true;
 
                         label_SeriesNumberText.Text = "Current Series Number: JV";
-                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("JVSeries");
 
                         if (label_CurrencyText != null) label_CurrencyText.Visible = false;
                         if (comboBox_Currency != null) comboBox_Currency.Visible = false;
@@ -3506,16 +3582,21 @@ namespace VoucherPro
                         panel_RefNumberCrystalReport.Visible = false;
                         panel_Signatory.Visible = false;
                         panel_SeriesNumber.Visible = false;
-
                         panel_Main.Visible = false;
                         panel_Main_CR.Visible = false;
                         panel_Company.Visible = false;
                         return;
                 }
 
-                if (comboBox_Forms.SelectedIndex == 1 || comboBox_Forms.SelectedIndex == 3)
+                // --- KEY CHANGE HERE ---
+                if (prefix != "")
                 {
-                    UpdateSeriesNumber(prefix);
+                    string selectedCompany = comboBox_Company.SelectedItem?.ToString();
+                    if (!string.IsNullOrEmpty(selectedCompany))
+                    {
+                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(prefix, selectedCompany);
+                        UpdateSeriesNumberIVP(prefix); // Call the new 5-digit method
+                    }
                 }
             }
 
@@ -3656,33 +3737,21 @@ namespace VoucherPro
             {
                 if (!string.IsNullOrEmpty(textBox_SeriesNumber.Text))
                 {
-                    // Determine prefix
-                    string prefix = "";
+                    string formPrefix = "";
+                    if (comboBox_Forms.SelectedIndex == 1) formPrefix = "CV";
+                    else if (comboBox_Forms.SelectedIndex == 3) formPrefix = "JV";
 
-                    if (comboBox_Forms.SelectedIndex == 1)
+                    if (!string.IsNullOrEmpty(formPrefix))
                     {
-                        prefix = "CV";
-                    }
-                    else if (comboBox_Forms.SelectedIndex == 3) // UPDATED: JV is now Index 3
-                    {
-                        prefix = "JV";
-                    }
+                        // Clean the input: Just remove "CV" or "JV"
+                        // The user sees "CV00001", stripping "CV" leaves "00001"
+                        string cleanInput = textBox_SeriesNumber.Text
+                            .Replace(formPrefix, "")
+                            .Trim();
 
-                    // CRITICAL FIX: Only run Replace if we actually have a prefix.
-                    // If prefix is empty (like if Index is 2 or unknown), skipping this prevents the crash.
-                    if (!string.IsNullOrEmpty(prefix))
-                    {
-                        string input = textBox_SeriesNumber.Text.Replace(prefix, "").Trim();
-
-                        if (int.TryParse(input, out int adjustedSeries))
+                        if (int.TryParse(cleanInput, out int adjustedSeries))
                         {
                             seriesNumber = adjustedSeries;
-                        }
-                        else
-                        {
-                            MessageBox.Show("Invalid series number format. Please enter a numeric value.");
-                            // Ensure we format it back with the correct prefix
-                            textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}";
                         }
                     }
                 }
@@ -3708,14 +3777,14 @@ namespace VoucherPro
             }
             else if (GlobalVariables.client == "IVP")
             {
-                string columnName = "";
+                string formType = "";
+                if (comboBox_Forms.SelectedIndex == 1) formType = "CV";
+                else if (comboBox_Forms.SelectedIndex == 3) formType = "JV";
 
-                if (comboBox_Forms.SelectedIndex == 1) columnName = "CVSeries";
-                else if (comboBox_Forms.SelectedIndex == 3) columnName = "JVSeries"; // FIX: Changed 2 to 3
-
-                if (!string.IsNullOrEmpty(columnName))
+                if (!string.IsNullOrEmpty(formType) && comboBox_Company.SelectedItem != null)
                 {
-                    accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber);
+                    // Pass the Company Name so Database knows which column (e.g. NL_CV) to update
+                    accessToDatabase.UpdateManualSeriesNumber(formType, seriesNumber, comboBox_Company.SelectedItem.ToString());
                 }
             }
         }
@@ -3729,6 +3798,45 @@ namespace VoucherPro
             seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
             string prefix = comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV";
             textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}";
+        }
+
+        // 1. HELPER: Maps the full company name to the short code (e.g., "North Luzon" -> "NL")
+        private string GetCompanyCode(string fullCompanyName)
+        {
+            if (string.IsNullOrEmpty(fullCompanyName)) return "";
+
+            switch (fullCompanyName)
+            {
+                case "North Luzon": return "NL";
+                case "South Luzon": return "SL";
+                case "Visayas": return "VIS";
+                case "Mindanao": return "MIN";
+                case "Metro Manila": return "MM";
+                case "Iberica Verheilen Pharmaceuticals Group.": return "IVP";
+                case "Verheilen Iberica HealthCare Company Inc.": return "VIHC";
+                case "My Health Shield NutriPharm Inc.": return "MHS";
+                case "Central Luzon": return "CL";
+                default: return "";
+            }
+        }
+
+        // 2. HELPER: Specific update logic for IVP (Format: CODE-CV00001)
+        private void UpdateSeriesNumberIVP(string formPrefix)
+        {
+            // Get the company code
+            string selectedCompany = comboBox_Company.SelectedItem?.ToString();
+            string companyCode = GetCompanyCode(selectedCompany);
+
+            // Format with 5 digits (00000)
+            if (!string.IsNullOrEmpty(companyCode))
+            {
+                textBox_SeriesNumber.Text = $"{formPrefix}{seriesNumber:00000}";
+            }
+            else
+            {
+                // Fallback if no company is selected
+                textBox_SeriesNumber.Text = $"{formPrefix}{seriesNumber:00000}";
+            }
         }
     }
 }
