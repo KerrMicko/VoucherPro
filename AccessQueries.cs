@@ -581,41 +581,38 @@ namespace VoucherPro
         public List<BillTable> GetBillData_CPI(string refNumber)
         {
             List<BillTable> bills = new List<BillTable>();
-
             string accessConnectionString = GetAccessConnectionString();
 
             try
             {
                 int nextID = GetNextIncrementalID_APV(accessConnectionString);
-                string entityRefListID = string.Empty;
                 using (OleDbConnection accessConnection = new OleDbConnection(accessConnectionString))
                 {
                     accessConnection.Open();
 
-                    // Retrieve data from Access database
                     string query = @"select TOP 1000 
-                        BillPaymentCheckLine.TxnDate AS BillPayment_TxnDate,
-                        BillPaymentCheckLine.PayeeEntityRefFullname,
-                        BillPaymentCheckLine.AddressAddr1,
-                        BillPaymentCheckLine.AddressAddr2,
-                        BillPaymentCheckLine.BankAccountRefFullName,
-                        BillPaymentCheckLine.Amount,
-                        BillPaymentCheckLine.Refnumber,
-                        BillPaymentCheckLine.AppliedToTxnRefNumber,
-                        BillPaymentCheckLine.AppliedToTxnTxnID,
-                        BillPaymentCheckLine.APAccountRefFullName,
-                        BillPaymentCheckLine.APAccountRefListID,
-                        BillPaymentCheckLine.Memo,
-                        Bill.Memo,
-                        Bill.AmountDue,
-                        Bill.DueDate,
-                        Bill.VendorReflistID,
-                        Bill.TxnDate AS Bill_TxnDate
-                        FROM 
-                        BillPaymentCheckLine
-                        INNER JOIN 
-                        Bill ON BillPaymentCheckLine.AppliedToTxnTxnID = Bill.TxnID
-                        Where BillPaymentCheckLine.Refnumber = ?";
+                BillPaymentCheckLine.TxnDate AS BillPayment_TxnDate,
+                BillPaymentCheckLine.PayeeEntityRefFullname,
+                BillPaymentCheckLine.AddressAddr1,
+                BillPaymentCheckLine.AddressAddr2,
+                BillPaymentCheckLine.BankAccountRefFullName,
+                BillPaymentCheckLine.Amount,
+                BillPaymentCheckLine.Refnumber,
+                BillPaymentCheckLine.AppliedToTxnRefNumber,
+                BillPaymentCheckLine.AppliedToTxnTxnID,
+                BillPaymentCheckLine.APAccountRefFullName,
+                BillPaymentCheckLine.APAccountRefListID,
+                BillPaymentCheckLine.Memo,
+                Bill.Memo,
+                Bill.AmountDue,
+                Bill.DueDate,
+                Bill.VendorReflistID,
+                Bill.TxnDate AS Bill_TxnDate
+                FROM 
+                BillPaymentCheckLine
+                INNER JOIN 
+                Bill ON BillPaymentCheckLine.AppliedToTxnTxnID = Bill.TxnID
+                Where BillPaymentCheckLine.Refnumber = ?";
 
                     using (OleDbCommand command = new OleDbCommand(query, accessConnection))
                     {
@@ -626,96 +623,105 @@ namespace VoucherPro
                             {
                                 BillTable newBill = new BillTable
                                 {
-                                    // BillPaymentCheckLine table
                                     DateCreated = reader["BillPayment_TxnDate"] != DBNull.Value ? Convert.ToDateTime(reader["BillPayment_TxnDate"]).Date : DateTime.MinValue,
                                     DueDate = reader["Bill_TxnDate"] != DBNull.Value ? Convert.ToDateTime(reader["Bill_TxnDate"]).Date : DateTime.MinValue,
-                                    PayeeFullName = reader["PayeeEntityRefFullName"] != DBNull.Value ? reader["PayeeEntityRefFullName"].ToString() : string.Empty,
-                                    Address = reader["AddressAddr1"] != DBNull.Value ? reader["AddressAddr1"].ToString() : string.Empty,
-                                    Address2 = reader["AddressAddr2"] != DBNull.Value ? reader["AddressAddr2"].ToString() : string.Empty,
-                                    BankAccount = reader["BankAccountRefFullName"] != DBNull.Value ? reader["BankAccountRefFullName"].ToString() : string.Empty,
-                                    APAccountRefFullName = reader["APAccountRefFullName"] != DBNull.Value ? reader["APAccountRefFullName"].ToString() : string.Empty,
+                                    PayeeFullName = reader["PayeeEntityRefFullName"]?.ToString() ?? string.Empty,
+                                    Address = reader["AddressAddr1"]?.ToString() ?? string.Empty,
+                                    Address2 = reader["AddressAddr2"]?.ToString() ?? string.Empty,
+                                    BankAccount = reader["BankAccountRefFullName"]?.ToString() ?? string.Empty,
+                                    APAccountRefFullName = reader["APAccountRefFullName"]?.ToString() ?? string.Empty,
                                     Amount = reader["Amount"] != DBNull.Value ? Convert.ToDouble(reader["Amount"]) : 0.0,
-                                    RefNumber = reader["RefNumber"] != DBNull.Value ? reader["RefNumber"].ToString() : string.Empty,
-                                    AppliedRefNumber = reader["AppliedToTxnRefNumber"] != DBNull.Value ? reader["AppliedToTxnRefNumber"].ToString() : string.Empty,
-                                    AppliedToTxnTxnID = reader["AppliedToTxnTxnID"] != DBNull.Value ? reader["AppliedToTxnTxnID"].ToString() : string.Empty,
-                                    Memo = reader["BillPaymentCheckLine.Memo"] != DBNull.Value ? reader["BillPaymentCheckLine.Memo"].ToString() : string.Empty,
-                                    BillMemo = reader["Bill.Memo"] != DBNull.Value ? reader["Bill.Memo"].ToString() : string.Empty,
+                                    RefNumber = reader["RefNumber"]?.ToString() ?? string.Empty,
+                                    AppliedRefNumber = reader["AppliedToTxnRefNumber"]?.ToString() ?? string.Empty,
+                                    AppliedToTxnTxnID = reader["AppliedToTxnTxnID"]?.ToString() ?? string.Empty,
+                                    Memo = reader["BillPaymentCheckLine.Memo"]?.ToString() ?? string.Empty,
+                                    BillMemo = reader["Bill.Memo"]?.ToString() ?? string.Empty,
                                     AmountDue = reader["AmountDue"] != DBNull.Value ? Convert.ToDouble(reader["AmountDue"]) : 0.0,
-
-                                    // Increment
                                     IncrementalID = nextID.ToString("D6")
                                 };
+
+                                // Fetch Account Number
                                 string accountNumberQuery = "SELECT AccountNumber FROM Account WHERE ListID = ?";
                                 using (OleDbCommand accountNumberCmd = new OleDbCommand(accountNumberQuery, accessConnection))
                                 {
                                     accountNumberCmd.Parameters.AddWithValue("ListID", OleDbType.VarChar).Value = reader["APAccountRefListID"];
                                     object accountNumberResult = accountNumberCmd.ExecuteScalar();
                                     if (accountNumberResult != null && accountNumberResult != DBNull.Value)
-                                    {
                                         newBill.AccountNumber = accountNumberResult.ToString();
-                                    }
                                 }
 
+                                // --- UPDATED QUERY: Includes Class Columns ---
                                 string secondQuery = @"SELECT TOP 1000
-                                        BillItemLine.ItemLineItemRefFullName AS AccountRefFullName, 
-                                        BillItemLine.ItemLineAmount AS Amount,
-                                        BillItemLine.ItemLineDesc AS ItemExpenseMemo
-                                    FROM 
-                                        BillItemLine 
-                                    WHERE 
-                                        BillItemLine.TxnID = ?
+                                BillItemLine.ItemLineItemRefFullName AS AccountRefFullName, 
+                                BillItemLine.ItemLineAmount AS Amount,
+                                BillItemLine.ItemLineDesc AS ItemExpenseMemo,
+                                BillItemLine.ItemLineClassRefFullName AS LineClass
+                            FROM 
+                                BillItemLine 
+                            WHERE 
+                                BillItemLine.TxnID = ?
 
-                                    UNION ALL
+                            UNION ALL
 
-                                    SELECT
-                                        BillExpenseLine.ExpenseLineAccountRefFullName AS AccountRefFullName, 
-                                        BillExpenseLine.ExpenseLineAmount AS Amount,
-                                        BillExpenseLine.ExpenseLineMemo AS ItemExpenseMemo
-                                    FROM 
-                                        [BillExpenseLine]
-                                    WHERE 
-                                        BillExpenseLine.TxnID = ?";
+                            SELECT
+                                BillExpenseLine.ExpenseLineAccountRefFullName AS AccountRefFullName, 
+                                BillExpenseLine.ExpenseLineAmount AS Amount,
+                                BillExpenseLine.ExpenseLineMemo AS ItemExpenseMemo,
+                                BillExpenseLine.ExpenseLineClassRefFullName AS LineClass
+                            FROM 
+                                [BillExpenseLine]
+                            WHERE 
+                                BillExpenseLine.TxnID = ?";
 
                                 using (OleDbConnection secondConnection = new OleDbConnection(accessConnectionString))
                                 {
                                     secondConnection.Open();
-
                                     using (OleDbCommand secondCommand = new OleDbCommand(secondQuery, secondConnection))
                                     {
-                                        secondCommand.Parameters.AddWithValue("BillItemLine.TxnID", OleDbType.VarChar).Value = reader["AppliedToTxnTxnID"];
-                                        secondCommand.Parameters.AddWithValue("BillExpenseLine.TxnID", OleDbType.VarChar).Value = reader["AppliedToTxnTxnID"];
+                                        secondCommand.Parameters.AddWithValue("p1", OleDbType.VarChar).Value = reader["AppliedToTxnTxnID"];
+                                        secondCommand.Parameters.AddWithValue("p2", OleDbType.VarChar).Value = reader["AppliedToTxnTxnID"];
 
                                         using (OleDbDataReader secondReader = secondCommand.ExecuteReader())
                                         {
                                             while (secondReader.Read())
                                             {
-                                                string itemLineItemRefFullName = secondReader["AccountRefFullName"] != DBNull.Value ? secondReader["AccountRefFullName"].ToString() : string.Empty;
-                                                double itemLineAmount = secondReader["Amount"] != DBNull.Value ? Convert.ToDouble(secondReader["Amount"]) : 0.0;
-                                                string itemLineItemMemo = secondReader["ItemExpenseMemo"] != DBNull.Value ? secondReader["ItemExpenseMemo"].ToString() : string.Empty;
+                                                string partName = secondReader["AccountRefFullName"]?.ToString() ?? string.Empty;
+                                                double amount = secondReader["Amount"] != DBNull.Value ? Convert.ToDouble(secondReader["Amount"]) : 0.0;
+                                                string memo = secondReader["ItemExpenseMemo"]?.ToString() ?? string.Empty;
+
+                                                // MAPPING THE CLASS
+                                                string classValue = secondReader["LineClass"]?.ToString() ?? string.Empty;
+
+                                                // DEBUG LOG: Verify the fetch
+                                                Console.WriteLine($"FETCH DEBUG: Part='{partName}' | Class='{classValue}'");
 
                                                 newBill.ItemDetails.Add(new ItemDetail
                                                 {
-                                                    ItemLineItemRefFullName = itemLineItemRefFullName,
-                                                    ItemLineAmount = itemLineAmount,
-                                                    ItemLineMemo = itemLineItemMemo,
+                                                    ItemLineItemRefFullName = partName,
+                                                    ItemLineAmount = amount,
+                                                    ItemLineMemo = memo,
+                                                    // Assigning to both to ensure the final Insert logic picks it up
+                                                    ItemLineClassRefFullName = classValue,
+                                                    ExpenseLineClassRefFullName = classValue,
+                                                    ExpenseLineItemRefFullName = partName, // Map this for Expense check
+                                                    ExpenseLineAmount = amount,
+                                                    ExpenseLineMemo = memo
                                                 });
                                             }
                                         }
                                     }
-
                                     secondConnection.Close();
                                 }
                                 bills.Add(newBill);
                             }
                         }
                     }
-
                     accessConnection.Close();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error retrieving data from bill Access database: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error: {ex.Message}");
             }
             return bills;
         }

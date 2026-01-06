@@ -1552,7 +1552,156 @@ namespace VoucherPro
                             }
                             else
                             {
-                                SearchBillsByReference(refNumberCR);
+                                //SearchBillsByReference(refNumberCR);
+
+                                try
+                                {
+                                    CRCV_CPIBILL cRCVCPIBILL = new CRCV_CPIBILL();
+                                    string databasePath2 = Path.Combine(Application.StartupPath, "CheckDatabase.accdb");
+                                    SetDatabaseLocation(cRCVCPIBILL, databasePath2);
+
+                                    AccessQueries accessQueries2 = new AccessQueries();
+                                    string refNumberCR2 = textBox_ReferenceNumber_CR.Text;
+
+                                    bills = new List<BillTable>();
+                                    bills = accessQueries.GetBillData_CPI(refNumberCR);
+
+                                    if (bills.Count > 0)
+                                    {
+                                        TextObject textObject_CVCheckNumber = cRCVCPIBILL.ReportDefinition.ReportObjects["TextCVSeriesnumber"] as TextObject;
+                                        TextObject textObject_CVRefNumber = cRCVCPIBILL.ReportDefinition.ReportObjects["TextRefNumber"] as TextObject;
+                                        TextObject textObject_CVAmountInWords = cRCVCPIBILL.ReportDefinition.ReportObjects["TextAmountInWords"] as TextObject;
+                                        TextObject textObject_CVBank = cRCVCPIBILL.ReportDefinition.ReportObjects["TextBankAccount"] as TextObject;
+                                        TextObject textObject_CVCheckDate = cRCVCPIBILL.ReportDefinition.ReportObjects["TextCheckDate"] as TextObject;
+                                        TextObject textObject_CVPayee = cRCVCPIBILL.ReportDefinition.ReportObjects["TextPayeeAccount"] as TextObject;
+                                        TextObject textObject_CVTotalAmount = cRCVCPIBILL.ReportDefinition.ReportObjects["TextTotalAmount"] as TextObject;
+                                        TextObject textObject_CVTotalDebitAmount = cRCVCPIBILL.ReportDefinition.ReportObjects["TextDebitTotalAmount"] as TextObject;
+                                        TextObject textObject_CVTotalCreditAmount = cRCVCPIBILL.ReportDefinition.ReportObjects["TextCreditTotalAmount"] as TextObject;
+                                        //TextObject textObject_Paid = cRCVCPIBILL.ReportDefinition.ReportObjects["TextPaid"] as TextObject;
+
+
+                                        TextObject textObject_PreparedBy = cRCVCPIBILL.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
+                                        TextObject textObject_PreparedByPos = cRCVCPIBILL.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
+                                        TextObject textObject_CheckedBy = cRCVCPIBILL.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
+                                        TextObject textObject_CheckedByPos = cRCVCPIBILL.ReportDefinition.ReportObjects["TextCheckedByPosition"] as TextObject;
+                                        TextObject textObject_ApprovedBy = cRCVCPIBILL.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
+                                        TextObject textObject_ApprovedByPos = cRCVCPIBILL.ReportDefinition.ReportObjects["TextApprovedByPosition"] as TextObject;
+                                        TextObject textObject_ReceivedBy = cRCVCPIBILL.ReportDefinition.ReportObjects["TextReceivedBy"] as TextObject;
+                                        TextObject textObject_ReceivedByPos = cRCVCPIBILL.ReportDefinition.ReportObjects["TextReceivedByPosition"] as TextObject;
+
+                                        AccessToDatabase accessToDatabase = new AccessToDatabase();
+
+                                        var (PreparedByName, PreparedByPosition,
+                                           ReviewedByName, ReviewedByPosition,
+                                           RecommendingApprovalName, RecommendingApprovalPosition,
+                                           ApprovedByName, ApprovedByPosition,
+                                           ReceivedByName, ReceivedByPosition) = accessToDatabase.RetrieveAllSignatoryData();
+
+                                        double amount = bills[0].AmountDue;
+                                        string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
+
+                                        //textObject_Paid.Text = "";
+
+                                        textObject_CVCheckNumber.Text = textBox_SeriesNumber.Text;
+                                        textObject_CVAmountInWords.Text = amountInWords;
+                                        textObject_CVBank.Text = bills[0].BankAccount;
+                                        textObject_CVCheckDate.Text = bills[0].DateCreated.ToString("dd-MMM-yyyy");
+                                        textObject_CVPayee.Text = bills[0].PayeeFullName.ToString();
+                                        textObject_CVTotalAmount.Text = bills[0].AmountDue.ToString("N2");
+
+
+                                        string refNumber = textBox_ReferenceNumber_CR.Text;
+                                        textObject_CVRefNumber.Text = refNumber;
+
+                                        textObject_PreparedBy.Text = PreparedByName;
+                                        textObject_PreparedByPos.Text = PreparedByPosition;
+                                        textObject_CheckedBy.Text = ReviewedByName;
+                                        textObject_CheckedByPos.Text = ReviewedByPosition;
+                                        textObject_ApprovedBy.Text = ApprovedByName;
+                                        textObject_ApprovedByPos.Text = ApprovedByPosition;
+                                        textObject_ReceivedBy.Text = ReceivedByName;
+                                        textObject_ReceivedByPos.Text = ReceivedByPosition;
+
+                                        double debitTotalAmount = 0;
+                                        double creditTotalAmount = 0;
+
+                                        foreach (var bill in bills) // 'bills' is List<BillTable>
+                                        {
+                                            foreach (var item in bill.ItemDetails)
+                                            {
+                                                try
+                                                {
+                                                    // Handle ItemLineAmount
+                                                    if (item.ItemLineAmount != 0)
+                                                    {
+                                                        if (item.ItemLineAmount > 0)
+                                                            debitTotalAmount += item.ItemLineAmount;
+                                                        else
+                                                            creditTotalAmount += Math.Abs(item.ItemLineAmount);
+                                                    }
+
+                                                    // Handle ExpenseLineAmount
+                                                    if (item.ExpenseLineAmount != 0)
+                                                    {
+                                                        if (item.ExpenseLineAmount > 0)
+                                                            debitTotalAmount += item.ExpenseLineAmount;
+                                                        else
+                                                            creditTotalAmount += Math.Abs(item.ExpenseLineAmount);
+                                                    }
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    MessageBox.Show($"Error processing item detail: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                }
+                                            }
+                                        }
+
+                                        textObject_CVTotalDebitAmount.Text = debitTotalAmount.ToString("N2");
+                                        textObject_CVTotalCreditAmount.Text = debitTotalAmount.ToString("N2");
+
+                                        // Locate the subreport object in the main report
+                                        SubreportObject subreportObject = cRCVCPIBILL.ReportDefinition.ReportObjects["SubreportBill1"] as SubreportObject;
+
+                                        if (subreportObject != null)
+                                        {
+                                            // Get the ReportDocument of the subreport
+                                            ReportDocument subReportDocument = cRCVCPIBILL.OpenSubreport(subreportObject.SubreportName);
+
+                                            // Access the desired TextObject in the subreport
+
+                                            TextObject textObject_AccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextPayable"] as TextObject;
+                                            TextObject textObject_TextAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextPayableAmount"] as TextObject;
+                                            TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
+
+                                            textObject_AccountPayable.Text = bills[0].BankAccount.ToString();
+                                            textObject_TextAmountPayable.Text = (debitTotalAmount - creditTotalAmount).ToString("N2");
+                                            textObject_Remarks.Text = bills[0].Memo.ToString();
+                                            // Create a DataTable with 4 columns
+
+                                            DataTable dataTable = new DataTable();
+                                            dataTable.Columns.Add("Particulars", typeof(string)); // First column
+                                            dataTable.Columns.Add("Class", typeof(string)); // Second column
+                                            dataTable.Columns.Add("Debit", typeof(string)); // Third column
+                                            dataTable.Columns.Add("Credit", typeof(string)); // Fourth column
+
+                                            InsertDataToBillCompiled(refNumber, bills);
+                                        }
+
+                                        cRCV_Kayak.SetParameterValue("ReferenceNumber", refNumber);
+
+                                        panel_Printing.Visible = false;
+                                        panel_Signatory.Visible = true;
+                                        panel_Main.Visible = false;
+                                        panel_Main_CR.Visible = true;
+
+                                        reportViewer.ReportSource = cRCVCPIBILL;
+                                        reportViewer.RefreshReport();
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show($"KAYAK ERROR HEHEHE:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                }
                             }
                         }
 
@@ -2338,35 +2487,29 @@ namespace VoucherPro
 
             using (OleDbConnection connection = new OleDbConnection(connectionString))
             {
-                connection.Open();
-
-                // Clear old data
-                string deleteQuery = "DELETE FROM Bill_Compiled";
-                using (OleDbCommand deleteCommand = new OleDbCommand(deleteQuery, connection))
+                try
                 {
-                    try
+                    connection.Open();
+
+                    // 1. CLEAR OLD DATA
+                    string deleteQuery = "DELETE FROM Bill_Compiled";
+                    using (OleDbCommand deleteCommand = new OleDbCommand(deleteQuery, connection))
                     {
                         deleteCommand.ExecuteNonQuery();
-                        Console.WriteLine("Old data has been deleted from Bill_Compiled.");
+                        Console.WriteLine("--- Database: Bill_Compiled cleared. ---");
                     }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Error deleting data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-                }
 
-                // Insert query
-                string insertQuery = @"INSERT INTO Bill_Compiled 
-                       (RefNumber, Particulars, [Class], [Memo], [CustomerJob], Debit, Credit) 
-                       VALUES (@RefNumber, @Particulars, @Class, @Memo, @CustomerJob, @Debit, @Credit)";
+                    // 2. PREPARE INSERT QUERY
+                    // Using [brackets] because 'Class' is a reserved keyword in MS Access
+                    string insertQuery = @"INSERT INTO Bill_Compiled 
+                                   (RefNumber, Particulars, [Class], [Memo], [CustomerJob], Debit, Credit) 
+                                   VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-                foreach (var bill in bills)
-                {
-                    foreach (var detail in bill.ItemDetails)
+                    foreach (var bill in bills)
                     {
-                        try
+                        foreach (var detail in bill.ItemDetails)
                         {
+                            // --- SECTION A: PROCESS ITEM LINES ---
                             if (!string.IsNullOrEmpty(detail.ItemLineItemRefFullName))
                             {
                                 string particulars = detail.ItemLineItemRefFullName ?? "";
@@ -2375,72 +2518,71 @@ namespace VoucherPro
                                 string customerJob = detail.ItemLineCustomerJob ?? "";
 
                                 double amount = detail.ItemLineAmount;
-
                                 string debit = amount > 0 ? amount.ToString("N2") : "";
                                 string credit = amount < 0 ? Math.Abs(amount).ToString("N2") : "";
 
                                 if (amount > 0) debitTotalAmount += amount;
                                 else if (amount < 0) creditTotalAmount += Math.Abs(amount);
 
+                                // LOGGING: Check if Class exists in the object
+                                Console.WriteLine($"DEBUG (ITEM): Ref={refNumber} | Part={particulars} | Class='{itemClass}'");
+
                                 using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
                                 {
-                                    command.Parameters.AddWithValue("@RefNumber", refNumber);
-                                    command.Parameters.AddWithValue("@Particulars", particulars);
-                                    command.Parameters.AddWithValue("@Class", itemClass);
-                                    command.Parameters.AddWithValue("@Memo", memo);
-                                    command.Parameters.AddWithValue("@CustomerJob", customerJob);
-                                    command.Parameters.AddWithValue("@Debit", debit);
-                                    command.Parameters.AddWithValue("@Credit", credit);
+                                    // OleDb uses positional parameters (the order must match the SQL)
+                                    command.Parameters.Add("@RefNumber", OleDbType.VarWChar).Value = refNumber ?? (object)DBNull.Value;
+                                    command.Parameters.Add("@Particulars", OleDbType.VarWChar).Value = particulars;
+                                    command.Parameters.Add("@Class", OleDbType.VarWChar).Value = string.IsNullOrWhiteSpace(itemClass) ? (object)DBNull.Value : itemClass;
+                                    command.Parameters.Add("@Memo", OleDbType.VarWChar).Value = memo ?? (object)DBNull.Value;
+                                    command.Parameters.Add("@CustomerJob", OleDbType.VarWChar).Value = customerJob ?? (object)DBNull.Value;
+                                    command.Parameters.Add("@Debit", OleDbType.VarWChar).Value = debit;
+                                    command.Parameters.Add("@Credit", OleDbType.VarWChar).Value = credit;
+
                                     command.ExecuteNonQuery();
                                 }
-
-                                Console.WriteLine($"Inserted Item: {particulars}, Debit: {debit}, Credit: {credit}");
                             }
 
+                            // --- SECTION B: PROCESS EXPENSE LINES ---
                             if (!string.IsNullOrEmpty(detail.ExpenseLineItemRefFullName))
                             {
-                                string particulars =
-                                    (bill.AccountNumber != null ? bill.AccountNumber + " - " : "") +
-                                    detail.ExpenseLineItemRefFullName;
-
+                                string particulars = (bill.AccountNumber != null ? bill.AccountNumber + " - " : "") + detail.ExpenseLineItemRefFullName;
                                 string expClass = detail.ExpenseLineClassRefFullName ?? "";
                                 string memo = detail.ExpenseLineMemo ?? "";
                                 string customerJob = detail.ExpenseLineCustomerJob ?? "";
 
                                 double amount = detail.ExpenseLineAmount;
-
                                 string debit = amount > 0 ? amount.ToString("N2") : "";
                                 string credit = amount < 0 ? Math.Abs(amount).ToString("N2") : "";
 
                                 if (amount > 0) debitTotalAmount += amount;
                                 else if (amount < 0) creditTotalAmount += Math.Abs(amount);
 
+                                // LOGGING: Check if Class exists in the object
+                                Console.WriteLine($"DEBUG (EXPENSE): Ref={refNumber} | Part={particulars} | Class='{expClass}'");
+
                                 using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
                                 {
-                                    command.Parameters.AddWithValue("@RefNumber", refNumber);
-                                    command.Parameters.AddWithValue("@Particulars", particulars);
-                                    command.Parameters.AddWithValue("@Class", expClass);
-                                    command.Parameters.AddWithValue("@Memo", memo);
-                                    command.Parameters.AddWithValue("@CustomerJob", customerJob);
-                                    command.Parameters.AddWithValue("@Debit", debit);
-                                    command.Parameters.AddWithValue("@Credit", credit);
+                                    command.Parameters.Add("@RefNumber", OleDbType.VarWChar).Value = refNumber ?? (object)DBNull.Value;
+                                    command.Parameters.Add("@Particulars", OleDbType.VarWChar).Value = particulars;
+                                    command.Parameters.Add("@Class", OleDbType.VarWChar).Value = string.IsNullOrWhiteSpace(expClass) ? (object)DBNull.Value : expClass;
+                                    command.Parameters.Add("@Memo", OleDbType.VarWChar).Value = memo ?? (object)DBNull.Value;
+                                    command.Parameters.Add("@CustomerJob", OleDbType.VarWChar).Value = customerJob ?? (object)DBNull.Value;
+                                    command.Parameters.Add("@Debit", OleDbType.VarWChar).Value = debit;
+                                    command.Parameters.Add("@Credit", OleDbType.VarWChar).Value = credit;
+
                                     command.ExecuteNonQuery();
                                 }
-
-                                Console.WriteLine($"Inserted Expense: {particulars}, Debit: {debit}, Credit: {credit}");
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show($"Error processing bill data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
                     }
+                    connection.Close();
+                    Console.WriteLine($"SUCCESS: Inserted data. Total Debit: {debitTotalAmount:N2}, Total Credit: {creditTotalAmount:N2}");
                 }
-
-                connection.Close();
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Critical Error in InsertDataToBillCompiled:\n{ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
-
-            Console.WriteLine($"Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
         }
 
 
