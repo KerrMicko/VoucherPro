@@ -24,7 +24,7 @@ namespace VoucherPro
 {
     public class GlobalVariables
     {
-        public static string client = "KAYAK";
+        public static string client = "IVP";
         public static bool includeImage = true;
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = false;
@@ -1890,7 +1890,12 @@ namespace VoucherPro
                         if (textObject_BILLCVSubTotal != null) textObject_BILLCVSubTotal.Text = bills[0].Amount.ToString("N2");
                         if (textObject_BILLCVSubCheckNumber != null) textObject_BILLCVSubCheckNumber.Text = bills[0].RefNumber ?? "";
                         if (textObject_BILLCVSubCheckNumber != null) textObject_BILLSubAccountPayable.Text = bills[0].BankAccount ?? "";
-                        if (textObject_BILLCVSubCheckNumber != null) textObject_BILLSubAmountPayable.Text = bills[0].AmountDue.ToString("N2") ?? "";
+                        if (textObject_BILLSubAmountPayable != null)
+                        {
+                            // Sums the AmountDue of all items in the bills list
+                            double totalAmountDue = bills.Sum(b => b.AmountDue);
+                            textObject_BILLSubAmountPayable.Text = totalAmountDue.ToString("N2");
+                        }
 
                         InsertDataToBillCompiled(refNumberCR, bills);
                     }

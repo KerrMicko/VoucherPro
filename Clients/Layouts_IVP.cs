@@ -68,7 +68,7 @@ namespace VoucherPro.Clients
             Font amountinWordsFont = font_Eight;
             Font dateFont = font_Nine;
             Font payeeFont = font_Eleven;
-            Font payeeFont2 = font_Eight;
+            Font payeeFont2 = font_Ten;
 
             // ----------------------------------------------------------------------
             // PRINTING LOGIC (Coordinates)
