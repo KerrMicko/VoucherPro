@@ -2034,6 +2034,22 @@ namespace VoucherPro
                                 command.ExecuteNonQuery();
                             }
                         }
+                        if (string.IsNullOrEmpty(check.Item) && string.IsNullOrEmpty(check.Account) && !string.IsNullOrEmpty(check.ItemDescription))
+                        {
+                            using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                            {
+                                command.Parameters.AddWithValue("@RefNumber", refNumber);
+                                // We use the Description field here since Item/Account are blank
+                                command.Parameters.AddWithValue("@Particulars", check.ItemDescription);
+                                command.Parameters.AddWithValue("@Class", (object)DBNull.Value);
+                                command.Parameters.AddWithValue("@Debit", "");
+                                command.Parameters.AddWithValue("@Credit", "");
+                                command.Parameters.AddWithValue("@Memo", memoValue);
+                                command.Parameters.AddWithValue("@CustomerJob", customerJob);
+
+                                command.ExecuteNonQuery();
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -2515,7 +2531,7 @@ namespace VoucherPro
                         foreach (var detail in bill.ItemDetails)
                         {
                             // --- SECTION A: PROCESS ITEM LINES ---
-                            if (!string.IsNullOrEmpty(detail.ItemLineItemRefFullName))
+                            if (!string.IsNullOrEmpty(detail.ItemLineItemRefFullName) || !string.IsNullOrEmpty(detail.ItemLineMemo))
                             {
                                 string particulars = detail.ItemLineItemRefFullName ?? "";
                                 string itemClass = detail.ItemLineClassRefFullName ?? "";
@@ -2548,7 +2564,7 @@ namespace VoucherPro
                             }
 
                             // --- SECTION B: PROCESS EXPENSE LINES ---
-                            if (!string.IsNullOrEmpty(detail.ExpenseLineItemRefFullName))
+                            if (!string.IsNullOrEmpty(detail.ExpenseLineItemRefFullName) || !string.IsNullOrEmpty(detail.ExpenseLineMemo))
                             {
                                 string particulars = (bill.AccountNumber != null ? bill.AccountNumber + " - " : "") + detail.ExpenseLineItemRefFullName;
                                 string expClass = detail.ExpenseLineClassRefFullName ?? "";
