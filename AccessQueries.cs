@@ -853,7 +853,7 @@ namespace VoucherPro
                     BillTable bt = new BillTable
                     {
                         DateCreated = payDate,
-                        DueDate = billDate, // Or dueDate depending on your report requirement
+                        DueDate = payDate, // Or dueDate depending on your report requirement
                         PayeeFullName = payee,
                         Address = address1,
                         Address2 = address2,
