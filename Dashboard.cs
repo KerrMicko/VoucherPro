@@ -24,10 +24,10 @@ namespace VoucherPro
 {
     public class GlobalVariables
     {
-        public static string client = "IVP";
+        public static string client = "IVP"; // IVP AND GIC SAME LAYOUT
         public static bool includeImage = true;
         public static bool includeItemReceipt = true;
-        public static bool testWithoutData = false;
+        public static bool testWithoutData = true;
         public static bool isPrinting = false;
         public static bool useCrystalReports_LEADS = true;
         public static int itemsPerPageAPV = 10;
@@ -167,7 +167,9 @@ namespace VoucherPro
             // ADD YOUR COMPANY NAMES HERE
             comboBox_Company.Items.AddRange(new string[]
             {
-                "North Luzon",
+
+                // ---------------- IVP COMPANIES ----------------
+                /*"North Luzon",
                 "South Luzon",
                 "Visayas",
                 "Mindanao",
@@ -175,7 +177,12 @@ namespace VoucherPro
                 "Iberica Verheilen Pharmaceuticals Group.",
                 "Verheilen Iberica HealthCare Company Inc.",
                 "My Health Shield NutriPharm Inc.",
-                "Central Luzon",
+                "Central Luzon",*/
+
+
+                // -------------- GIC COMPANIES ---------------
+
+                "Greenfloor Innovations Corporation",
             });
 
             // Set default selection
@@ -499,10 +506,14 @@ namespace VoucherPro
             {
                 comboBox_Forms.Items.AddRange(new string[]
             {
-                "",
+                /*"",
                 "Check Voucher",
                 "Check",
-                "Journal Voucher",
+                "Journal Voucher",*/
+                //------------------------- GIC 
+                "",
+                "Check Voucher",
+
             });
                 comboBox_Forms.SelectedIndex = 0;
                 comboBox_Forms.SelectedIndexChanged += ComboBox_Forms_SelectedIndexChanged;
@@ -1476,29 +1487,18 @@ namespace VoucherPro
                                 {
                                     try
                                     {
-                                        // Handling Item Amounts
-                                        double itemAmount = data.ItemAmount;
-                                        if (itemAmount > 0)
+                                        // 1. Check ItemType to decide which field to sum
+                                        if (data.ItemType == ItemType.Item)
                                         {
-                                            debitTotalAmount += itemAmount;
+                                            double val = data.ItemAmount;
+                                            if (val > 0) debitTotalAmount += val;
+                                            else if (val < 0) creditTotalAmount += Math.Abs(val);
                                         }
-                                        else if (itemAmount < 0)
+                                        else if (data.ItemType == ItemType.Expense)
                                         {
-                                            creditTotalAmount += Math.Abs(itemAmount);
-                                        }
-
-                                        // Handling Expenses Amounts
-                                        if (!string.IsNullOrEmpty(data.AccountNameCheck))
-                                        {
-                                            double expenseAmount = data.ExpensesAmount;
-                                            if (expenseAmount > 0)
-                                            {
-                                                debitTotalAmount += expenseAmount;
-                                            }
-                                            else if (expenseAmount < 0)
-                                            {
-                                                creditTotalAmount += Math.Abs(expenseAmount);
-                                            }
+                                            double val = data.ExpensesAmount;
+                                            if (val > 0) debitTotalAmount += val;
+                                            else if (val < 0) creditTotalAmount += Math.Abs(val);
                                         }
                                     }
                                     catch (Exception ex)
@@ -1519,16 +1519,25 @@ namespace VoucherPro
                                     // Get the ReportDocument of the subreport
                                     ReportDocument subReportDocument = cRCV_Kayak.OpenSubreport(subreportObject.SubreportName);
 
-                                    // Access the desired TextObject in the subreport
 
+                                    // Access the desired TextObject in the subreport
                                     TextObject textObject_AccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextAccountPayable"] as TextObject;
                                     TextObject textObject_TextAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextAmountPayable"] as TextObject;
                                     TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
 
-                                    textObject_AccountPayable.Text = cvData[0].BankAccountNumber + " - " + cvData[0].BankAccount.ToString();
-                                    textObject_TextAmountPayable.Text = debitTotalAmount.ToString("N2");
-                                    textObject_Remarks.Text = cvData[0].Memo.ToString();
-                                    // Create a DataTable with 4 columns
+                                    // SAFETY CHECK: Ensure the bank data is not null before assigning to report
+                                    string bankNum = cvData[0].BankAccountNumber ?? "";
+                                    string bankName = cvData[0].BankAccount ?? "";
+
+                                    if (textObject_AccountPayable != null)
+                                        textObject_AccountPayable.Text = $"{bankNum} - {bankName}".TrimStart(' ', '-');
+
+                                    if (textObject_TextAmountPayable != null)
+                                        textObject_TextAmountPayable.Text = debitTotalAmount.ToString("N2");
+
+                                    // THE FIX: Use null-coalescing to prevent NullReferenceException on Memo
+                                    if (textObject_Remarks != null)
+                                        textObject_Remarks.Text = cvData[0].Memo?.ToString() ?? string.Empty;
 
                                     DataTable dataTable = new DataTable();
                                     dataTable.Columns.Add("Particulars", typeof(string)); // First column
@@ -1564,7 +1573,7 @@ namespace VoucherPro
                                     string refNumberCR2 = textBox_ReferenceNumber_CR.Text;
 
                                     bills = new List<BillTable>();
-                                    bills = accessQueries.GetBillData_CPI(refNumberCR);
+                                    bills = accessQueries.GetBillData_KAYAKdirect(refNumberCR);
 
                                     if (bills.Count > 0)
                                     {
@@ -1625,34 +1634,25 @@ namespace VoucherPro
                                         double debitTotalAmount = 0;
                                         double creditTotalAmount = 0;
 
-                                        foreach (var bill in bills) // 'bills' is List<BillTable>
+                                        foreach (var bill in bills)
                                         {
                                             foreach (var item in bill.ItemDetails)
                                             {
                                                 try
                                                 {
-                                                    // Handle ItemLineAmount
+                                                    // Use an if-else structure so a single line isn't counted twice
                                                     if (item.ItemLineAmount != 0)
                                                     {
-                                                        if (item.ItemLineAmount > 0)
-                                                            debitTotalAmount += item.ItemLineAmount;
-                                                        else
-                                                            creditTotalAmount += Math.Abs(item.ItemLineAmount);
+                                                        if (item.ItemLineAmount > 0) debitTotalAmount += item.ItemLineAmount;
+                                                        else creditTotalAmount += Math.Abs(item.ItemLineAmount);
                                                     }
-
-                                                    // Handle ExpenseLineAmount
-                                                    if (item.ExpenseLineAmount != 0)
+                                                    else if (item.ExpenseLineAmount != 0) // Only check this if ItemLineAmount was 0
                                                     {
-                                                        if (item.ExpenseLineAmount > 0)
-                                                            debitTotalAmount += item.ExpenseLineAmount;
-                                                        else
-                                                            creditTotalAmount += Math.Abs(item.ExpenseLineAmount);
+                                                        if (item.ExpenseLineAmount > 0) debitTotalAmount += item.ExpenseLineAmount;
+                                                        else creditTotalAmount += Math.Abs(item.ExpenseLineAmount);
                                                     }
                                                 }
-                                                catch (Exception ex)
-                                                {
-                                                    MessageBox.Show($"Error processing item detail: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                                }
+                                                catch (Exception ex) { /* log error */ }
                                             }
                                         }
 
@@ -1673,9 +1673,29 @@ namespace VoucherPro
                                             TextObject textObject_TextAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextPayableAmount"] as TextObject;
                                             TextObject textObject_Remarks = subReportDocument.ReportDefinition.ReportObjects["TextRemarks"] as TextObject;
 
-                                            textObject_AccountPayable.Text = bills[0].BankAccount.ToString();
-                                            textObject_TextAmountPayable.Text = (debitTotalAmount - creditTotalAmount).ToString("N2");
-                                            textObject_Remarks.Text = bills[0].Memo.ToString();
+
+                                            string accNumber = bills[0].AccountNumber ?? "";
+                                            string bankName = bills[0].BankAccount ?? "";
+
+
+                                            if (textObject_AccountPayable != null)
+                                            {
+                                                textObject_AccountPayable.Text = string.IsNullOrEmpty(accNumber)
+                                                    ? bankName
+                                                    : $"{accNumber} - {bankName}";
+                                            }
+
+                                            if (textObject_TextAmountPayable != null)
+                                            {
+                                                // Use the actual Check Amount from the SDK retrieval to ensure accuracy
+                                                textObject_TextAmountPayable.Text = bills[0].Amount.ToString("N2");
+                                            }
+
+                                            if (textObject_Remarks != null)
+                                            {
+                                                // Null-safe check for Memo to prevent crashes
+                                                textObject_Remarks.Text = bills[0].Memo?.ToString() ?? string.Empty;
+                                            }
                                             // Create a DataTable with 4 columns
 
                                             DataTable dataTable = new DataTable();
@@ -2305,105 +2325,76 @@ namespace VoucherPro
             {
                 connection.Open();
 
-                // Clear old data
+                // 1. Clear old data
                 string deleteQuery = "DELETE FROM CheckVoucherCompiled";
                 using (OleDbCommand deleteCommand = new OleDbCommand(deleteQuery, connection))
                 {
-                    try
-                    {
-                        deleteCommand.ExecuteNonQuery();
-                        Console.WriteLine("Old data has been deleted from CheckVoucherCompiled.");
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Error deleting data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
+                    deleteCommand.ExecuteNonQuery();
                 }
 
-                // INSERT QUERY NOW HAS Memo + CustomerJob
+                // 2. Query with "?" placeholders for OleDb
                 string insertQuery = @"
-                                        INSERT INTO CheckVoucherCompiled 
-                                        (RefNumber, [Particulars], [Class], [Debit], [Credit], [Memo], [CustomerJob]) 
-                                        VALUES 
-                                        (@RefNumber, @Particulars, @Class, @Debit, @Credit, @Memo, @CustomerJob)";
+            INSERT INTO CheckVoucherCompiled 
+            (RefNumber, [Particulars], [Class], [Debit], [Credit], [Memo], [CustomerJob]) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)";
 
                 foreach (var check in checkData)
                 {
                     try
                     {
-                        // COMMON FIELDS
-                        string memoValue = string.IsNullOrEmpty(check.ExpensesMemo) ? "" : check.ExpensesMemo;
-                        string customerJob = string.IsNullOrEmpty(check.ExpensesCustomerJob) ? "" : check.ExpensesCustomerJob;
-
-                        //
-                        // INSERT ITEM ENTRY
-                        //
-                        if (!string.IsNullOrEmpty(check.ItemName))
+                        // Logic for ITEMS
+                        // Note: Check if you are using 'Item' or 'ItemName' in your class
+                        if (!string.IsNullOrEmpty(check.Item) || !string.IsNullOrEmpty(check.ItemName))
                         {
-                            string itemName = check.ItemName;
-                            string itemClass = check.ItemClass;
-                            double itemAmount = check.ItemAmount;
+                            string particulars = check.Item ?? check.ItemName;
+                            double amount = check.ItemAmount;
 
-                            string debit = itemAmount > 0 ? itemAmount.ToString("N2") : "";
-                            string credit = itemAmount < 0 ? Math.Abs(itemAmount).ToString("N2") : "";
-
-                            if (itemAmount > 0) debitTotalAmount += itemAmount;
-                            else if (itemAmount < 0) creditTotalAmount += Math.Abs(itemAmount);
-
-                            using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                            using (OleDbCommand cmd = new OleDbCommand(insertQuery, connection))
                             {
-                                command.Parameters.AddWithValue("@RefNumber", refNumber);
-                                command.Parameters.AddWithValue("@Particulars", itemName);
-                                command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(itemClass) ? (object)DBNull.Value : itemClass);
-                                command.Parameters.AddWithValue("@Debit", debit);
-                                command.Parameters.AddWithValue("@Credit", credit);
-                                command.Parameters.AddWithValue("@Memo", memoValue);
-                                command.Parameters.AddWithValue("@CustomerJob", customerJob);
+                                // MUST ADD IN ORDER: Ref, Part, Class, Debit, Credit, Memo, Cust
+                                cmd.Parameters.AddWithValue("?", refNumber ?? "");
+                                cmd.Parameters.AddWithValue("?", particulars ?? "");
+                                cmd.Parameters.AddWithValue("?", check.ItemClass ?? (object)DBNull.Value);
+                                cmd.Parameters.AddWithValue("?", amount > 0 ? amount.ToString("N2") : "");
+                                cmd.Parameters.AddWithValue("?", amount < 0 ? Math.Abs(amount).ToString("N2") : "");
+                                cmd.Parameters.AddWithValue("?", check.ExpensesMemo ?? "");
+                                cmd.Parameters.AddWithValue("?", check.ExpensesCustomerJob ?? "");
 
-                                command.ExecuteNonQuery();
+                                cmd.ExecuteNonQuery();
                             }
+                            if (amount > 0) debitTotalAmount += amount;
+                            else if (amount < 0) creditTotalAmount += Math.Abs(amount);
                         }
 
-                        //
-                        // INSERT EXPENSE ENTRY
-                        //
-                        if (!string.IsNullOrEmpty(check.AccountNameCheck))
+                        // Logic for EXPENSES
+                        if (!string.IsNullOrEmpty(check.AccountNameCheck) || !string.IsNullOrEmpty(check.Account))
                         {
-                            string expenseName = check.AccountNumber + " - " + check.AccountNameCheck;
-                            string expenseClass = check.AccountClassCheck;
-                            double expenseAmount = check.ExpensesAmount;
+                            string accName = check.AccountNameCheck ?? check.Account;
+                            string particulars = $"{check.AccountNumber} - {accName}";
+                            double amount = check.ExpensesAmount;
 
-                            string debit = expenseAmount > 0 ? expenseAmount.ToString("N2") : "";
-                            string credit = expenseAmount < 0 ? Math.Abs(expenseAmount).ToString("N2") : "";
-
-                            if (expenseAmount > 0) debitTotalAmount += expenseAmount;
-                            else if (expenseAmount < 0) creditTotalAmount += Math.Abs(expenseAmount);
-
-                            using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
+                            using (OleDbCommand cmd = new OleDbCommand(insertQuery, connection))
                             {
-                                command.Parameters.AddWithValue("@RefNumber", refNumber);
-                                command.Parameters.AddWithValue("@Particulars", expenseName);
-                                command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(expenseClass) ? (object)DBNull.Value : expenseClass);
-                                command.Parameters.AddWithValue("@Debit", debit);
-                                command.Parameters.AddWithValue("@Credit", credit);
-                                command.Parameters.AddWithValue("@Memo", memoValue);
-                                command.Parameters.AddWithValue("@CustomerJob", customerJob);
+                                cmd.Parameters.AddWithValue("?", refNumber ?? "");
+                                cmd.Parameters.AddWithValue("?", particulars);
+                                cmd.Parameters.AddWithValue("?", check.ExpenseClass ?? (object)DBNull.Value);
+                                cmd.Parameters.AddWithValue("?", amount > 0 ? amount.ToString("N2") : "");
+                                cmd.Parameters.AddWithValue("?", amount < 0 ? Math.Abs(amount).ToString("N2") : "");
+                                cmd.Parameters.AddWithValue("?", check.ExpensesMemo ?? "");
+                                cmd.Parameters.AddWithValue("?", check.ExpensesCustomerJob ?? "");
 
-                                command.ExecuteNonQuery();
+                                cmd.ExecuteNonQuery();
                             }
+                            if (amount > 0) debitTotalAmount += amount;
+                            else if (amount < 0) creditTotalAmount += Math.Abs(amount);
                         }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Error processing check data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Console.WriteLine("Insert Error: " + ex.Message);
                     }
                 }
-
-                connection.Close();
             }
-
-            Console.WriteLine($"Total Debit: {debitTotalAmount:F2}, Total Credit: {creditTotalAmount:F2}");
         }
 
 
@@ -2517,91 +2508,75 @@ namespace VoucherPro
                     using (OleDbCommand deleteCommand = new OleDbCommand(deleteQuery, connection))
                     {
                         deleteCommand.ExecuteNonQuery();
-                        Console.WriteLine("--- Database: Bill_Compiled cleared. ---");
                     }
 
-                    // 2. PREPARE INSERT QUERY
-                    // Using [brackets] because 'Class' is a reserved keyword in MS Access
+                    // 2. PREPARE INSERT QUERY (Note: Order is Ref, Part, Class, Memo, Job, Debit, Credit)
                     string insertQuery = @"INSERT INTO Bill_Compiled 
-                                   (RefNumber, Particulars, [Class], [Memo], [CustomerJob], Debit, Credit) 
-                                   VALUES (?, ?, ?, ?, ?, ?, ?)";
+                           (RefNumber, Particulars, [Class], [Memo], [CustomerJob], Debit, Credit) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?)";
 
                     foreach (var bill in bills)
                     {
                         foreach (var detail in bill.ItemDetails)
                         {
-                            // --- SECTION A: PROCESS ITEM LINES ---
-                            if (!string.IsNullOrEmpty(detail.ItemLineItemRefFullName) || !string.IsNullOrEmpty(detail.ItemLineMemo))
+                            string particulars = "";
+                            string classVal = "";
+                            string memo = "";
+                            string customerJob = "";
+                            double amount = 0;
+
+                            // Determine if this is an Item Line or an Expense Line to prevent double counting
+                            if (!string.IsNullOrEmpty(detail.ItemLineItemRefFullName))
                             {
-                                string particulars = detail.ItemLineItemRefFullName ?? "";
-                                string itemClass = detail.ItemLineClassRefFullName ?? "";
-                                string memo = detail.ItemLineMemo ?? "";
-                                string customerJob = detail.ItemLineCustomerJob ?? "";
-
-                                double amount = detail.ItemLineAmount;
-                                string debit = amount > 0 ? amount.ToString("N2") : "";
-                                string credit = amount < 0 ? Math.Abs(amount).ToString("N2") : "";
-
-                                if (amount > 0) debitTotalAmount += amount;
-                                else if (amount < 0) creditTotalAmount += Math.Abs(amount);
-
-                                // LOGGING: Check if Class exists in the object
-                                Console.WriteLine($"DEBUG (ITEM): Ref={refNumber} | Part={particulars} | Class='{itemClass}'");
-
-                                using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
-                                {
-                                    // OleDb uses positional parameters (the order must match the SQL)
-                                    command.Parameters.Add("@RefNumber", OleDbType.VarWChar).Value = refNumber ?? (object)DBNull.Value;
-                                    command.Parameters.Add("@Particulars", OleDbType.VarWChar).Value = particulars;
-                                    command.Parameters.Add("@Class", OleDbType.VarWChar).Value = string.IsNullOrWhiteSpace(itemClass) ? (object)DBNull.Value : itemClass;
-                                    command.Parameters.Add("@Memo", OleDbType.VarWChar).Value = memo ?? (object)DBNull.Value;
-                                    command.Parameters.Add("@CustomerJob", OleDbType.VarWChar).Value = customerJob ?? (object)DBNull.Value;
-                                    command.Parameters.Add("@Debit", OleDbType.VarWChar).Value = debit;
-                                    command.Parameters.Add("@Credit", OleDbType.VarWChar).Value = credit;
-
-                                    command.ExecuteNonQuery();
-                                }
+                                particulars = detail.ItemLineItemRefFullName;
+                                classVal = detail.ItemLineClassRefFullName ?? "";
+                                memo = detail.ItemLineMemo ?? "";
+                                customerJob = detail.ItemLineCustomerJob ?? "";
+                                amount = detail.ItemLineAmount;
+                            }
+                            else if (!string.IsNullOrEmpty(detail.ExpenseLineItemRefFullName))
+                            {
+                                // Use bill level AccountNumber if available
+                                particulars = (!string.IsNullOrEmpty(bill.AccountNumber) ? bill.AccountNumber + " - " : "") + detail.ExpenseLineItemRefFullName;
+                                classVal = detail.ExpenseLineClassRefFullName ?? "";
+                                memo = detail.ExpenseLineMemo ?? "";
+                                customerJob = detail.ExpenseLineCustomerJob ?? "";
+                                amount = detail.ExpenseLineAmount;
+                            }
+                            else
+                            {
+                                // Skip empty lines
+                                continue;
                             }
 
-                            // --- SECTION B: PROCESS EXPENSE LINES ---
-                            if (!string.IsNullOrEmpty(detail.ExpenseLineItemRefFullName) || !string.IsNullOrEmpty(detail.ExpenseLineMemo))
+                            // Calculate Debit/Credit
+                            string debitStr = amount > 0 ? amount.ToString("N2") : "";
+                            string creditStr = amount < 0 ? Math.Abs(amount).ToString("N2") : "";
+
+                            if (amount > 0) debitTotalAmount += amount;
+                            else if (amount < 0) creditTotalAmount += Math.Abs(amount);
+
+                            // 3. EXECUTE INSERT
+                            using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
                             {
-                                string particulars = (bill.AccountNumber != null ? bill.AccountNumber + " - " : "") + detail.ExpenseLineItemRefFullName;
-                                string expClass = detail.ExpenseLineClassRefFullName ?? "";
-                                string memo = detail.ExpenseLineMemo ?? "";
-                                string customerJob = detail.ExpenseLineCustomerJob ?? "";
+                                // OleDb requires exact positional order
+                                command.Parameters.Add("?", OleDbType.VarWChar).Value = refNumber ?? (object)DBNull.Value;
+                                command.Parameters.Add("?", OleDbType.VarWChar).Value = particulars ?? "";
+                                command.Parameters.Add("?", string.IsNullOrWhiteSpace(classVal) ? (object)DBNull.Value : classVal);
+                                command.Parameters.Add("?", memo ?? (object)DBNull.Value);
+                                command.Parameters.Add("?", customerJob ?? (object)DBNull.Value);
+                                command.Parameters.Add("?", debitStr);
+                                command.Parameters.Add("?", creditStr);
 
-                                double amount = detail.ExpenseLineAmount;
-                                string debit = amount > 0 ? amount.ToString("N2") : "";
-                                string credit = amount < 0 ? Math.Abs(amount).ToString("N2") : "";
-
-                                if (amount > 0) debitTotalAmount += amount;
-                                else if (amount < 0) creditTotalAmount += Math.Abs(amount);
-
-                                // LOGGING: Check if Class exists in the object
-                                Console.WriteLine($"DEBUG (EXPENSE): Ref={refNumber} | Part={particulars} | Class='{expClass}'");
-
-                                using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
-                                {
-                                    command.Parameters.Add("@RefNumber", OleDbType.VarWChar).Value = refNumber ?? (object)DBNull.Value;
-                                    command.Parameters.Add("@Particulars", OleDbType.VarWChar).Value = particulars;
-                                    command.Parameters.Add("@Class", OleDbType.VarWChar).Value = string.IsNullOrWhiteSpace(expClass) ? (object)DBNull.Value : expClass;
-                                    command.Parameters.Add("@Memo", OleDbType.VarWChar).Value = memo ?? (object)DBNull.Value;
-                                    command.Parameters.Add("@CustomerJob", OleDbType.VarWChar).Value = customerJob ?? (object)DBNull.Value;
-                                    command.Parameters.Add("@Debit", OleDbType.VarWChar).Value = debit;
-                                    command.Parameters.Add("@Credit", OleDbType.VarWChar).Value = credit;
-
-                                    command.ExecuteNonQuery();
-                                }
+                                command.ExecuteNonQuery();
                             }
                         }
                     }
                     connection.Close();
-                    Console.WriteLine($"SUCCESS: Inserted data. Total Debit: {debitTotalAmount:N2}, Total Credit: {creditTotalAmount:N2}");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Critical Error in InsertDataToBillCompiled:\n{ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Error: {ex.Message}");
                 }
             }
         }
@@ -3979,6 +3954,8 @@ namespace VoucherPro
                 case "Verheilen Iberica HealthCare Company Inc.": return "VIHC";
                 case "My Health Shield NutriPharm Inc.": return "MHS";
                 case "Central Luzon": return "CL";
+                    //----- GIC COMPANY------
+                case "Greenfloor Innovations Corporation": return "GIC";
                 default: return "";
             }
         }

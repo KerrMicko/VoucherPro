@@ -1347,6 +1347,7 @@ namespace VoucherPro
                 case "Iberica Verheilen Pharmaceuticals Group.": return $"IVP_{formType}";
                 case "Verheilen Iberica HealthCare Company Inc.": return $"VIHC_{formType}";
                 case "My Health Shield NutriPharm Inc.": return $"MHS_{formType}";
+                case "Greenfloor Innovations Corporation": return $"GIC_{formType}";
 
                 case "Central Luzon": prefix = "CL"; break;
                 default: return "";

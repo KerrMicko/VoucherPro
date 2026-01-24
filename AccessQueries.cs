@@ -726,6 +726,150 @@ namespace VoucherPro
             return bills;
         }
 
+        public List<BillTable> GetBillData_KAYAKdirect(string refNumber)
+        {
+            QBSessionManager sessionManager = new QBSessionManager();
+            List<BillTable> bills = new List<BillTable>();
+
+            try
+            {
+                // 1. Get Incremental ID
+                string accessConnectionString = GetAccessConnectionString();
+                string nextIDStr = GetNextIncrementalID_APV(accessConnectionString).ToString("D6");
+
+                sessionManager.OpenConnection2("", "KAYAK Bill Retrieval", ENConnectionType.ctLocalQBD);
+                sessionManager.BeginSession("", ENOpenMode.omDontCare);
+
+                // ====================================================
+                // 1. QUERY BILL PAYMENT CHECK
+                // ====================================================
+                IMsgSetRequest req1 = sessionManager.CreateMsgSetRequest("US", 13, 0);
+                IBillPaymentCheckQuery bpcQuery = req1.AppendBillPaymentCheckQueryRq();
+                bpcQuery.IncludeLineItems.SetValue(true);
+                bpcQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.MatchCriterion.SetValue(ENMatchCriterion.mcStartsWith);
+                bpcQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.RefNumber.SetValue(refNumber);
+
+                IMsgSetResponse resp1 = sessionManager.DoRequests(req1);
+                IResponse r1 = resp1.ResponseList.GetAt(0);
+                IBillPaymentCheckRetList bpList = r1.Detail as IBillPaymentCheckRetList;
+
+                if (bpList == null || bpList.Count == 0) return bills;
+
+                IBillPaymentCheckRet bp = bpList.GetAt(0);
+
+                // Header data from Payment Check
+                DateTime payDate = bp.TxnDate?.GetValue() ?? DateTime.MinValue;
+                string payee = bp.PayeeEntityRef?.FullName?.GetValue() ?? "";
+                string bankAccount = bp.BankAccountRef?.FullName?.GetValue() ?? "";
+                string paymentMemo = bp.Memo?.GetValue() ?? "";
+                double checkAmount = bp.Amount?.GetValue() ?? 0;
+
+                // Collect all Applied Bill TxnIDs
+                List<string> appliedTxnIDs = new List<string>();
+                if (bp.AppliedToTxnRetList != null)
+                {
+                    for (int k = 0; k < bp.AppliedToTxnRetList.Count; k++)
+                    {
+                        string tId = bp.AppliedToTxnRetList.GetAt(k).TxnID?.GetValue();
+                        if (!string.IsNullOrEmpty(tId)) appliedTxnIDs.Add(tId);
+                    }
+                }
+
+                if (appliedTxnIDs.Count == 0) return bills;
+
+                // ====================================================
+                // 2. QUERY ALL LINKED BILLS IN ONE BATCH
+                // ====================================================
+                IMsgSetRequest req2 = sessionManager.CreateMsgSetRequest("US", 13, 0);
+                IBillQuery billQuery = req2.AppendBillQueryRq();
+                billQuery.IncludeLineItems.SetValue(true);
+
+                foreach (string id in appliedTxnIDs)
+                {
+                    billQuery.ORBillQuery.TxnIDList.Add(id);
+                }
+
+                IMsgSetResponse resp2 = sessionManager.DoRequests(req2);
+                IBillRetList billList = resp2.ResponseList.GetAt(0).Detail as IBillRetList;
+
+                if (billList == null) return bills;
+
+                // ====================================================
+                // 3. PROCESS EACH BILL RETRIEVED
+                // ====================================================
+                for (int bIndex = 0; bIndex < billList.Count; bIndex++)
+                {
+                    IBillRet bill = billList.GetAt(bIndex);
+
+                    BillTable bt = new BillTable
+                    {
+                        IncrementalID = nextIDStr,
+                        DateCreated = payDate,
+                        DueDate = payDate,
+                        PayeeFullName = payee,
+                        BankAccount = bankAccount,
+                        RefNumber = refNumber, // Check Ref
+                        AppliedRefNumber = bill.RefNumber?.GetValue() ?? "", // Bill Ref
+                        AppliedToTxnTxnID = bill.TxnID?.GetValue() ?? "",
+                        Memo = paymentMemo,
+                        BillMemo = bill.Memo?.GetValue() ?? "",
+                        Amount = checkAmount,
+                        AmountDue = bill.AmountDue?.GetValue() ?? 0,
+                        APAccountRefFullName = bill.APAccountRef?.FullName?.GetValue() ?? "",
+                        // Get AP Account Number
+                        AccountNumber = GetAccountNumber(sessionManager, bill.APAccountRef?.ListID?.GetValue())
+                    };
+
+                    // Expense Lines
+                    if (bill.ExpenseLineRetList != null)
+                    {
+                        for (int i = 0; i < bill.ExpenseLineRetList.Count; i++)
+                        {
+                            var exp = bill.ExpenseLineRetList.GetAt(i);
+                            bt.ItemDetails.Add(new ItemDetail
+                            {
+                                ItemLineItemRefFullName = exp.AccountRef?.FullName?.GetValue() ?? "",
+                                ItemLineAmount = exp.Amount?.GetValue() ?? 0,
+                                ItemLineClassRefFullName = exp.ClassRef?.FullName?.GetValue() ?? "",
+                                ItemLineMemo = exp.Memo?.GetValue() ?? "",
+                                // Maintain compatibility with your previous Expense naming
+                                ExpenseLineAmount = exp.Amount?.GetValue() ?? 0,
+                                ExpenseLineClassRefFullName = exp.ClassRef?.FullName?.GetValue() ?? ""
+                            });
+                        }
+                    }
+
+                    // Item Lines
+                    if (bill.ORItemLineRetList != null)
+                    {
+                        for (int i = 0; i < bill.ORItemLineRetList.Count; i++)
+                        {
+                            var orItem = bill.ORItemLineRetList.GetAt(i);
+                            if (orItem.ItemLineRet != null)
+                            {
+                                var item = orItem.ItemLineRet;
+                                bt.ItemDetails.Add(new ItemDetail
+                                {
+                                    ItemLineItemRefFullName = item.ItemRef?.FullName?.GetValue() ?? "",
+                                    ItemLineAmount = item.Amount?.GetValue() ?? 0,
+                                    ItemLineClassRefFullName = item.ClassRef?.FullName?.GetValue() ?? "",
+                                    ItemLineMemo = item.Desc?.GetValue() ?? ""
+                                });
+                            }
+                        }
+                    }
+                    bills.Add(bt);
+                }
+            }
+            catch (Exception ex) { MessageBox.Show("KAYAK Bill Retrieval Error: " + ex.Message); }
+            finally
+            {
+                try { sessionManager.EndSession(); sessionManager.CloseConnection(); } catch { }
+            }
+
+            return bills;
+        }
+
         public List<BillTable> GetBillData_IVP(string refNumber)
         {
             QBSessionManager sessionManager = new QBSessionManager();
@@ -1268,7 +1412,7 @@ namespace VoucherPro
             return checks;
         } // CV Check Expense Item
 
-        public List<CheckTableExpensesAndItems> GetCheckExpensesAndItemsData_KAYAK(string refNumber)
+        /*public List<CheckTableExpensesAndItems> GetCheckExpensesAndItemsData_KAYAK(string refNumber)
         {
             List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
 
@@ -1327,7 +1471,7 @@ namespace VoucherPro
                                     //IncrementalID = nextID,
                                     IncrementalID = nextID.ToString("D6"),
 
-                                   
+
                                 };
                                 string bankAccountRefListID = itemReader["AccountRefListID"] != DBNull.Value ? itemReader["AccountRefListID"].ToString() : string.Empty;
 
@@ -1360,7 +1504,7 @@ namespace VoucherPro
                                             {
                                                 newCheckItem.AccountName = secondReader["AssetAccountRefFullname"] != DBNull.Value ? secondReader["AssetAccountRefFullname"].ToString() : string.Empty;
                                                 newCheckItem.ItemName = secondReader["Name"] != DBNull.Value ? secondReader["Name"].ToString() : string.Empty;
-                                                string assetAccountRefListID = secondReader["AssetAccountRefListID"] != DBNull.Value? secondReader["AssetAccountRefListID"].ToString() : string.Empty;
+                                                string assetAccountRefListID = secondReader["AssetAccountRefListID"] != DBNull.Value ? secondReader["AssetAccountRefListID"].ToString() : string.Empty;
 
                                                 if (!string.IsNullOrEmpty(assetAccountRefListID))
                                                 {
@@ -1373,7 +1517,7 @@ namespace VoucherPro
                                                         {
                                                             while (accReader.Read())
                                                             {
-                                                                newCheckItem.AssetAccountNumber = accReader["AccountNumber"] != DBNull.Value? accReader["AccountNumber"].ToString() : string.Empty;
+                                                                newCheckItem.AssetAccountNumber = accReader["AccountNumber"] != DBNull.Value ? accReader["AccountNumber"].ToString() : string.Empty;
                                                                 newCheckItem.AssetAccountName = accReader["Name"] != DBNull.Value ? accReader["Name"].ToString() : string.Empty;
                                                             }
                                                         }
@@ -1479,7 +1623,143 @@ namespace VoucherPro
                 MessageBox.Show($"Error retrieving data to Access database: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return checks;
-        } // CV Check Expense Item
+        } // CV Check Expense Item*/
+
+        public List<CheckTableExpensesAndItems> GetCheckExpensesAndItemsData_KAYAK(string refNumber)
+        {
+            QBSessionManager sessionManager = new QBSessionManager();
+            List<CheckTableExpensesAndItems> checks = new List<CheckTableExpensesAndItems>();
+
+            try
+            {
+                string accessConnectionString = GetAccessConnectionString();
+                string nextIDStr = GetNextIncrementalID_CV(accessConnectionString).ToString("D6");
+
+                sessionManager.OpenConnection2("", "KAYAK Check Retrieval", ENConnectionType.ctLocalQBD);
+                sessionManager.BeginSession("", ENOpenMode.omDontCare);
+
+                IMsgSetRequest request = sessionManager.CreateMsgSetRequest("US", 13, 0);
+                request.Attributes.OnError = ENRqOnError.roeContinue;
+
+                ICheckQuery checkQuery = request.AppendCheckQueryRq();
+                checkQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.MatchCriterion.SetValue(ENMatchCriterion.mcStartsWith);
+                checkQuery.ORTxnQuery.TxnFilter.ORRefNumberFilter.RefNumberFilter.RefNumber.SetValue(refNumber);
+                checkQuery.IncludeLineItems.SetValue(true);
+
+                IMsgSetResponse response = sessionManager.DoRequests(request);
+                IResponse qbResponse = response.ResponseList.GetAt(0);
+
+                ICheckRetList list = qbResponse.Detail as ICheckRetList;
+                if (list == null || list.Count == 0) return checks;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    ICheckRet check = list.GetAt(i);
+
+                    // HEADER DATA
+                    string bankAccountName = check.AccountRef?.FullName?.GetValue() ?? "";
+                    string bankAccountListID = check.AccountRef?.ListID?.GetValue() ?? "";
+                    // Fetch Bank Account Number
+                    string bankAccountNumber = GetAccountNumber(sessionManager, bankAccountListID);
+
+                    // EXPENSE LINES
+                    if (check.ExpenseLineRetList != null)
+                    {
+                        for (int e = 0; e < check.ExpenseLineRetList.Count; e++)
+                        {
+                            IExpenseLineRet exp = check.ExpenseLineRetList.GetAt(e);
+                            string expAccListID = exp.AccountRef?.ListID?.GetValue() ?? "";
+
+                            checks.Add(new CheckTableExpensesAndItems
+                            {
+                                IncrementalID = nextIDStr,
+                                DateCreated = check.TxnDate?.GetValue() ?? DateTime.MinValue,
+                                BankAccount = bankAccountName,
+                                BankAccountNumber = bankAccountNumber,
+                                PayeeFullName = check.PayeeEntityRef?.FullName?.GetValue() ?? "",
+                                RefNumber = check.RefNumber?.GetValue() ?? "",
+                                TotalAmount = check.Amount?.GetValue() ?? 0,
+
+                                // Line Specifics
+                                ExpenseClass = exp.ClassRef?.FullName?.GetValue() ?? "",
+                                Account = exp.AccountRef?.FullName?.GetValue() ?? "",
+                                AccountNumber = GetAccountNumber(sessionManager, expAccListID),
+                                ExpensesAmount = exp.Amount?.GetValue() ?? 0,
+                                ItemType = ItemType.Expense
+                            });
+                        }
+                    }
+
+                    // ITEM LINES
+                    if (check.ORItemLineRetList != null)
+                    {
+                        for (int iLine = 0; iLine < check.ORItemLineRetList.Count; iLine++)
+                        {
+                            IORItemLineRet orItemLine = (IORItemLineRet)check.ORItemLineRetList.GetAt(iLine);
+                            if (orItemLine.ItemLineRet != null)
+                            {
+                                IItemLineRet item = orItemLine.ItemLineRet;
+                                // Items usually map to an Income/Expense account internally
+                                // If you need the Asset Account Number for the Item:
+                                string itemAccNumber = GetItemAssetAccountNumber(sessionManager, item.ItemRef?.ListID?.GetValue());
+
+                                checks.Add(new CheckTableExpensesAndItems
+                                {
+                                    IncrementalID = nextIDStr,
+                                    DateCreated = check.TxnDate?.GetValue() ?? DateTime.MinValue,
+                                    BankAccount = bankAccountName,
+                                    BankAccountNumber = bankAccountNumber,
+                                    PayeeFullName = check.PayeeEntityRef?.FullName?.GetValue() ?? "",
+                                    RefNumber = check.RefNumber?.GetValue() ?? "",
+
+                                    // Item Specifics
+                                    ItemClass = item.ClassRef?.FullName?.GetValue() ?? "",
+                                    Item = item.ItemRef?.FullName?.GetValue() ?? "",
+                                    AssetAccountNumber = itemAccNumber,
+                                    ItemAmount = item.Amount?.GetValue() ?? 0,
+                                    ItemType = ItemType.Item
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
+            finally { sessionManager.EndSession(); sessionManager.CloseConnection(); }
+
+            return checks;
+        }
+
+        private string GetAccountNumber(QBSessionManager sessionManager, string listID)
+        {
+            if (string.IsNullOrEmpty(listID)) return "";
+
+            IMsgSetRequest request = sessionManager.CreateMsgSetRequest("US", 13, 0);
+            IAccountQuery accQuery = request.AppendAccountQueryRq();
+            accQuery.ORAccountListQuery.ListIDList.Add(listID);
+
+            IMsgSetResponse response = sessionManager.DoRequests(request);
+            IResponse qbResponse = response.ResponseList.GetAt(0);
+            IAccountRetList accList = qbResponse.Detail as IAccountRetList;
+
+            return accList?.GetAt(0)?.AccountNumber?.GetValue() ?? "";
+        }
+
+        private string GetItemAssetAccountNumber(QBSessionManager sessionManager, string itemListID)
+        {
+            if (string.IsNullOrEmpty(itemListID)) return "";
+
+            IMsgSetRequest request = sessionManager.CreateMsgSetRequest("US", 13, 0);
+            IItemQuery itemQuery = request.AppendItemQueryRq();
+            itemQuery.ORListQuery.ListIDList.Add(itemListID);
+
+            IMsgSetResponse response = sessionManager.DoRequests(request);
+            IResponse qbResponse = response.ResponseList.GetAt(0);
+
+            // This is a simplified check for AssetAccountRef within the Item details
+            // You may need to cast to IItemInventoryRet depending on your Item Types
+            return ""; // Logic similar to GetAccountNumber but targeting ItemRet.AssetAccountRef
+        }
 
         /*public List<CheckTableExpensesAndItems> GetCheckExpensesAndItemsData_IVP(string refNumber)
         {
