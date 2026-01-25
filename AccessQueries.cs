@@ -870,6 +870,109 @@ namespace VoucherPro
             return bills;
         }
 
+        public List<BillTable> GetBillData_IVP_DirectBill(string billRefNumber)
+        {
+            QBSessionManager sessionManager = new QBSessionManager();
+            List<BillTable> bills = new List<BillTable>();
+
+            try
+            {
+                sessionManager.OpenConnection2("", "APV Retrieval", ENConnectionType.ctLocalQBD);
+                sessionManager.BeginSession("", ENOpenMode.omDontCare);
+
+                IMsgSetRequest request = sessionManager.CreateMsgSetRequest("US", 13, 0);
+                request.Attributes.OnError = ENRqOnError.roeContinue;
+
+                // 1. Query the Bill directly using the RefNumber
+                IBillQuery billQuery = request.AppendBillQueryRq();
+                billQuery.IncludeLineItems.SetValue(true);
+
+                // Filter by the Bill's Reference Number
+                billQuery.ORBillQuery.BillFilter.ORRefNumberFilter.RefNumberFilter.MatchCriterion.SetValue(ENMatchCriterion.mcStartsWith);
+                billQuery.ORBillQuery.BillFilter.ORRefNumberFilter.RefNumberFilter.RefNumber.SetValue(billRefNumber);
+
+                IMsgSetResponse response = sessionManager.DoRequests(request);
+                IResponse resp = response.ResponseList.GetAt(0);
+                IBillRetList billList = resp.Detail as IBillRetList;
+
+                if (billList == null || billList.Count == 0)
+                {
+                    MessageBox.Show("Bill RefNumber not found: " + billRefNumber);
+                    return bills;
+                }
+
+                // 2. Loop through results (usually one, but handles duplicates)
+                for (int i = 0; i < billList.Count; i++)
+                {
+                    IBillRet bill = billList.GetAt(i);
+
+                    BillTable bt = new BillTable
+                    {
+                        // Core Header Info
+                        DateCreated = bill.TxnDate?.GetValue() ?? DateTime.Now,
+                        DueDate = bill.DueDate?.GetValue() ?? DateTime.Now,
+                        PayeeFullName = bill.VendorRef?.FullName?.GetValue() ?? "",
+                        APAccountRefFullName = bill.APAccountRef?.FullName?.GetValue() ?? "",
+                        RefNumber = bill.RefNumber?.GetValue() ?? "", // The Bill Number
+                        Memo = bill.Memo?.GetValue() ?? "",
+                        AmountDue = bill.AmountDue?.GetValue() ?? 0,
+                        IsPaid = bill.IsPaid?.GetValue() ?? false
+                    };
+
+                    // 3. Process Expense Lines
+                    if (bill.ExpenseLineRetList != null)
+                    {
+                        for (int j = 0; j < bill.ExpenseLineRetList.Count; j++)
+                        {
+                            var exp = bill.ExpenseLineRetList.GetAt(j);
+                            bt.ItemDetails.Add(new ItemDetail
+                            {
+                                ExpenseLineItemRefFullName = exp.AccountRef?.FullName?.GetValue() ?? "",
+                                ExpenseLineAmount = exp.Amount?.GetValue() ?? 0,
+                                ExpenseLineClassRefFullName = exp.ClassRef?.FullName?.GetValue() ?? "",
+                                ExpenseLineCustomerJob = exp.CustomerRef?.FullName?.GetValue() ?? "",
+                                ExpenseLineMemo = exp.Memo?.GetValue() ?? ""
+                            });
+                        }
+                    }
+
+                    // 4. Process Item Lines
+                    if (bill.ORItemLineRetList != null)
+                    {
+                        for (int j = 0; j < bill.ORItemLineRetList.Count; j++)
+                        {
+                            var orItem = bill.ORItemLineRetList.GetAt(j);
+                            if (orItem.ItemLineRet != null)
+                            {
+                                var item = orItem.ItemLineRet;
+                                bt.ItemDetails.Add(new ItemDetail
+                                {
+                                    ItemLineItemRefFullName = item.ItemRef?.FullName?.GetValue() ?? "",
+                                    ItemLineAmount = item.Amount?.GetValue() ?? 0,
+                                    ItemLineClassRefFullName = item.ClassRef?.FullName?.GetValue() ?? "",
+                                    ItemLineCustomerJob = item.CustomerRef?.FullName?.GetValue() ?? "",
+                                    ItemLineMemo = item.Desc?.GetValue() ?? ""
+                                });
+                            }
+                        }
+                    }
+
+                    bills.Add(bt);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error: " + ex.Message);
+            }
+            finally
+            {
+                sessionManager.EndSession();
+                sessionManager.CloseConnection();
+            }
+
+            return bills;
+        }
+
         public List<BillTable> GetBillData_IVP(string refNumber)
         {
             QBSessionManager sessionManager = new QBSessionManager();

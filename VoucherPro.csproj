@@ -84,6 +84,12 @@
       <DependentUpon>CRCV_IVP.rpt</DependentUpon>
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Clients\CRAPV_IVPBILL.cs">
+      <DependentUpon>CRAPV_IVPBILL.rpt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <SubType>Component</SubType>
+      <DesignTime>True</DesignTime>
+    </Compile>
     <Compile Include="Clients\CRCV_IVPBILL.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -135,6 +141,10 @@
     <EmbeddedResource Include="Clients\CRCV_IVP.rpt">
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
       <LastGenOutput>CRCV_IVP.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Clients\CRAPV_IVPBILL.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>CRAPV_IVPBILL.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="Clients\CRCV_IVPBILL.rpt">
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
