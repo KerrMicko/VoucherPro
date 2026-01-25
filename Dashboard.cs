@@ -3877,6 +3877,15 @@ namespace VoucherPro
             else if (GlobalVariables.client == "IVP")
             {
                 // Logic for visibility of company panel
+                if (GlobalVariables.client == "IVP" && comboBox_Forms.SelectedItem?.ToString() == "Check")
+                {
+                    MessageBox.Show("The 'Check' form is not accessible.", "Access Restricted", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                    // Silently reset to blank (index 0) so they can't stay on this tab
+                    comboBox_Forms.SelectedIndex = 0;
+                    return;
+                }
+
                 if (comboBox_Forms.SelectedIndex == 1 || comboBox_Forms.SelectedIndex == 3) // CV or JV
                 {
                     panel_Company.Visible = true;
