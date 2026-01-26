@@ -1355,8 +1355,11 @@ namespace VoucherPro
 
 
                                 TextObject textObject_PreparedBy = cRJV_IVP.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
+                                TextObject textObject_PreparedByPos = cRJV_IVP.ReportDefinition.ReportObjects["TextPreparedByPosition"] as TextObject;
                                 TextObject textObject_CheckedBy = cRJV_IVP.ReportDefinition.ReportObjects["TextCheckedBy"] as TextObject;
+                                TextObject textObject_CheckedByPos = cRJV_IVP.ReportDefinition.ReportObjects["TextCheckedByPosition"] as TextObject;
                                 TextObject textObject_ApprovedBy = cRJV_IVP.ReportDefinition.ReportObjects["TextApprovedBy"] as TextObject;
+                                TextObject textObject_ApprovedByPos = cRJV_IVP.ReportDefinition.ReportObjects["TextApprovedByPosition"] as TextObject;
 
                                 if (textObject_JVRefNumber != null) textObject_JVRefNumber.Text = textBox_SeriesNumber.Text;
                                 if (textObject_JVCheckDate != null) textObject_JVCheckDate.Text = DateTime.Now.ToString("MMMM dd, yyyy");
@@ -1379,8 +1382,11 @@ namespace VoucherPro
 
 
                                 textObject_PreparedBy.Text = signatories.PreparedByName;
+                                textObject_PreparedByPos.Text = signatories.PreparedByPosition;
                                 textObject_CheckedBy.Text = signatories.ReviewedByName;
+                                textObject_CheckedByPos.Text = signatories.ReviewedByPosition;
                                 textObject_ApprovedBy.Text = signatories.ApprovedByName;
+                                textObject_ApprovedByPos.Text = signatories.ApprovedByPosition;
 
                                 // 4. Handle Subreport
                                 SubreportObject subreportObject = cRJV_IVP.ReportDefinition.ReportObjects["SubreportJVDetailsIVP"] as SubreportObject;
