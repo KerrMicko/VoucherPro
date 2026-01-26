@@ -1784,6 +1784,9 @@ namespace VoucherPro
                 TextObject textObject_CVBILLCheckDate = null;
                 TextObject textObject_CVBILLPayee = null;
                 TextObject textObject_CVBILLAddress = null;
+                TextObject textObject_CVBILLTIN = null;
+                TextObject textObject_CVBILLCurrency = null;
+                TextObject textObject_CVBILLCurrate = null;
                 //TextObject textObject_CVBILLTotalAmount = null;
                 TextObject textObject_CVBILLTotalDebitAmount = null;
                 TextObject textObject_CVBILLTotalCreditAmount = null;
@@ -1800,6 +1803,9 @@ namespace VoucherPro
                 {
                     textObject_CVBILLCheckNumber = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLSeriesnumber"] as TextObject;
                     textObject_CVBILLAddress= cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLAddress"] as TextObject;
+                    textObject_CVBILLTIN= cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTIN"] as TextObject;
+                    textObject_CVBILLCurrency= cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCurrency"] as TextObject;
+                    textObject_CVBILLCurrate= cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCurrate"] as TextObject;
                     //textObject_CVBILLAmountInWords = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLAmountInWords"] as TextObject;
                     textObject_CVBILLCheckDate = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCheckDate"] as TextObject;
                     textObject_CVBILLPayee = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLPayee"] as TextObject;
@@ -1913,6 +1919,10 @@ namespace VoucherPro
                 if (textObject_CVBILLCheckDate != null) textObject_CVBILLCheckDate.Text = DateTime.Now.ToString("MMMM dd, yyyy");
                 if (textObject_CVBILLPayee != null) textObject_CVBILLPayee.Text = bills[0].PayeeFullName ?? "";
                 //if (textObject_CVBILLTotalAmount != null) textObject_CVBILLTotalAmount.Text = bills[0].AmountDue.ToString("N2");
+
+                if (textObject_CVBILLTIN != null)textObject_CVBILLTIN.Text = bills[0].Tin ?? "";
+                if (textObject_CVBILLCurrency != null)textObject_CVBILLCurrency.Text = bills[0].Currency ?? "";
+                if (textObject_CVBILLCurrate != null)textObject_CVBILLCurrate.Text = bills[0].Exchangerate.ToString("N2");
 
                 SubreportObject subreportObject = null;
                 try

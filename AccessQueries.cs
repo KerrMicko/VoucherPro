@@ -883,15 +883,16 @@ namespace VoucherPro
                 IMsgSetRequest request = sessionManager.CreateMsgSetRequest("US", 13, 0);
                 request.Attributes.OnError = ENRqOnError.roeContinue;
 
-                // 1. Query the Bill directly using the RefNumber
+                // 1. Query the Bill
                 IBillQuery billQuery = request.AppendBillQueryRq();
                 billQuery.IncludeLineItems.SetValue(true);
-
-                // Filter by the Bill's Reference Number
                 billQuery.ORBillQuery.BillFilter.ORRefNumberFilter.RefNumberFilter.MatchCriterion.SetValue(ENMatchCriterion.mcStartsWith);
                 billQuery.ORBillQuery.BillFilter.ORRefNumberFilter.RefNumberFilter.RefNumber.SetValue(billRefNumber);
 
                 IMsgSetResponse response = sessionManager.DoRequests(request);
+
+                if (response.ResponseList == null || response.ResponseList.Count == 0) return bills;
+
                 IResponse resp = response.ResponseList.GetAt(0);
                 IBillRetList billList = resp.Detail as IBillRetList;
 
@@ -901,27 +902,92 @@ namespace VoucherPro
                     return bills;
                 }
 
-                // 2. Loop through results (usually one, but handles duplicates)
+                // 2. Loop through results
                 for (int i = 0; i < billList.Count; i++)
                 {
                     IBillRet bill = billList.GetAt(i);
 
+                    // --- FIXED: ROBUST TIN FETCHING ---
+                    string vendorTIN = "";
+
+                    if (bill.VendorRef != null)
+                    {
+                        try
+                        {
+                            string vendorListID = bill.VendorRef.ListID?.GetValue();
+
+                            if (!string.IsNullOrEmpty(vendorListID))
+                            {
+                                // Create a NEW request to query the Vendor specifically
+                                IMsgSetRequest vendorReq = sessionManager.CreateMsgSetRequest("US", 13, 0);
+                                IVendorQuery vq = vendorReq.AppendVendorQueryRq();
+
+                                // Filter by the specific Vendor ListID found on the bill
+                                vq.ORVendorListQuery.ListIDList.Add(vendorListID);
+
+                                // Make sure we ask for Custom Fields too (in case TIN is stored there)
+                                vq.OwnerIDList.Add("0");
+
+                                IMsgSetResponse vResp = sessionManager.DoRequests(vendorReq);
+                                IResponse vResponseRoot = vResp.ResponseList.GetAt(0);
+                                IVendorRetList vList = vResponseRoot.Detail as IVendorRetList;
+
+                                if (vList != null && vList.Count > 0)
+                                {
+                                    IVendorRet vendor = vList.GetAt(0);
+
+                                    // A. Check Standard TaxIdent Field
+                                    vendorTIN = vendor.VendorTaxIdent?.GetValue() ?? "";
+
+                                    // B. If Standard is empty, check Custom Fields
+                                    if (string.IsNullOrEmpty(vendorTIN) && vendor.DataExtRetList != null)
+                                    {
+                                        for (int k = 0; k < vendor.DataExtRetList.Count; k++)
+                                        {
+                                            var dataExt = vendor.DataExtRetList.GetAt(k);
+                                            // Case-insensitive check for "TIN"
+                                            if (dataExt.DataExtName.GetValue().IndexOf("TIN", StringComparison.OrdinalIgnoreCase) >= 0)
+                                            {
+                                                vendorTIN = dataExt.DataExtValue.GetValue();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception tinEx)
+                        {
+                            // Temporarily show error to debug
+                            MessageBox.Show("Error fetching TIN: " + tinEx.Message);
+                        }
+                    }
+                    // -----------------------------------
+
                     BillTable bt = new BillTable
                     {
-                        // Core Header Info
+                        // Core Fields
                         DateCreated = bill.TxnDate?.GetValue() ?? DateTime.Now,
                         DueDate = bill.DueDate?.GetValue() ?? DateTime.Now,
                         PayeeFullName = bill.VendorRef?.FullName?.GetValue() ?? "",
+                        TermsRefFullName = bill.TermsRef?.FullName?.GetValue() ?? "",
+                        APAccountRefFullName = bill.APAccountRef?.FullName?.GetValue() ?? "",
+                        RefNumber = bill.RefNumber?.GetValue() ?? "",
+                        Memo = bill.Memo?.GetValue() ?? "",
+                        AmountDue = bill.AmountDue?.GetValue() ?? 0,
+                        IsPaid = bill.IsPaid?.GetValue() ?? false,
+
+                        // Address Fields
                         VendorAddressAddr1 = bill.VendorAddress?.Addr1?.GetValue() ?? "",
                         VendorAddressAddr2 = bill.VendorAddress?.Addr2?.GetValue() ?? "",
                         VendorAddressAddr3 = bill.VendorAddress?.Addr3?.GetValue() ?? "",
                         VendorAddressAddr4 = bill.VendorAddress?.Addr4?.GetValue() ?? "",
                         VendorAddressCity = bill.VendorAddress?.City?.GetValue() ?? "",
-                        APAccountRefFullName = bill.APAccountRef?.FullName?.GetValue() ?? "",
-                        RefNumber = bill.RefNumber?.GetValue() ?? "", // The Bill Number
-                        Memo = bill.Memo?.GetValue() ?? "",
-                        AmountDue = bill.AmountDue?.GetValue() ?? 0,
-                        IsPaid = bill.IsPaid?.GetValue() ?? false
+
+                        // NEW FIELDS
+                        Tin = vendorTIN,
+                        Currency = bill.CurrencyRef?.FullName?.GetValue() ?? "",
+                        Exchangerate = bill.ExchangeRate?.GetValue() ?? 1.0
                     };
 
                     // 3. Process Expense Lines

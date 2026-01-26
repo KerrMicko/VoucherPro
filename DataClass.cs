@@ -31,12 +31,14 @@ namespace VoucherPro
             public string VendorAddressAddr3 { get; set; } //VendorRefFullName
             public string VendorAddressAddr4 { get; set; } //VendorRefFullName
             public string VendorAddressCity { get; set; } //VendorRefFullName
+            public string Currency { get; set; } //VendorRefFullName
+            public double Exchangerate { get; set; } //VendorRefFullName
 
             public DateTime DueDate { get; set; }
             public double AmountDue { get; set; }
             public string Memo { get; set; }
             public string BillMemo { get; set; }
-            public string TinID { get; set; }
+            public string Tin { get; set; }
             public string POnumber { get; set; }
             public DateTime DateCreatedHistory { get; set; }
             public string MemoHistory { get; set; }
