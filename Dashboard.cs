@@ -1783,6 +1783,7 @@ namespace VoucherPro
                 //TextObject textObject_CVBILLAmountInWords = null;
                 TextObject textObject_CVBILLCheckDate = null;
                 TextObject textObject_CVBILLPayee = null;
+                TextObject textObject_CVBILLAddress = null;
                 //TextObject textObject_CVBILLTotalAmount = null;
                 TextObject textObject_CVBILLTotalDebitAmount = null;
                 TextObject textObject_CVBILLTotalCreditAmount = null;
@@ -1798,6 +1799,7 @@ namespace VoucherPro
                 try
                 {
                     textObject_CVBILLCheckNumber = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLSeriesnumber"] as TextObject;
+                    textObject_CVBILLAddress= cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLAddress"] as TextObject;
                     //textObject_CVBILLAmountInWords = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLAmountInWords"] as TextObject;
                     textObject_CVBILLCheckDate = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCheckDate"] as TextObject;
                     textObject_CVBILLPayee = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLPayee"] as TextObject;
@@ -1810,6 +1812,8 @@ namespace VoucherPro
                     {
                         textObject_CompanyName.Text = comboBox_Company.SelectedItem.ToString();
                     }
+
+                    
 
 
                     textObject_PreparedBy = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
@@ -1885,8 +1889,26 @@ namespace VoucherPro
 
                 double amount = bills[0].AmountDue;
                 string amountInWords = AccessToDatabase.AmountToWordsConverter.Convert(amount);
+                var b = bills[0];
+
+                // Line 1: Combine Addr1, Addr2, Addr3, Addr4 into one string separated by commas
+                string streetLine = string.Join(", ", new[] {
+                    b.VendorAddressAddr1,
+                    b.VendorAddressAddr2,
+                    b.VendorAddressAddr3,
+                    b.VendorAddressAddr4
+                }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+                                // Line 2: City (Add State/Zip here if you have them in your BillTable)
+                                string cityLine = string.Join(" ", new[] {
+                    b.VendorAddressCity,
+                }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+                // Final: Join the two lines with a single NewLine
+                string fullAddress = string.Join(Environment.NewLine, new[] { streetLine, cityLine }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
                 if (textObject_CVBILLCheckNumber != null) textObject_CVBILLCheckNumber.Text = textBox_SeriesNumber.Text;
+                if (textObject_CVBILLAddress != null)textObject_CVBILLAddress.Text = fullAddress;
                 //if (textObject_CVBILLAmountInWords != null) textObject_CVBILLAmountInWords.Text = amountInWords;
                 if (textObject_CVBILLCheckDate != null) textObject_CVBILLCheckDate.Text = DateTime.Now.ToString("MMMM dd, yyyy");
                 if (textObject_CVBILLPayee != null) textObject_CVBILLPayee.Text = bills[0].PayeeFullName ?? "";
@@ -1920,6 +1942,7 @@ namespace VoucherPro
                         TextObject textObject_BILLCVSubCheckDate = subReportDocument.ReportDefinition.ReportObjects["TextCVBILLSubCheckDate"] as TextObject;
                         TextObject textObject_BILLCVSubTotal = subReportDocument.ReportDefinition.ReportObjects["TextCVBILLSUBTotalAmount"] as TextObject;
                         TextObject textObject_BILLCVSubCheckNumber = subReportDocument.ReportDefinition.ReportObjects["TextCVBILLSubCheckNumber"] as TextObject;
+                        TextObject textObject_BILLCVTERMS = subReportDocument.ReportDefinition.ReportObjects["TextCVBILLSubTerms"] as TextObject;
                         //TextObject textObject_BILLSubAccountPayable = subReportDocument.ReportDefinition.ReportObjects["TextBILLSubAccountPayable"] as TextObject;
                         TextObject textObject_BILLSubAmountPayable = subReportDocument.ReportDefinition.ReportObjects["TextBILLSubAmountPayable"] as TextObject;
                         TextObject textObject_PaidSign = subReportDocument.ReportDefinition.ReportObjects["TextPaidSign"] as TextObject;
@@ -1929,6 +1952,7 @@ namespace VoucherPro
                         }
 
                         if (textObject_BILLSubRemarks != null) textObject_BILLSubRemarks.Text = bills[0].Memo ?? "";
+                        if (textObject_BILLCVTERMS != null) textObject_BILLCVTERMS.Text = bills[0].TermsRefFullName ?? "";
                         if (textObject_BILLCVSubCheckDate != null) textObject_BILLCVSubCheckDate.Text = bills[0].DueDate.ToString("MMMM dd, yyyy");
                         if (textObject_BILLCVSubTotal != null) textObject_BILLCVSubTotal.Text = bills[0].AmountDue.ToString("N2");
                         if (textObject_BILLCVSubCheckNumber != null) textObject_BILLCVSubCheckNumber.Text = bills[0].RefNumber ?? "";
@@ -1936,7 +1960,7 @@ namespace VoucherPro
                         if (textObject_BILLSubAmountPayable != null)
                         {
                             // Sums the AmountDue of all items in the bills list
-                            double totalAmountDue = bills.Sum(b => b.AmountDue);
+                            double totalAmountDue = bills.Sum(a=> a.AmountDue);
                             textObject_BILLSubAmountPayable.Text = totalAmountDue.ToString("N2");
                         }
 

@@ -26,6 +26,12 @@ namespace VoucherPro
 
             // Bill table
             public string Vendor { get; set; } //VendorRefFullName
+            public string VendorAddressAddr1 { get; set; } //VendorRefFullName
+            public string VendorAddressAddr2 { get; set; } //VendorRefFullName
+            public string VendorAddressAddr3 { get; set; } //VendorRefFullName
+            public string VendorAddressAddr4 { get; set; } //VendorRefFullName
+            public string VendorAddressCity { get; set; } //VendorRefFullName
+
             public DateTime DueDate { get; set; }
             public double AmountDue { get; set; }
             public string Memo { get; set; }

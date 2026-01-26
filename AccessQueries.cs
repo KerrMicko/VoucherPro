@@ -912,6 +912,11 @@ namespace VoucherPro
                         DateCreated = bill.TxnDate?.GetValue() ?? DateTime.Now,
                         DueDate = bill.DueDate?.GetValue() ?? DateTime.Now,
                         PayeeFullName = bill.VendorRef?.FullName?.GetValue() ?? "",
+                        VendorAddressAddr1 = bill.VendorAddress?.Addr1?.GetValue() ?? "",
+                        VendorAddressAddr2 = bill.VendorAddress?.Addr2?.GetValue() ?? "",
+                        VendorAddressAddr3 = bill.VendorAddress?.Addr3?.GetValue() ?? "",
+                        VendorAddressAddr4 = bill.VendorAddress?.Addr4?.GetValue() ?? "",
+                        VendorAddressCity = bill.VendorAddress?.City?.GetValue() ?? "",
                         APAccountRefFullName = bill.APAccountRef?.FullName?.GetValue() ?? "",
                         RefNumber = bill.RefNumber?.GetValue() ?? "", // The Bill Number
                         Memo = bill.Memo?.GetValue() ?? "",
