@@ -2685,12 +2685,12 @@ namespace VoucherPro
                 }
 
                 // 2. Prepare Insert Query
-                // We now insert into both Debit and Credit columns appropriately
+                // ADDED: [Name] column and @Name placeholder
                 string insertQuery = @"
-                                    INSERT INTO JV_Compiled 
-                                    (RefNumber, [Particulars], [Class], [Debit], [Credit], [Memo]) 
-                                    VALUES 
-                                    (@RefNumber, @Particulars, @Class, @Debit, @Credit, @Memo)";
+                            INSERT INTO JV_Compiled 
+                            (RefNumber, [Particulars], [Class], [Name], [Debit], [Credit], [Memo]) 
+                            VALUES 
+                            (@RefNumber, @Particulars, @Class, @Name, @Debit, @Credit, @Memo)";
 
                 foreach (var line in journalData)
                 {
@@ -2699,14 +2699,15 @@ namespace VoucherPro
                         // MAPPING VARIABLES
                         string particulars = string.IsNullOrEmpty(line.AccountName) ? "" : line.AccountName;
                         string className = line.Class;
+                        // ADDED: Name mapping (Ensuring it handles nulls)
+                        string nameValue = string.IsNullOrEmpty(line.Name) ? "" : line.Name;
                         string memoValue = string.IsNullOrEmpty(line.Memo) ? "" : line.Memo;
 
                         string debitStr = "";
                         string creditStr = "";
 
                         // ---------------------------------------------------------
-                        // UPDATED LOGIC: 
-                        // Separate Debit and Credit into their own columns.
+                        // SEPARATE DEBIT / CREDIT LOGIC
                         // ---------------------------------------------------------
                         if (line.Debit != 0)
                         {
@@ -2716,18 +2717,21 @@ namespace VoucherPro
                         else if (line.Credit != 0)
                         {
                             creditTotalAmount += line.Credit;
-                            // Move to Credit column (Absolute value / Positive string)
                             creditStr = line.Credit.ToString("N2");
                         }
 
                         // EXECUTE INSERT
                         using (OleDbCommand command = new OleDbCommand(insertQuery, connection))
                         {
+                            // IMPORTANT: The order of these parameters MUST match the order in the SQL string above
                             command.Parameters.AddWithValue("@RefNumber", refNumber);
                             command.Parameters.AddWithValue("@Particulars", particulars);
 
                             // Handle Class nulls
                             command.Parameters.AddWithValue("@Class", string.IsNullOrEmpty(className) ? (object)DBNull.Value : className);
+
+                            // ADDED: Name Parameter
+                            command.Parameters.AddWithValue("@Name", string.IsNullOrEmpty(nameValue) ? (object)DBNull.Value : nameValue);
 
                             // Insert separated Debit and Credit strings
                             command.Parameters.AddWithValue("@Debit", debitStr);
