@@ -24,7 +24,7 @@ namespace VoucherPro
 {
     public class GlobalVariables
     {
-        public static string client = "IVP"; // IVP AND GIC SAME LAYOUT
+        public static string client = "KAYAK"; // IVP AND GIC SAME LAYOUT
         public static bool includeImage = true;
         public static bool includeItemReceipt = true;
         public static bool testWithoutData = true;
