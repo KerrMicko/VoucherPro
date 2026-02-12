@@ -581,13 +581,18 @@ namespace VoucherPro
                         UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
                     }
                 }
-                else if (GlobalVariables.client == "KAYAK")
+                /*else if (GlobalVariables.client == "KAYAK")
                 {
                     if (seriesNumber != 0)
                     {
                         seriesNumber--;
                         UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
                     }
+                }*/
+                if (GlobalVariables.client == "KAYAK")
+                {
+                    // Do nothing. Manual input only.
+                    return;
                 }
                 else if (GlobalVariables.client == "CPI")
                 {
@@ -630,10 +635,15 @@ namespace VoucherPro
                     seriesNumber++;
                     UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 2 ? "CV" : "APV");
                 }
-                else if (GlobalVariables.client == "KAYAK")
+                /*else if (GlobalVariables.client == "KAYAK")
                 {
                     seriesNumber++;
                     UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
+                }*/
+                if (GlobalVariables.client == "KAYAK")
+                {
+                    // Do nothing. Manual input only.
+                    return;
                 }
                 else if (GlobalVariables.client == "CPI")
                 {
@@ -3692,11 +3702,11 @@ namespace VoucherPro
                         }
                         else if (GlobalVariables.client == "KAYAK")
                         {
-                            string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
+                           /* string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
                             accessToDatabase.IncrementSeriesNumberInDatabase(columnName); // Increment for next print
 
                             seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
-                            UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");
+                            UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");*/
                         }
                         else if (GlobalVariables.client == "CPI")
                         {
@@ -3839,7 +3849,10 @@ namespace VoucherPro
                         return;
                 }
 
-                UpdateSeriesNumber(prefix);
+                if (GlobalVariables.client != "KAYAK")
+                {
+                    UpdateSeriesNumber(prefix);
+                }
             }
             else if (GlobalVariables.client == "KAYAK")
             {
@@ -3854,8 +3867,10 @@ namespace VoucherPro
                         panel_RefNumber.Visible = false;
                         panel_RefNumberCrystalReport.Visible = true;
                         panel_Signatory.Visible = true;
-                        label_SeriesNumberText.Text = "Current Series Number: CV";
-                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");
+                        /*label_SeriesNumberText.Text = "Current Series Number: CV";
+                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase("CVSeries");*/
+
+                        textBox_SeriesNumber.Text = "";
 
                         panel_Main.Visible = false;
                         panel_Main_CR.Visible = true;
@@ -3866,13 +3881,14 @@ namespace VoucherPro
                         panel_RefNumberCrystalReport.Visible = false;
                         panel_Signatory.Visible = false;
                         panel_SeriesNumber.Visible = false;
+                        textBox_SeriesNumber.Text = "";
 
                         panel_Main.Visible = false;
                         panel_Main_CR.Visible = false;
                         return;
                 }
 
-                UpdateSeriesNumber(prefix);
+                //UpdateSeriesNumber(prefix);
             }
             else if (GlobalVariables.client == "CPI")
             {
@@ -3914,21 +3930,24 @@ namespace VoucherPro
                         return;
                 }
 
-                UpdateSeriesNumber(prefix);
+                if (GlobalVariables.client != "KAYAK")
+                {
+                    UpdateSeriesNumber(prefix);
+                }
             }
 
 
             else if (GlobalVariables.client == "IVP")
             {
                 // Logic for visibility of company panel
-                if (GlobalVariables.client == "IVP" && comboBox_Forms.SelectedItem?.ToString() == "Check")
+                /*if (GlobalVariables.client == "IVP" && comboBox_Forms.SelectedItem?.ToString() == "Check")
                 {
                     MessageBox.Show("The 'Check' form is not accessible.", "Access Restricted", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
                     // Silently reset to blank (index 0) so they can't stay on this tab
                     comboBox_Forms.SelectedIndex = 0;
                     return;
-                }
+                }*/
 
                 if (comboBox_Forms.SelectedIndex == 1 || comboBox_Forms.SelectedIndex == 3) // CV or JV
                 {
@@ -4014,13 +4033,16 @@ namespace VoucherPro
                 }
 
                 // --- KEY CHANGE HERE ---
-                if (prefix != "")
+                if (GlobalVariables.client != "KAYAK")
                 {
-                    string selectedCompany = comboBox_Company.SelectedItem?.ToString();
-                    if (!string.IsNullOrEmpty(selectedCompany))
+                    if (prefix != "")
                     {
-                        seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(prefix, selectedCompany);
-                        UpdateSeriesNumberIVP(prefix); // Call the new 5-digit method
+                        string selectedCompany = comboBox_Company.SelectedItem?.ToString();
+                        if (!string.IsNullOrEmpty(selectedCompany))
+                        {
+                            seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(prefix, selectedCompany);
+                            UpdateSeriesNumberIVP(prefix); // Call the new 5-digit method
+                        }
                     }
                 }
             }
@@ -4122,7 +4144,7 @@ namespace VoucherPro
                     }
                 }
             }
-            else if (GlobalVariables.client == "KAYAK")
+            /*else if (GlobalVariables.client == "KAYAK")
             {
                 if (!string.IsNullOrEmpty(textBox_SeriesNumber.Text))
                 {
@@ -4139,6 +4161,13 @@ namespace VoucherPro
                         textBox_SeriesNumber.Text = $"{prefix}{seriesNumber:000}"; // Revert to the current value
                     }
                 }
+            }*/
+
+            if (GlobalVariables.client == "KAYAK")
+            {
+                // Allow the user to type whatever they want without 
+                // the program trying to "fix" or parse it into an integer.
+                return;
             }
             else if (GlobalVariables.client == "CPI")
             {
@@ -4192,8 +4221,8 @@ namespace VoucherPro
             }
             else if (GlobalVariables.client == "KAYAK")
             {
-                string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
-                accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment
+               /* string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
+                accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment*/
             }
             else if (GlobalVariables.client == "CPI")
             {
