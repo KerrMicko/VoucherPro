@@ -714,7 +714,7 @@ namespace VoucherPro
                 }
                 else if (comboBox_Forms.SelectedIndex != 0 && textBox_ReferenceNumber_CR.Text != "")
                 {
-                    if(GlobalVariables.client == "LEADS")
+                    if (GlobalVariables.client == "LEADS")
                     {
                         try
                         {
@@ -1764,7 +1764,7 @@ namespace VoucherPro
                             MessageBox.Show($"KAYAK ERROR HEHEHE:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
                     }
-                    
+
                 }
                 else
                 {
@@ -1812,10 +1812,10 @@ namespace VoucherPro
                 try
                 {
                     textObject_CVBILLCheckNumber = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLSeriesnumber"] as TextObject;
-                    textObject_CVBILLAddress= cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLAddress"] as TextObject;
-                    textObject_CVBILLTIN= cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTIN"] as TextObject;
-                    textObject_CVBILLCurrency= cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCurrency"] as TextObject;
-                    textObject_CVBILLCurrate= cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCurrate"] as TextObject;
+                    textObject_CVBILLAddress = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLAddress"] as TextObject;
+                    textObject_CVBILLTIN = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLTIN"] as TextObject;
+                    textObject_CVBILLCurrency = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCurrency"] as TextObject;
+                    textObject_CVBILLCurrate = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCurrate"] as TextObject;
                     //textObject_CVBILLAmountInWords = cRCV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLAmountInWords"] as TextObject;
                     textObject_CVBILLCheckDate = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLCheckDate"] as TextObject;
                     textObject_CVBILLPayee = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextCVBILLPayee"] as TextObject;
@@ -1829,7 +1829,7 @@ namespace VoucherPro
                         textObject_CompanyName.Text = comboBox_Company.SelectedItem.ToString();
                     }
 
-                    
+
 
 
                     textObject_PreparedBy = cRAPV_IVPBILL.ReportDefinition.ReportObjects["TextPreparedBy"] as TextObject;
@@ -1915,8 +1915,8 @@ namespace VoucherPro
                     b.VendorAddressAddr4
                 }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
-                                // Line 2: City (Add State/Zip here if you have them in your BillTable)
-                                string cityLine = string.Join(" ", new[] {
+                // Line 2: City (Add State/Zip here if you have them in your BillTable)
+                string cityLine = string.Join(" ", new[] {
                     b.VendorAddressCity,
                 }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
@@ -1924,15 +1924,15 @@ namespace VoucherPro
                 string fullAddress = string.Join(Environment.NewLine, new[] { streetLine, cityLine }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
                 if (textObject_CVBILLCheckNumber != null) textObject_CVBILLCheckNumber.Text = textBox_SeriesNumber.Text;
-                if (textObject_CVBILLAddress != null)textObject_CVBILLAddress.Text = fullAddress;
+                if (textObject_CVBILLAddress != null) textObject_CVBILLAddress.Text = fullAddress;
                 //if (textObject_CVBILLAmountInWords != null) textObject_CVBILLAmountInWords.Text = amountInWords;
                 if (textObject_CVBILLCheckDate != null) textObject_CVBILLCheckDate.Text = DateTime.Now.ToString("MMMM dd, yyyy");
                 if (textObject_CVBILLPayee != null) textObject_CVBILLPayee.Text = bills[0].PayeeFullName ?? "";
                 //if (textObject_CVBILLTotalAmount != null) textObject_CVBILLTotalAmount.Text = bills[0].AmountDue.ToString("N2");
 
-                if (textObject_CVBILLTIN != null)textObject_CVBILLTIN.Text = bills[0].Tin ?? "";
-                if (textObject_CVBILLCurrency != null)textObject_CVBILLCurrency.Text = bills[0].Currency ?? "";
-                if (textObject_CVBILLCurrate != null)textObject_CVBILLCurrate.Text = bills[0].Exchangerate.ToString("N2");
+                if (textObject_CVBILLTIN != null) textObject_CVBILLTIN.Text = bills[0].Tin ?? "";
+                if (textObject_CVBILLCurrency != null) textObject_CVBILLCurrency.Text = bills[0].Currency ?? "";
+                if (textObject_CVBILLCurrate != null) textObject_CVBILLCurrate.Text = bills[0].Exchangerate.ToString("N2");
 
                 SubreportObject subreportObject = null;
                 try
@@ -1980,7 +1980,7 @@ namespace VoucherPro
                         if (textObject_BILLSubAmountPayable != null)
                         {
                             // Sums the AmountDue of all items in the bills list
-                            double totalAmountDue = bills.Sum(a=> a.AmountDue);
+                            double totalAmountDue = bills.Sum(a => a.AmountDue);
                             textObject_BILLSubAmountPayable.Text = totalAmountDue.ToString("N2");
                         }
 
@@ -3128,7 +3128,7 @@ namespace VoucherPro
                                 Console.WriteLine($"Generate: APV Data Count: {totalItemDetails}, Total Pages: {totalPages}");
                                 printDocument.PrinterSettings.MaximumPage = totalPages;
                             }
-                            
+
                             // Update preview control to start at the first page
                             printPreviewControl.StartPage = 0;
 
@@ -3274,7 +3274,7 @@ namespace VoucherPro
                     {
                         MessageBox.Show("No data found for the provided reference number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
-                    
+
                 }
                 else
                 {
@@ -3375,7 +3375,7 @@ namespace VoucherPro
                     "Noted By:",
                 });
             }
-            
+
             comboBox_Signatory.SelectedIndex = 0;
 
             Label label_SignatoryName = new Label
@@ -3420,7 +3420,7 @@ namespace VoucherPro
                 Font = new Font("Microsoft Sans Serif", 8),
                 BackColor = Color.Transparent,
             };
-            
+
             Label label_SignatoryStatus = new Label
             {
                 Parent = panel_Signatory,
@@ -3672,7 +3672,7 @@ namespace VoucherPro
                         Console.WriteLine($"Print: APV Data Count: {totalItemDetails}, Total Pages: {totalPages}");
                         printDocument.PrinterSettings.MaximumPage = totalPages;
                     }
-                    
+
                     // Update preview control to start at the first page
                     printPreviewControl.StartPage = 0;
 
@@ -3702,11 +3702,11 @@ namespace VoucherPro
                         }
                         else if (GlobalVariables.client == "KAYAK")
                         {
-                           /* string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
-                            accessToDatabase.IncrementSeriesNumberInDatabase(columnName); // Increment for next print
+                            /* string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
+                             accessToDatabase.IncrementSeriesNumberInDatabase(columnName); // Increment for next print
 
-                            seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
-                            UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");*/
+                             seriesNumber = accessToDatabase.GetSeriesNumberFromDatabase(columnName);
+                             UpdateSeriesNumber(comboBox_Forms.SelectedIndex == 1 ? "CV" : "APV");*/
                         }
                         else if (GlobalVariables.client == "CPI")
                         {
@@ -4221,8 +4221,8 @@ namespace VoucherPro
             }
             else if (GlobalVariables.client == "KAYAK")
             {
-               /* string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
-                accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment*/
+                /* string columnName = comboBox_Forms.SelectedIndex == 1 ? "CVSeries" : "APVSeries";
+                 accessToDatabase.UpdateManualSeriesNumber(columnName, seriesNumber); // Save manual adjustment*/
             }
             else if (GlobalVariables.client == "CPI")
             {
@@ -4271,7 +4271,7 @@ namespace VoucherPro
                 case "Verheilen Iberica HealthCare Company Inc.": return "VIHC";
                 case "My Health Shield NutriPharm Inc.": return "MHS";
                 case "Central Luzon": return "CL";
-                    //----- GIC COMPANY------
+                //----- GIC COMPANY------
                 case "Greenfloor Innovations Corporation": return "GIC";
                 default: return "";
             }
