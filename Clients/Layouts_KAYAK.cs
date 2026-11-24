@@ -58,10 +58,16 @@ namespace VoucherPro.Clients
             Font font_Data = font_Eight;
             Font font_Data2 = font_Seven;
 
-            string companyName = "Kayak Construction Corp.";
+            /*string companyName = "Kayak Construction Corp.";
             //string companyTIN = "VAT Reg. TIN: 243-354-422-00000";
             string companyAddress = "Unit 811 GTP Tower 1 Pioneer Corporate Center, Madison St., Corner Pioneer St., Mandaluyong City";
             string companyTelNo = "Tel. No.: 6256282, Website Address: www.kayakcorp.com.ph";
+            string cvText = "CHECK VOUCHER";*/
+
+            string companyName = "General Alliance For Skilled Professional, Inc.";
+            //string companyTIN = "VAT Reg. TIN: 243-354-422-00000";
+            string companyAddress = "100 Naval St. Dolores 1920 Taytay Rizal Philippines";
+            string companyTelNo = "";
             string cvText = "CHECK VOUCHER";
 
             e.Graphics.DrawString(companyName, font_TwelveBold, Brushes.Black, new PointF(48, 40));
